@@ -54,6 +54,13 @@ def get_app_layout():
                         )
                     ], style={'text-align': 'center', 'vertical-align': 'middle'}),
                     html.Div([
+                        dcc.ConfirmDialog(
+                        id='confirm_finalizer',
+                        displayed=False,
+                        message="Clicking OK will finalize the trend and overwrite any existing finalized files previously created for this month"
+                        ),
+                    ]),
+                    html.Div([
                         dbc.Alert(
                             html.P(id='logic_alert_text'),
                             id = "finalizer_logic_alert",
