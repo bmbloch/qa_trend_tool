@@ -1714,7 +1714,7 @@ def output_flags(sector_val, init_flags_triggered, all_buttons, curryr, currmon,
 @Timer("Confirm Finalizer")
 def confirm_finalizer(sector_val, submit_button, download_button, curryr, currmon, success_init):
     input_id = get_input_id()
-    if sector_val is None or success_init == False:
+    if sector_val is None or success_init == False or submit_button is None:
         raise PreventUpdate
     # Need this callback to tie to update_data callback so the callback is not executed before the data is actually updated, but only want to actually save the data when the finalize button is clicked, so only do that when the input id is for the finalize button
     elif input_id == "store_submit_button":
@@ -1866,12 +1866,17 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 Output('store_flag_skips', 'data'),
                 Output('countdown', 'data'),
                 Output('countdown', 'columns'),
-                Output('countdown_container', 'style')],
-                [Input('sector', 'data'),
-                Input('submit-button', 'n_clicks'),
+                Output('countdown_container', 'style'),
+                Output('flag_filt', 'data'),
+                Output('flag_filt', 'columns'),
+                Output('flag_filt', 'style_table'),
+                Output('flag_filt_container', 'style')],
+                [Input('submit-button', 'n_clicks'),
                 Input('preview-button', 'n_clicks'),
+                Input('dropflag', 'value'),
                 Input('init_trigger', 'data')],
-                [State('store_orig_cols', 'data'),
+                [State('sector', 'data'),
+                State('store_orig_cols', 'data'),
                 State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('store_user', 'data'),
@@ -1894,7 +1899,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('r_threshold', 'value'),
                 State('store_flag_cols', 'data')])
 @Timer("Update Data")
-def update_data(sector_val, submit_button, preview_button, init_fired, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
     
     input_id = get_input_id()
 
@@ -1953,7 +1958,7 @@ def update_data(sector_val, submit_button, preview_button, init_fired, orig_cols
             preview_data = pd.DataFrame()
             shim_data = pd.DataFrame()
 
-        if input_id != "preview-button":
+        if input_id == "submit-button" or input_id == "init_trigger":
             countdown = data.copy()
             countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
             countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
@@ -1962,6 +1967,52 @@ def update_data(sector_val, submit_button, preview_button, init_fired, orig_cols
             type_dict_countdown, format_dict_countdown = get_types(sector_val)
 
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
+
+        if input_id != "preview-button":
+            
+            flag_filt = data.copy()
+            if "rol" in drop_flag:
+                flag_filt[drop_flag + "_test"] = flag_filt.groupby('identity')[drop_flag].transform('sum')
+                flag_filt['skip_test'] = flag_filt['flag_skip'].str.contains(drop_flag)
+                flag_filt['skip_test'] = np.where(flag_filt['skip_test'] == True, 1, 0)
+                flag_filt['skip_test'] = flag_filt.groupby('identity')['skip_test'].transform('sum')
+                flag_filt[drop_flag] = np.where((flag_filt[drop_flag + "_test"] > 0) & (flag_filt['skip_test'] > 0), 0, flag_filt[drop_flag])
+
+            flag_filt = flag_filt[[drop_flag, 'identity', 'flag_skip']]
+            flag_filt = flag_filt[(flag_filt[drop_flag] > 0)]
+
+            if drop_flag == "c_flag_sqdiff":
+                flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=False, method='min')
+            
+            if len(flag_filt) > 0:
+                has_skip = flag_filt['flag_skip'].str.contains(drop_flag, regex=False)
+                flag_filt['has_skip'] = has_skip
+                flag_filt = flag_filt[flag_filt['has_skip'] == False]
+                flag_filt = flag_filt.drop(['flag_skip', 'has_skip'], axis=1)
+                flag_filt['Total Flags'] = flag_filt[drop_flag].count()
+                temp = flag_filt.copy()
+                temp = temp.reset_index()
+                temp = temp.head(1)
+                temp = temp[['Total Flags']]
+                title = "Total Flags: " + str(temp['Total Flags'].loc[0])
+                flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
+                flag_filt = flag_filt.drop_duplicates('identity')
+                flag_filt = flag_filt[['identity', drop_flag]]
+                flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
+                flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
+            elif len(flag_filt) == 0:
+                title =  'Total Flags: 0'
+                data_fill = {'Submarkets With Flag': ['No Submarkets Flagged'],
+                        'Flag Ranking': [0]}
+                flag_filt = pd.DataFrame(data_fill, columns=['Submarkets With Flag', 'Flag Ranking'])
+
+            flag_filt_display = {'display': 'block', 'padding-top': '20px'}
+
+            if len(flag_filt) >= 10:
+                flag_filt_style_table = {'height': '350px', 'overflowY': 'auto'}
+            else:
+                flag_filt_style_table = {'height': '350px', 'overflowY': 'visible'}
+
         
         if input_id == 'submit-button':
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
@@ -1989,6 +2040,11 @@ def update_data(sector_val, submit_button, preview_button, init_fired, orig_cols
                 submit_button = no_update
                 preview_button = 1
                 init_flags = no_update
+            elif input_id == "dropflag":
+                all_buttons = no_update
+                submit_button = no_update
+                preview_button = no_update
+                init_flags = no_update
             else:
                 all_buttons = 1
                 submit_button = 1
@@ -2002,11 +2058,15 @@ def update_data(sector_val, submit_button, preview_button, init_fired, orig_cols
 
         # Return statement is conditional on input_id - only want to update the flag countdown related outputs if this is a non-preview callback trigger
         
-        if input_id != "preview-button":
+        if input_id == "submit-button" or input_id == "init_trigger":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, countdown.to_dict('rows'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display
+                    for i in range(0, len(countdown.columns))], countdown_display, flag_filt.to_dict('rows'), [{'name': [title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
+        elif input_id == "dropflag":
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('rows'), [{'name': [title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         else:
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 
 @trend.callback(Output('dropman', 'value'),
@@ -2483,68 +2543,6 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
             return no_update, no_update, no_update, no_update, no_update, no_update, no_update, sum_data.to_dict('rows'), [{'name': ['OOB Initial Flag Summary', sum_data.columns[i]], 'id': sum_data.columns[i], 'type': type_dict_sum[sum_data.columns[i]], 'format': format_dict_sum[sum_data.columns[i]]} 
                                 for i in range(0, len(sum_data.columns))], sum_display, highlighting_sum, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
-
-@trend.callback([Output('flag_filt', 'data'),
-                    Output('flag_filt', 'columns'),
-                    Output('flag_filt', 'style_table'),
-                    Output('flag_filt_container', 'style')],
-                    [Input('dropflag', 'value'),
-                    Input('sector', 'data'),
-                    Input('store_submit_button', 'data')],
-                    [State('curryr', 'data'),
-                    State('currmon', 'data'),
-                    State('init_trigger', 'data')])
-@Timer("Flag Filter")
-def filter_flag_table(drop_val, sector_val, submit_button, curryr, currmon, success_init):
-
-    if sector_val is None or success_init == False:
-        raise PreventUpdate
-    else:
-        data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        dataframe = data.copy()
-        if "rol" in drop_val:
-            dataframe[drop_val + "_test"] = dataframe.groupby('identity')[drop_val].transform('sum')
-            dataframe['skip_test'] = dataframe['flag_skip'].str.contains(drop_val)
-            dataframe['skip_test'] = np.where(dataframe['skip_test'] == True, 1, 0)
-            dataframe['skip_test'] = dataframe.groupby('identity')['skip_test'].transform('sum')
-            dataframe[drop_val] = np.where((dataframe[drop_val + "_test"] > 0) & (dataframe['skip_test'] > 0), 0, dataframe[drop_val])
-
-        dataframe = dataframe[[drop_val, 'identity', 'flag_skip']]
-        dataframe = dataframe[(dataframe[drop_val] > 0)]
-
-        if drop_val == "c_flag_sqdiff":
-            dataframe[drop_val] = dataframe[drop_val].rank(ascending=False, method='min')
-        
-        if len(dataframe) > 0:
-            has_skip = dataframe['flag_skip'].str.contains(drop_val, regex=False)
-            dataframe['has_skip'] = has_skip
-            dataframe = dataframe[dataframe['has_skip'] == False]
-            dataframe = dataframe.drop(['flag_skip', 'has_skip'], axis=1)
-            dataframe['Total Flags'] = dataframe[drop_val].count()
-            temp = dataframe.copy()
-            temp = temp.reset_index()
-            temp = temp.head(1)
-            temp = temp[['Total Flags']]
-            title = "Total Flags: " + str(temp['Total Flags'].loc[0])
-            dataframe.sort_values(by=['identity', drop_val], ascending=[True, True], inplace=True)
-            dataframe = dataframe.drop_duplicates('identity')
-            dataframe = dataframe[['identity', drop_val]]
-            dataframe = dataframe.rename(columns={'identity': 'Submarkets With Flag', drop_val: 'Flag Ranking'})
-            dataframe.sort_values(by=['Flag Ranking'], inplace=True)
-        elif len(dataframe) == 0:
-            title =  'Total Flags: 0'
-            data_fill = {'Submarkets With Flag': ['No Submarkets Flagged'],
-                    'Flag Ranking': [0]}
-            dataframe = pd.DataFrame(data_fill, columns=['Submarkets With Flag', 'Flag Ranking'])
-
-        flag_filt_display = {'display': 'block', 'padding-top': '20px'}
-
-        if len(dataframe) >= 10:
-            return dataframe.to_dict('rows'), [{'name': [title, dataframe.columns[i]], 'id': dataframe.columns[i]} 
-                    for i in range(0, len(dataframe.columns))], {'height': '350px', 'overflowY': 'auto'}, flag_filt_display
-        else:
-            return dataframe.to_dict('rows'), [{'name': [title, dataframe.columns[i]], 'id': dataframe.columns[i]} 
-                    for i in range(0, len(dataframe.columns))], {'height': '350px', 'overflowY': 'visible'}, flag_filt_display
 
 @trend.callback([Output('expand_hist', 'value'),
                  Output('subsequent_fix', 'value')],
