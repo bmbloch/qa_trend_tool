@@ -1271,6 +1271,54 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
 
     return decision_data_update
 
+# This function filters out submarkets flagged for a specific flag chosen by the user on the Home tab, and creates the necessary table and styles for display
+def filter_flags(dataframe_in, drop_flag):
+
+    flag_filt = dataframe_in.copy()
+    if "rol" in drop_flag:
+        flag_filt[drop_flag + "_test"] = flag_filt.groupby('identity')[drop_flag].transform('sum')
+        flag_filt['skip_test'] = flag_filt['flag_skip'].str.contains(drop_flag)
+        flag_filt['skip_test'] = np.where(flag_filt['skip_test'] == True, 1, 0)
+        flag_filt['skip_test'] = flag_filt.groupby('identity')['skip_test'].transform('sum')
+        flag_filt[drop_flag] = np.where((flag_filt[drop_flag + "_test"] > 0) & (flag_filt['skip_test'] > 0), 0, flag_filt[drop_flag])
+
+    flag_filt = flag_filt[[drop_flag, 'identity', 'flag_skip']]
+    flag_filt = flag_filt[(flag_filt[drop_flag] > 0)]
+
+    if drop_flag == "c_flag_sqdiff":
+        flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=False, method='min')
+    
+    if len(flag_filt) > 0:
+        has_skip = flag_filt['flag_skip'].str.contains(drop_flag, regex=False)
+        flag_filt['has_skip'] = has_skip
+        flag_filt = flag_filt[flag_filt['has_skip'] == False]
+        flag_filt = flag_filt.drop(['flag_skip', 'has_skip'], axis=1)
+        flag_filt['Total Flags'] = flag_filt[drop_flag].count()
+        temp = flag_filt.copy()
+        temp = temp.reset_index()
+        temp = temp.head(1)
+        temp = temp[['Total Flags']]
+        flag_filt_title = "Total Flags: " + str(temp['Total Flags'].loc[0])
+        flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
+        flag_filt = flag_filt.drop_duplicates('identity')
+        flag_filt = flag_filt[['identity', drop_flag]]
+        flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
+        flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
+    elif len(flag_filt) == 0:
+        flag_filt_title =  'Total Flags: 0'
+        data_fill = {'Submarkets With Flag': ['No Submarkets Flagged'],
+                'Flag Ranking': [0]}
+        flag_filt = pd.DataFrame(data_fill, columns=['Submarkets With Flag', 'Flag Ranking'])
+
+    flag_filt_display = {'display': 'block', 'padding-top': '20px'}
+
+    if len(flag_filt) >= 10:
+        flag_filt_style_table = {'height': '350px', 'overflowY': 'auto'}
+    else:
+        flag_filt_style_table = {'height': '350px', 'overflowY': 'visible'}
+
+    return flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title
+
 
 #This function produces the items that need to be returned by the update_data callback if the user has just loaded the program
 def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
@@ -1714,10 +1762,11 @@ def output_flags(sector_val, init_flags_triggered, all_buttons, curryr, currmon,
 @Timer("Confirm Finalizer")
 def confirm_finalizer(sector_val, submit_button, download_button, curryr, currmon, success_init):
     input_id = get_input_id()
-    if sector_val is None or success_init == False or submit_button is None:
+
+    if sector_val is None or success_init == False:
         raise PreventUpdate
     # Need this callback to tie to update_data callback so the callback is not executed before the data is actually updated, but only want to actually save the data when the finalize button is clicked, so only do that when the input id is for the finalize button
-    elif input_id == "store_submit_button":
+    elif input_id != "finalize-button":
         raise PreventUpdate
     else:
         print("End Confirm Finalizer")
@@ -1969,49 +2018,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
         if input_id != "preview-button":
-            
-            flag_filt = data.copy()
-            if "rol" in drop_flag:
-                flag_filt[drop_flag + "_test"] = flag_filt.groupby('identity')[drop_flag].transform('sum')
-                flag_filt['skip_test'] = flag_filt['flag_skip'].str.contains(drop_flag)
-                flag_filt['skip_test'] = np.where(flag_filt['skip_test'] == True, 1, 0)
-                flag_filt['skip_test'] = flag_filt.groupby('identity')['skip_test'].transform('sum')
-                flag_filt[drop_flag] = np.where((flag_filt[drop_flag + "_test"] > 0) & (flag_filt['skip_test'] > 0), 0, flag_filt[drop_flag])
-
-            flag_filt = flag_filt[[drop_flag, 'identity', 'flag_skip']]
-            flag_filt = flag_filt[(flag_filt[drop_flag] > 0)]
-
-            if drop_flag == "c_flag_sqdiff":
-                flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=False, method='min')
-            
-            if len(flag_filt) > 0:
-                has_skip = flag_filt['flag_skip'].str.contains(drop_flag, regex=False)
-                flag_filt['has_skip'] = has_skip
-                flag_filt = flag_filt[flag_filt['has_skip'] == False]
-                flag_filt = flag_filt.drop(['flag_skip', 'has_skip'], axis=1)
-                flag_filt['Total Flags'] = flag_filt[drop_flag].count()
-                temp = flag_filt.copy()
-                temp = temp.reset_index()
-                temp = temp.head(1)
-                temp = temp[['Total Flags']]
-                title = "Total Flags: " + str(temp['Total Flags'].loc[0])
-                flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
-                flag_filt = flag_filt.drop_duplicates('identity')
-                flag_filt = flag_filt[['identity', drop_flag]]
-                flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
-                flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
-            elif len(flag_filt) == 0:
-                title =  'Total Flags: 0'
-                data_fill = {'Submarkets With Flag': ['No Submarkets Flagged'],
-                        'Flag Ranking': [0]}
-                flag_filt = pd.DataFrame(data_fill, columns=['Submarkets With Flag', 'Flag Ranking'])
-
-            flag_filt_display = {'display': 'block', 'padding-top': '20px'}
-
-            if len(flag_filt) >= 10:
-                flag_filt_style_table = {'height': '350px', 'overflowY': 'auto'}
-            else:
-                flag_filt_style_table = {'height': '350px', 'overflowY': 'visible'}
+            flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag)
 
         
         if input_id == 'submit-button':
@@ -2060,10 +2067,10 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         
         if input_id == "submit-button" or input_id == "init_trigger":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, countdown.to_dict('rows'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display, flag_filt.to_dict('rows'), [{'name': [title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+                    for i in range(0, len(countdown.columns))], countdown_display, flag_filt.to_dict('rows'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         elif input_id == "dropflag":
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('rows'), [{'name': [title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('rows'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         else:
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update
