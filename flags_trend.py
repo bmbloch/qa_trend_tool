@@ -4,27 +4,23 @@ import re
 from IPython.core.display import display, HTML
 from pathlib import Path
 
-from timer_trend import Timer
+#from timer_trend import Timer
 from support_functions_trend import get_issue
 
 # This function sorts by the applicable flag and assigns an ascending ranking based on how far from the benchmark the sub is.
-@Timer("Calc Flag Ranking")
-def calc_flag_ranking(dataframe_in, flag_names, calc_names, c_flag_sqdiff):
+#@Timer("Calc Flag Ranking")
+def calc_flag_ranking(dataframe_in, flag_names, calc_names):
     dataframe = dataframe_in.copy()
-    if c_flag_sqdiff == False:
-        temp_names = ['temp_' + flag_name for flag_name in flag_names]
-        dataframe[calc_names] = np.where(dataframe[flag_names] == 0, np.nan, dataframe[calc_names])  
-        dataframe[temp_names] = dataframe[calc_names].rank(ascending=False, method='first')
-        dataframe[flag_names] = np.where(dataframe[flag_names] == 0, 0, dataframe[temp_names])
-        dataframe = dataframe.drop(calc_names, axis=1)
-    # EM requested that the actual difference be the output for the orig flags file so the ids causing the flag are easier to spot, so handle that case differently
-    elif c_flag_sqdiff == True:
-        dataframe["c_flag_sqdiff"] = np.where(dataframe["c_flag_sqdiff"] == 1, dataframe['calc'], dataframe["c_flag_sqdiff"])
-        dataframe = dataframe.drop(['calc'], axis=1)
 
+    temp_names = ['temp_' + flag_name for flag_name in flag_names]
+    dataframe[calc_names] = np.where(dataframe[flag_names] == 0, np.nan, dataframe[calc_names])  
+    dataframe[temp_names] = dataframe[calc_names].rank(ascending=False, method='first')
+    dataframe[flag_names] = np.where(dataframe[flag_names] == 0, 0, dataframe[temp_names])
+    dataframe = dataframe.drop(calc_names, axis=1)
+    
     return dataframe
 
-@Timer("Calc Flags")
+#@Timer("Calc Flags")
 def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     
     data = data_in.copy()
@@ -48,7 +44,9 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
         data['c_flag_sqdiff'] = np.where((data['yr'] >= 2009) & (data['sqcons'] - data['cons'] != data['p_sqcons'] - data['rol_cons']) & (data['sqcons'] != data['cons']) & (data['curr_tag'] == 0) & (np.isnan(data['p_sqcons']) == False), 1, 0)
         data['c_flag_sqdiff'] = np.where((data['sqcons'] != data['cons']) & (data['curr_tag'] == 1), 1, data['c_flag_sqdiff'])
         
-        data = calc_flag_ranking(data, False, False, False, True)
+        # EM requested that the actual difference be the output for the orig flags file so the ids causing the flag are easier to spot, so handle that case differently
+        data["c_flag_sqdiff"] = np.where(data["c_flag_sqdiff"] == 1, data['calc'], data["c_flag_sqdiff"])
+        data = data.drop(['calc'], axis=1)
     
     # Flag if a vacancy level is very low and there is no support from the actual square pool
     data['calc_vlow'] = (data['vac']) * -1
@@ -259,6 +257,9 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     flag_names = get_issue(False, False, False, False, False, False, False, False, False, False, "list", sector_val)
     flag_names = list(flag_names.keys())
 
-    data = calc_flag_ranking(data, flag_names, calc_names, False)
+    if sector_val == "apt":
+        flag_names.remove("c_flag_sqdiff")
+
+    data = calc_flag_ranking(data, flag_names, calc_names)
     
     return data
