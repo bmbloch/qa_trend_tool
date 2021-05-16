@@ -8,7 +8,7 @@ from IPython.core.display import display, HTML
 from pathlib import Path
 import math
 
-from timer_trend import Timer
+#from timer_trend import Timer
 
 
 # This function will calculate the key metrics needed to assess viability of oob forecast
