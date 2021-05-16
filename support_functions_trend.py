@@ -10,7 +10,7 @@ import dash_core_components as dcc
 import itertools
 
 from init_load_trend import get_home
-from timer_trend import Timer
+#from timer_trend import Timer
 
 # Function that filters the dataframe for the columns to display on the data tab to the user, based on what type of flag is currently being analyzed
 def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon):
@@ -134,7 +134,7 @@ def drop_cols(dataframe):
         return dataframe
 
 # This function creates the rank table for key vars for subs within the met
-@Timer("Rank it")
+#@Timer("Rank it")
 def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
     frames = []
     
@@ -202,7 +202,7 @@ def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
 
     
 # This function will roll up the data on a metro or national level for review based on the selection of metro by the user on the Rollups tab
-@Timer("Rollup")    
+#@Timer("Rollup")    
 def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll = dataframe.copy()
     
