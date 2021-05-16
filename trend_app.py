@@ -1506,7 +1506,6 @@ def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig
         flags_resolved = [x for x in test_flag_list if x not in flags_remaining and x not in skip_list]
         flags_unresolved = [x for x in test_flag_list if x in flags_remaining and x not in skip_list]
         new_flags = [x for x in flags_remaining if x not in orig_flag_list and x not in skip_list]
-
     else:
         flags_resolved = test_flag_list
         flags_unresolved = []
@@ -1957,8 +1956,8 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('flag_description_new', 'children'),
                 State('flag_description_skipped', 'children'),
                 State('subsequent_fix', 'value'),
-                State('v_threshold', 'value'),
-                State('r_threshold', 'value'),
+                State('v_threshold', 'data'),
+                State('r_threshold', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Update Data")
 def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
