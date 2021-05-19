@@ -2106,11 +2106,11 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         # Return statement is conditional on input_id - only want to update the flag countdown related outputs if this is a non-preview callback trigger
         
         if input_id == "submit-button" or input_id == "init_trigger":
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, countdown.to_dict('rows'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display, flag_filt.to_dict('rows'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
+                    for i in range(0, len(countdown.columns))], countdown_display, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         elif input_id == "dropflag":
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('rows'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         else:
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update
@@ -2573,11 +2573,11 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
             nat_vac_title = str(curryr) + ' m' + str(currmon) + ' US Vacancy Survey Stats'
             nat_rent_title = str(curryr) + ' m' + str(currmon) + ' US Rent Survey Stats'
             
-            return rank_data_met.to_dict('rows'), [{'name':['Top Ten Flagged Metros', rank_data_met.columns[i]], 'id': rank_data_met.columns[i], 'type': type_dict_rank_met[rank_data_met.columns[i]], 'format': format_dict_rank_met[rank_data_met.columns[i]]} 
-                                for i in range(0, len(rank_data_met.columns))], highlighting_rank_met, rank_data_sub.to_dict('rows'), [{'name':['Top Ten Flagged Submarkets', rank_data_sub.columns[i]], 'id': rank_data_sub.columns[i], 'type': type_dict_rank_sub[rank_data_sub.columns[i]], 'format': format_dict_rank_sub[rank_data_sub.columns[i]]} 
-                                for i in range(0, len(rank_data_sub.columns))], highlighting_rank_sub, rank_display, sum_data.to_dict('rows'), [{'name': ['OOB Initial Flag Summary', sum_data.columns[i]], 'id': sum_data.columns[i], 'type': type_dict_sum[sum_data.columns[i]], 'format': format_dict_sum[sum_data.columns[i]]} 
-                                for i in range(0, len(sum_data.columns))], sum_display, highlighting_sum, nat_data_vac.to_dict('rows'), [{'name': [nat_vac_title, nat_data_vac.columns[i]], 'id': nat_data_vac.columns[i], 'type': type_dict_nat_vac[nat_data_vac.columns[i]], 'format': format_dict_nat_vac[nat_data_vac.columns[i]]} 
-                                for i in range(0, len(nat_data_vac.columns))], nat_met_vac_display, highlighting_nat_vac, nat_data_rent.to_dict('rows'), [{'name': [nat_rent_title, nat_data_rent.columns[i]], 'id': nat_data_rent.columns[i], 'type': type_dict_nat_rent[nat_data_rent.columns[i]], 'format': format_dict_nat_rent[nat_data_rent.columns[i]]} 
+            return rank_data_met.to_dict('records'), [{'name':['Top Ten Flagged Metros', rank_data_met.columns[i]], 'id': rank_data_met.columns[i], 'type': type_dict_rank_met[rank_data_met.columns[i]], 'format': format_dict_rank_met[rank_data_met.columns[i]]} 
+                                for i in range(0, len(rank_data_met.columns))], highlighting_rank_met, rank_data_sub.to_dict('records'), [{'name':['Top Ten Flagged Submarkets', rank_data_sub.columns[i]], 'id': rank_data_sub.columns[i], 'type': type_dict_rank_sub[rank_data_sub.columns[i]], 'format': format_dict_rank_sub[rank_data_sub.columns[i]]} 
+                                for i in range(0, len(rank_data_sub.columns))], highlighting_rank_sub, rank_display, sum_data.to_dict('records'), [{'name': ['OOB Initial Flag Summary', sum_data.columns[i]], 'id': sum_data.columns[i], 'type': type_dict_sum[sum_data.columns[i]], 'format': format_dict_sum[sum_data.columns[i]]} 
+                                for i in range(0, len(sum_data.columns))], sum_display, highlighting_sum, nat_data_vac.to_dict('records'), [{'name': [nat_vac_title, nat_data_vac.columns[i]], 'id': nat_data_vac.columns[i], 'type': type_dict_nat_vac[nat_data_vac.columns[i]], 'format': format_dict_nat_vac[nat_data_vac.columns[i]]} 
+                                for i in range(0, len(nat_data_vac.columns))], nat_met_vac_display, highlighting_nat_vac, nat_data_rent.to_dict('records'), [{'name': [nat_rent_title, nat_data_rent.columns[i]], 'id': nat_data_rent.columns[i], 'type': type_dict_nat_rent[nat_data_rent.columns[i]], 'format': format_dict_nat_rent[nat_data_rent.columns[i]]} 
                                 for i in range(0, len(nat_data_rent.columns))], nat_met_rent_display, highlighting_nat_rent
         else:
             sum_data = use_pickle("in", "sum_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -2585,7 +2585,7 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
             type_dict_sum, format_dict_sum = get_types(sector_val)
             highlighting_sum = get_style("partial", sum_data, curryr, currmon, [], [])
 
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, sum_data.to_dict('rows'), [{'name': ['OOB Initial Flag Summary', sum_data.columns[i]], 'id': sum_data.columns[i], 'type': type_dict_sum[sum_data.columns[i]], 'format': format_dict_sum[sum_data.columns[i]]} 
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, sum_data.to_dict('records'), [{'name': ['OOB Initial Flag Summary', sum_data.columns[i]], 'id': sum_data.columns[i], 'type': type_dict_sum[sum_data.columns[i]], 'format': format_dict_sum[sum_data.columns[i]]} 
                                 for i in range(0, len(sum_data.columns))], sum_display, highlighting_sum, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 
@@ -2959,9 +2959,9 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
             else:
                 col_header.append(data_title)
     
-    return display_data.to_dict('rows'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
-                            for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('rows'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
-                            for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, key_met_2.to_dict('rows'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
+    return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
+                            for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
+                            for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display, True
         
 @trend.callback([Output('droproll', 'value'),
@@ -3182,12 +3182,12 @@ def output_rollup(roll_val, drop_val, roll_trigger, submit_button, preview_butto
             disable_roll_view = False
     
         if multi_view == False or roll_val[:2] == "US":
-            return go.Figure(data=data_vac_roll), go.Figure(data=data_rent_roll), vac_series_met_display, rent_series_met_display, rolled.to_dict('rows'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
+            return go.Figure(data=data_vac_roll), go.Figure(data=data_rent_roll), vac_series_met_display, rent_series_met_display, rolled.to_dict('records'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
             for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, no_update, no_update, no_update, no_update, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, disable_roll_view
         elif multi_view == True:
-            return no_update, no_update, {'display': 'none'}, {'display': 'none'}, rolled.to_dict('rows'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
-            for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, met_rank.to_dict('rows'), [{'name': ['Met Rank', met_rank.columns[i]], 'id': met_rank.columns[i], 'type': type_dict_rank[met_rank.columns[i]], 'format': format_dict_rank[met_rank.columns[i]]} 
-                            for i in range(0, len(met_rank.columns))], sub_rank.to_dict('rows'), [{'name': ['Sub Rank', sub_rank.columns[i]], 'id': sub_rank.columns[i], 'type': type_dict_rank[sub_rank.columns[i]], 'format': format_dict_rank[sub_rank.columns[i]]}
+            return no_update, no_update, {'display': 'none'}, {'display': 'none'}, rolled.to_dict('records'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
+            for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, met_rank.to_dict('records'), [{'name': ['Met Rank', met_rank.columns[i]], 'id': met_rank.columns[i], 'type': type_dict_rank[met_rank.columns[i]], 'format': format_dict_rank[met_rank.columns[i]]} 
+                            for i in range(0, len(met_rank.columns))], sub_rank.to_dict('records'), [{'name': ['Sub Rank', sub_rank.columns[i]], 'id': sub_rank.columns[i], 'type': type_dict_rank[sub_rank.columns[i]], 'format': format_dict_rank[sub_rank.columns[i]]}
                             for i in range(0, len(sub_rank.columns))], sub_rank_display, met_rank_display, rank_toggle_display, disable_roll_view
 
 @trend.callback(Output('store_shim_finals', 'data'),
