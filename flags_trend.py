@@ -31,7 +31,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Only flag if the avail from nc is different from the row above, since once the nc comes on, the vac level will be different in all subsequent rows and we will overflag. Just want to focus on where the nc is actually causing the level change initially and in periods where some of it gets absorbed later
     data['calc_rolv'] = abs(data['vac'] - data['rol_vac'])
     calc_names.append('calc_rolv')
-    data['c_flag_rolv'] = np.where((data['yr'] >= 2009) & (abs(data['vac'] - data['rol_vac']) >= 0.005) & (data['newncrev'] > 0) & (data['curr_tag'] == 0) & ((data['newncava'] != data['newncava'].shift(1)) | (data['newnc_thismo'] > 0) & (data['vac'] == data['vac_oob'])), 1, 0)
+    data['c_flag_rolv'] = np.where((data['yr'] >= 2009) & (abs(data['vac'] - data['rol_vac']) >= 0.005) & (data['newncrev'] > 0) & (data['curr_tag'] == 0) & (data['vac'] == data['vac_oob']) & (data['conv'] == data['conv_oob']) & (data['demo'] == data['demo_oob']) & ((data['newncava'] != data['newncava'].shift(1)) | (data['newnc_thismo'] > 0)), 1, 0)
     
     # Flag if G_mrent is different to rol vac and the cause is a cons rebench. Often this is not a problem, but still good to check it out
     data['calc_rolg'] = abs(data['G_mrent'] - data['rol_G_mrent'])
