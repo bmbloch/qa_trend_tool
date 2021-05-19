@@ -140,6 +140,9 @@ def initial_load(sector_val, curryr, currmon, msq_load):
                     data = data.rename(columns={x:  x[2:] + "_oob"})
             data['vac_oob'] = data['vac']
             data['vac_chg_oob'] = data['vac_chg']
+            if sector_val == "ret":
+                data['conv_oob'] = data['conv']
+                data['demo_oob'] = data['demo']
 
             # Create columns to store the shim comments
             data['inv_cons_comment'] = ""
