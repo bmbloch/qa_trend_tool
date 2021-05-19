@@ -233,7 +233,7 @@ def get_app_layout():
                             dcc.Dropdown(
                                 id='dropman',
                                         ),
-                                ], style={'padding-left': '10px', 'width': '18%', 'display': 'inline-block'}),
+                                ], style={'padding-left': '10px', 'width': '9%', 'display': 'inline-block'}),
                         html.Div([
                             dcc.Checklist(
                                 id='expand_hist',
@@ -241,8 +241,17 @@ def get_app_layout():
                                 options=[
                                             {'label': ' Full History', 'value': 'full'},
                                             ],
-                                labelStyle={'display': 'block', 'margin': '0 10px 0 10px'}), 
-                        ],  style={'padding-left': '10px', 'width': '8%', 'display': 'inline-block', 'vertical-align': 'top'}),
+                                labelStyle={'display': 'block'}), 
+                        ],  style={'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top'}),
+                        html.Div([
+                            dcc.Checklist(
+                                id='hide_cd',
+                                value=["N"],
+                                options=[
+                                            {'label': ' Hide CD Shim', 'value': 'Y'},
+                                            ],
+                                labelStyle={'display': 'block'}), 
+                        ],  style={'display': 'none'}, id='hide_cd_container'),
                         html.Div([
                             html.P(id='flag_description_noprev')
                                 ], style={'display': 'none'}, id='noprev_container'),
