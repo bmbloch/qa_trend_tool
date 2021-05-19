@@ -68,6 +68,10 @@ def get_types(sector_val):
     type_dict['rol abs'] = 'numeric'
     type_dict['inv shim'] = 'numeric'
     type_dict['cons shim'] = 'numeric'
+    type_dict['conv shim'] = 'numeric'
+    type_dict['demo shim'] = 'numeric'
+    type_dict['conv'] = 'numeric'
+    type_dict['demo'] = 'numeric'
     type_dict['avail shim'] = 'numeric'
     type_dict['mrent shim'] = 'numeric'
     type_dict['merent shim'] = 'numeric'
@@ -167,6 +171,10 @@ def get_types(sector_val):
     format_dict['rol cons'] = Format(group=",")
     format_dict['cons shim'] = Format(group=",")
     format_dict['cons roldiff'] = Format(group=",")
+    format_dict['conv'] = Format(group=",")
+    format_dict['conv shim'] = Format(group=",")
+    format_dict['demo'] = Format(group=",")
+    format_dict['demo shim'] = Format(group=",")
     format_dict['occ'] = Format(group=",")
     format_dict['avail'] = Format(group=",")
     format_dict['sq avail'] = Format(group=",")
@@ -1186,7 +1194,10 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
                 decision_data_test = decision_data_test.rename(columns={x: x[:-4]})
         update_data = data.copy()
         update_data = update_data[update_data['identity'] == identity_val]
-        update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
+        if sector_val != "ind":
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
+        else:
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], axis=1)
         update_data['vac'] = round(update_data['vac'], 3)
         update_data['vac_chg'] = round(update_data['vac_chg'], 3)
@@ -1216,6 +1227,10 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
                 update_data.loc[index, 'i_user'] = user
             if math.isnan(row['cons']) == False:
                 update_data.loc[index, 'c_user'] = user
+            if math.isnan(row['conv']) == False:
+                update_data.loc[index, 'i_user'] = user
+            if math.isnan(row['demo']) == False:
+                update_data.loc[index, 'i_user'] = user
             if math.isnan(row['vac']) == False or math.isnan(row['vac_chg']) == False or math.isnan(row['avail']) == False or math.isnan(row['abs']) == False:
                 update_data.loc[index, 'v_user'] = user
             if math.isnan(row['mrent']) == False or math.isnan(row['G_mrent']) == False:
@@ -1416,13 +1431,15 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
 def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg):
 
-    shim_data['inv'] = np.where(shim_data['inv'] == '', np.nan, shim_data['inv'])
-    shim_data['cons'] = np.where(shim_data['cons'] == '', np.nan, shim_data['cons'])
-    shim_data['avail'] = np.where(shim_data['avail'] == '', np.nan, shim_data['avail'])
-    shim_data['mrent'] = np.where(shim_data['mrent'] == '', np.nan, shim_data['mrent'])
-    shim_data['merent'] = np.where(shim_data['merent'] == '', np.nan, shim_data['merent'])
+    if sector_val != "ind":
+        shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
+    else:
+        shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
+    
+    for col in shim_cols:
+        shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
 
-    if shim_data[['inv', 'cons', 'avail', 'mrent', 'merent']].isnull().values.all() == True:
+    if shim_data[shim_cols].isnull().values.all() == True:
         no_shim = True
     else:
         no_shim = False
@@ -1440,8 +1457,8 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         data_orig = data_orig[(data_orig['identity'] == drop_val)]
         if "trunc" in expand and "full" not in expand:
             data_orig = data_orig[(data_orig['yr'] >= curryr - 3) | ((data_orig['yr'] == curryr - 4) & (data_orig['currmon'] == 12))]
-        data_orig = data_orig[['currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
-        shim_data = shim_data[['currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
+        data_orig = data_orig[['currmon', 'yr'] + shim_cols]
+        shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         if no_shim == False:
             data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg)
@@ -1479,7 +1496,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 
     preview_data = pd.DataFrame()
 
-    shim_data[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
+    shim_data[shim_cols] = np.nan
 
     return data, preview_data, shim_data, message, message_display
 
@@ -1524,18 +1541,21 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
 
     if message_display == False:
 
-        shim_data['inv'] = np.where(shim_data['inv'] == '', np.nan, shim_data['inv'])
-        shim_data['cons'] = np.where(shim_data['cons'] == '', np.nan, shim_data['cons'])
-        shim_data['avail'] = np.where(shim_data['avail'] == '', np.nan, shim_data['avail'])
-        shim_data['mrent'] = np.where(shim_data['mrent'] == '', np.nan, shim_data['mrent'])
-        shim_data['merent'] = np.where(shim_data['merent'] == '', np.nan, shim_data['merent'])
+        if sector_val != "ind":
+            shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
+        else:
+            shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
+
+        for col in shim_cols:
+            shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
+
 
         data_orig = data.copy()
         data_orig = data_orig[(data_orig['identity'] == drop_val)]
         if "trunc" in expand and "full" not in expand:
             data_orig = data_orig[(data_orig['yr'] >= curryr - 3) | ((data_orig['yr'] == curryr - 4) & (data_orig['currmon'] == 12))]
-        data_orig = data_orig[['currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
-        shim_data = shim_data[['currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
+        data_orig = data_orig[['currmon', 'yr'] + shim_cols]
+        shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg)
         
@@ -1687,6 +1707,8 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                 decision_data = decision_data.reset_index()
                 decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols]
                 update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
+                if sector_val != "ind":
+                    update_cols += ['conv_new', 'demo_new']
                 for x in update_cols:
                     decision_data[x] = np.nan
                 decision_data = decision_data.set_index('identity_row')
@@ -2673,28 +2695,31 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, identity
         # Drop flag columns to reduce dimensionality
         data = data.drop(flag_cols, axis=1)
 
+        if sector_val != "ind":
+            shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
+        else:
+            shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
+
         # Reset the shim view to all nulls, unless there are shims entered
         if len(shim_data) == 0:
             shim_data = data.copy()
-            shim_data[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
+            shim_data[shim_cols] = np.nan
             shim_data = shim_data[(shim_data['identity'] == drop_val)]
-        shim_data = shim_data[['currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
+        shim_data = shim_data[['currmon', 'yr'] + shim_cols]
 
         # If the user chooses to expand the history displayed in the datatable, ensure that the new shim periods get added, but do not lose the shims already entered if there are some
         if input_id == "expand_hist":
             shim_add = data.copy()
-            shim_add = shim_add[['identity', 'currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
+            shim_add = shim_add[['identity', 'currmon', 'yr'] + shim_cols]
             shim_add = shim_add[(shim_add['yr'] < curryr - 4) | ((shim_add['yr'] == curryr - 4) & (shim_add['currmon'] < 12))]
             shim_add = shim_add[(shim_add['identity'] == drop_val)]
             shim_add = shim_add.drop(['identity'], axis=1)
             shim_add[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
             shim_add = shim_add.append(shim_data, ignore_index=True)
             shim_data = shim_add.copy()
-            shim_data['inv'] = np.where(shim_data['inv'] == '', np.nan, shim_data['inv'])
-            shim_data['cons'] = np.where(shim_data['cons'] == '', np.nan, shim_data['cons'])
-            shim_data['avail'] = np.where(shim_data['avail'] == '', np.nan, shim_data['avail'])
-            shim_data['mrent'] = np.where(shim_data['mrent'] == '', np.nan, shim_data['mrent'])
-            shim_data['merent'] = np.where(shim_data['merent'] == '', np.nan, shim_data['merent'])
+            for col in shim_cols:
+                shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
+            
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
             if len(preview_data) > 0:
@@ -2709,10 +2734,10 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, identity
         if (len(preview_data) > 0 and  identity_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (shim_data.reset_index()['identity_row'].str.contains(identity_val).loc[0] == False):
             preview_data = pd.DataFrame()
             shim_data = data.copy()
-            shim_data = shim_data[['identity', 'currmon', 'yr', 'inv', 'cons', 'avail', 'mrent', 'merent']]
+            shim_data = shim_data[['identity', 'currmon', 'yr'] + shim_cols]
             shim_data = shim_data[(shim_data['identity'] == drop_val)]
             shim_data = shim_data.drop(['identity'], axis=1)
-            shim_data[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
+            shim_data[shim_cols] = np.nan
             use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
@@ -3164,7 +3189,10 @@ def finalize_shims(shim_data, sector_val, curryr, currmon, success_init, drop_va
     else:
         shims_final = pd.DataFrame()
         for x in shim_data:
-            temp = {'identity_row': drop_val + str(x['yr']) + str(x['month']), 'currmon': x['month'], 'yr': x['yr'], 'inv': x['inv shim'], 'cons': x['cons shim'], 'avail': x['avail shim'], 'mrent': x['mrent shim'], 'merent': x['merent shim']}
+            if sector_val != "ind":
+                temp = {'identity_row': drop_val + str(x['yr']) + str(x['month']), 'currmon': x['month'], 'yr': x['yr'], 'inv': x['inv shim'], 'cons': x['cons shim'], 'conv': x['conv shim'], 'demo': x['demo shim'], 'avail': x['avail shim'], 'mrent': x['mrent shim'], 'merent': x['merent shim']}
+            else:
+                temp = {'identity_row': drop_val + str(x['yr']) + str(x['month']), 'currmon': x['month'], 'yr': x['yr'], 'inv': x['inv shim'], 'cons': x['cons shim'], 'avail': x['avail shim'], 'mrent': x['mrent shim'], 'merent': x['merent shim']}
             shims_final = shims_final.append(temp, ignore_index=True)
         shims_final = shims_final.set_index('identity_row')
         use_pickle("out", "shim_data_" + sector_val, shims_final, curryr, currmon, sector_val)
