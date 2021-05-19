@@ -215,7 +215,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
         # Load the currmon row of all msqs to calculate extra data points and also the rollups
         # This takes  awhile (loading stata dtas is slow) so will give the analyst the option to only refresh if there was an actual edit made to the msqs
-        if msq_load == "Y":
+        if msq_load == "Y" or (file_used == "oob" and load_trunc == False):
             print("start load msqs")
             data_in = pd.DataFrame()
             pathlist = Path("{}central/square/data/{}/production/msq/output".format(get_home(), sector_val)).glob('**/*.dta')
