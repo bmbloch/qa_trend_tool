@@ -17,7 +17,10 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     dataframe = dataframe_in.copy()
     
     # Note: leave rol_vac and rol_G_mrent in so that it can be used to identify row where diff to rol is for highlighting purposes, will be dropped before final output of datatable
-    display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
+    if sector_val != "ind":
+        display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
+    else:
+        display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
     
     if ('90' in identity_val and sector_val == "apt") or (sector_val == "off" and ('81' in identity_val or '82' in identity_val)) or (('70' in identity_val and sector_val == "ret")):
         display_cols.remove('merent')
@@ -662,12 +665,12 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
     diffs = diffs.dropna(axis=0, how='all')
     diffs = diffs.dropna(axis=1, how='all')
 
-    # Because a user might want to retain the current avail in the case of an inv or cons shim, or similarly, merent in the case of an mrent shim, we need an additional check to add them back in to the diffs dataframe since they will be nulled out with the boolean indexing method
-    if "avail" not in list(diffs.columns) and ("inv" in list(diffs.columns) or "cons" in list(diffs.columns)):
+    # Because a user might want to retain the current avail in the case of an inv or cons shim ro conversion/demolition shim, or similarly, merent in the case of an mrent shim, we need an additional check to add them back in to the diffs dataframe since they will be nulled out with the boolean indexing method
+    if "avail" not in list(diffs.columns) and ("inv" in list(diffs.columns) or "cons" in list(diffs.columns) or "conv" in list(diffs.columns) or "demo" in list(diffs.columns)):
         diffs['avail'] = np.nan
-    if "inv" in list(diffs.columns) or "cons" in list(diffs.columns):
+    if "inv" in list(diffs.columns) or "cons" in list(diffs.columns) or "conv" in list(diffs.columns) or "demo" in list(diffs.columns):
         check_avail = data_update.copy()
-        check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False))]
+        check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False) | (check_avail['conv'].isnull() == False) | (check_avail['demo'].isnull() == False))]
         check_avail = check_avail[['avail']]
         check_avail = check_avail.rename(columns={'avail': 'avail_check'})
         diffs = diffs.join(check_avail)
@@ -697,6 +700,10 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                     col_issue_diffs = "i_flag"
                 elif col_name == "cons":
                     col_issue_diffs = "c_flag"
+                elif col_name == "conv":
+                    col_issue_diffs = "a_flag"
+                elif col_name == "demo":
+                    col_issue_diffs = "d_flag"
                 elif col_name == "avail":
                     col_issue_diffs = "v_flag"
                 elif col_name == "mrent":
@@ -726,6 +733,12 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     elif variable_fix == "c":
         orig_cons = dataframe.loc[row_to_fix]['cons']
         cons_diff = fix - orig_cons
+    elif variable_fix == "a":
+        orig_conv = dataframe.loc[row_to_fix]['conv']
+        cv_diff = fix - orig_conv
+    elif variable_fix == "d":
+        orig_demo = dataframe.loc[row_to_fix]['demo']
+        cv_diff = fix - orig_demo
     elif variable_fix == "v":
         orig_avail = dataframe.loc[row_to_fix]['avail']
         avail_diff = fix - orig_avail
@@ -754,6 +767,17 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
         dataframe.loc[index_row, 'cons'] = fix
         dataframe['inv'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['inv'] + cons_diff, dataframe['inv'])
         dataframe['occ'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['occ'] + cons_diff, dataframe['occ'])
+        dataframe['vac'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['avail'] / dataframe['inv'], dataframe['vac'])
+        dataframe['vac'] = round(dataframe['vac'], 4)
+        dataframe['vac_chg'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row), dataframe['vac'] - dataframe['vac'].shift(1), dataframe['vac_chg'])
+        dataframe['abs'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row), dataframe['occ'] - dataframe['occ'].shift(1), dataframe['abs'])
+    elif variable_fix == "a" or variable_fix == "d":
+        if variable_fix == "a":
+            dataframe.loc[index_row, 'conv'] = fix
+        elif variable_fix == "d":
+            dataframe.loc[index_row, 'demo'] = fix
+        dataframe['inv'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['inv'] + cv_diff, dataframe['inv'])
+        dataframe['occ'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['occ'] + cv_diff, dataframe['occ'])
         dataframe['vac'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['avail'] / dataframe['inv'], dataframe['vac'])
         dataframe['vac'] = round(dataframe['vac'], 4)
         dataframe['vac_chg'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row), dataframe['vac'] - dataframe['vac'].shift(1), dataframe['vac_chg'])
