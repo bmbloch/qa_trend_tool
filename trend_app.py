@@ -2189,7 +2189,7 @@ def calc_stats_flags(drop_val, sector_val, init_fired, curryr, currmon, success_
         if has_flag == 1:
             key_met_radio_val = flag_list[0][0]
         else:
-            key_met_radio_val = 'v'
+            key_met_radio_val = no_update
 
         return identity_val, has_flag, flag_list, key_met_radio_val
 
