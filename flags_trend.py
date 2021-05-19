@@ -31,7 +31,11 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Only flag if the avail from nc is different from the row above, since once the nc comes on, the vac level will be different in all subsequent rows and we will overflag. Just want to focus on where the nc is actually causing the level change initially and in periods where some of it gets absorbed later
     data['calc_rolv'] = abs(data['vac'] - data['rol_vac'])
     calc_names.append('calc_rolv')
-    data['c_flag_rolv'] = np.where((data['yr'] >= 2009) & (abs(data['vac'] - data['rol_vac']) >= 0.005) & (data['newncrev'] > 0) & (data['curr_tag'] == 0) & (data['vac'] == data['vac_oob']) & (data['conv'] == data['conv_oob']) & (data['demo'] == data['demo_oob']) & ((data['newncava'] != data['newncava'].shift(1)) | (data['newnc_thismo'] > 0)), 1, 0)
+    
+    if sector_val != "ind":
+        data['c_flag_rolv'] = np.where((data['yr'] >= 2009) & (abs(data['vac'] - data['rol_vac']) >= 0.005) & (data['newncrev'] > 0) & (data['curr_tag'] == 0) & (data['vac'] == data['vac_oob']) & (data['conv'] == data['conv_oob']) & (data['demo'] == data['demo_oob']) & ((data['newncava'] != data['newncava'].shift(1)) | (data['newnc_thismo'] > 0)), 1, 0)
+    else:
+        data['c_flag_rolv'] = np.where((data['yr'] >= 2009) & (abs(data['vac'] - data['rol_vac']) >= 0.005) & (data['newncrev'] > 0) & (data['curr_tag'] == 0) & (data['vac'] == data['vac_oob']) & ((data['newncava'] != data['newncava'].shift(1)) | (data['newnc_thismo'] > 0)), 1, 0)
     
     # Flag if G_mrent is different to rol vac and the cause is a cons rebench. Often this is not a problem, but still good to check it out
     data['calc_rolg'] = abs(data['G_mrent'] - data['rol_G_mrent'])
@@ -204,7 +208,6 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
 
     data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] < 0) & (data['G_mrent'] < data['sub_g_renx_mo_wgt_fill'] / 2), 1, data['g_flag_surdiff'])
     data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] > 0) & (data['G_mrent'] > data['sub_g_renx_mo_wgt_fill'] / 2), 1, data['g_flag_surdiff'])
-
 
     threshold = 0.001
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (data['G_mrent'] > data['us_g_renx_mo_wgt'] + threshold) & (round(data['us_g_renx_mo_wgt'],3) >= 0), 3, data['g_flag_surdiff'])
