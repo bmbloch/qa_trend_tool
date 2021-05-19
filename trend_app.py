@@ -1178,11 +1178,11 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
             dataframe.to_pickle(file_path)
 
 #@Timer("Update Decision Log")
-def update_decision_log(decision_data, data, identity_val, sector_val, curryr, currmon, user, button, flag_name):
+def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, button, flag_name):
     if button == "submit":
         # Identify where the trend series has changed for key variables
         decision_data_test = decision_data.copy()
-        decision_data_test = decision_data_test[decision_data_test['identity'] == identity_val]
+        decision_data_test = decision_data_test[decision_data_test['identity'] == drop_val]
         
         drop_list = []
         for x in list(decision_data_test.columns):
@@ -1193,7 +1193,7 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
             if "oob" in x:
                 decision_data_test = decision_data_test.rename(columns={x: x[:-4]})
         update_data = data.copy()
-        update_data = update_data[update_data['identity'] == identity_val]
+        update_data = update_data[update_data['identity'] == drop_val]
         if sector_val != "ind":
             update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
         else:
@@ -1240,7 +1240,7 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
         
         # Fill in the new values in a trunc dataframe
         decision_data_fill = decision_data.copy()
-        decision_data_fill = decision_data_fill[decision_data_fill['identity'] == identity_val]
+        decision_data_fill = decision_data_fill[decision_data_fill['identity'] == drop_val]
         no_change_list = ['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'i_user', 'c_user', 'v_user', 'g_user', 'e_user']
         for x in list(decision_data_fill.columns):
             if "new" not in x:
@@ -1279,7 +1279,7 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
         
         # Replace the new values in the "new" columns in a trunc dataframe that also has the oob values
         decision_data_replace = decision_data.copy()
-        decision_data_replace = decision_data_replace[decision_data_replace['identity'] == identity_val]
+        decision_data_replace = decision_data_replace[decision_data_replace['identity'] == drop_val]
         decision_data_replace = decision_data_replace.reset_index()
         update_data = update_data.reset_index()
         for x in drop_list + ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
@@ -1288,18 +1288,18 @@ def update_decision_log(decision_data, data, identity_val, sector_val, curryr, c
 
         # Append the updated decision for the "new" columns from the trunc dataframe we just created to the rest of the identities in the log, and output the updated log
         decision_data_update = decision_data.copy()
-        decision_data_update = decision_data_update[decision_data_update['identity'] != identity_val]
+        decision_data_update = decision_data_update[decision_data_update['identity'] != drop_val]
         decision_data_update = decision_data_update.append(decision_data_replace)
         decision_data_update.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], inplace = True)
     
     elif button == "skip":
         decision_data_update = decision_data.copy()
-        if decision_data_update['skipped'].loc[identity_val + str(curryr) + str(currmon)] == '':
-            decision_data_update.loc[identity_val + str(curryr) + str(currmon), 'skipped'] = flag_name
-            decision_data_update.loc[identity_val + str(curryr) + str(currmon), 'skip_user'] = user
+        if decision_data_update['skipped'].loc[drop_val + str(curryr) + str(currmon)] == '':
+            decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skipped'] = flag_name
+            decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skip_user'] = user
         else:
-            decision_data_update.loc[identity_val + str(curryr) + str(currmon), 'skipped'] = decision_data_update['skipped'].loc[identity_val + str(curryr) + str(currmon)] + ", " + flag_name
-            decision_data_update.loc[identity_val + str(curryr) + str(currmon), 'skip_user'] = decision_data_update['skip_user'].loc[identity_val + str(curryr) + str(currmon)] + ", " + user
+            decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skipped'] = decision_data_update['skipped'].loc[drop_val + str(curryr) + str(currmon)] + ", " + flag_name
+            decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skip_user'] = decision_data_update['skip_user'].loc[drop_val + str(curryr) + str(currmon)] + ", " + user
 
     return decision_data_update
 
@@ -2120,56 +2120,49 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 [Input('sector', 'data'),
                 Input('init_trigger', 'data'),
                 Input('store_submit_button', 'data')],
-                [State('identity_val', 'data'),
-                State('has_flag', 'data'),
-                State('curryr', 'data'),
-                State('currmon', 'data'),
-                State('init_trigger', 'data'),
-                State('v_threshold', 'data'),
-                State('r_threshold', 'data'),
-                State('store_flag_cols', 'data')])
-#@Timer("Set Shim Drop")
-def set_shim_drop(sector_val, init_fired, submit_button, identity_val, has_flag, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols):
-    
-    if sector_val is None or success_init == False:
-        raise PreventUpdate
-    else:
-        input_id = get_input_id()
-        data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        
-        if input_id == "init_trigger":
-            sect_val = data['subsector'].iloc[0]
-            met_val = data['metcode'].iloc[0]
-            sub_val = data['subid'].iloc[0]
-            drop_val = met_val + str(sub_val) + sect_val
-
-        else:
-            # In order to get the next sub that is flagged, we need to recalc stats and flags to update the data to see if the old flag is removed.
-            data = drop_cols(data)
-            data = calc_stats(data, curryr, currmon, 1, sector_val)
-            data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
-            flag_list, identity_val, has_flag = flag_examine(data, False, False, curryr, currmon, flag_cols)
-            use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
-
-            drop_val = identity_val
-
-        return drop_val   
-
-@trend.callback([Output('identity_val', 'data'),
-                Output('has_flag', 'data'),
-                Output('flag_list', 'data'),
-                Output('key_met_radios', 'value')],
-                [Input('dropman', 'value'),
-                Input('sector', 'data'),
-                Input('init_trigger', 'data')],
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data'),
                 State('v_threshold', 'data'),
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data')])
+#@Timer("Set Shim Drop")
+def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols):
+    
+    if sector_val is None or success_init == False:
+        raise PreventUpdate
+    else:
+        input_id = get_input_id()
+        data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
+
+        # In order to get the next sub that is flagged, we need to recalc stats and flags to update the data to see if the old flag is removed.
+        data = drop_cols(data)
+        data = calc_stats(data, curryr, currmon, 1, sector_val)
+        data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
+        flag_list, drop_val, has_flag = flag_examine(data, False, False, curryr, currmon, flag_cols)
+    
+        use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
+
+        return drop_val   
+
+
+@trend.callback([Output('has_flag', 'data'),
+                Output('flag_list', 'data'),
+                Output('key_met_radios', 'value')],
+                [Input('dropman', 'value'),
+                Input('sector', 'data'),
+                Input('init_trigger', 'data'),
+                Input('store_preview_button', 'data')],
+                [State('curryr', 'data'),
+                State('currmon', 'data'),
+                State('init_trigger', 'data'),
+                State('v_threshold', 'data'),
+                State('r_threshold', 'data'),
+                State('store_flag_cols', 'data'),
+                State('store_flag_unresolve', 'data'),
+                State('store_flag_new', 'data')])
 #@Timer("Calc Stats and Flags")
-def calc_stats_flags(drop_val, sector_val, init_fired, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols):
+def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:    
@@ -2177,21 +2170,26 @@ def calc_stats_flags(drop_val, sector_val, init_fired, curryr, currmon, success_
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
 
         input_id = get_input_id()
-        # Call the recalc stats/flags functions if the drop down menu for the sub did not trigger. Otherwise the data was refreshed at the earlier callback
-        if input_id != "dropman":
+        # Call the recalc stats/flags functions so we can get the first flagged sub if this is the initial load. Otherwise the data was refreshed at the earlier callback
+        if input_id != 'dropman' and input_id != "store_preview_button":
             data = drop_cols(data)
             data = calc_stats(data, curryr, currmon, 1, sector_val)
             data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
-        flag_list, identity_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
+        flag_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
 
         # Reset the radio button to the correct variable based on the new flag
         if has_flag == 1:
-            key_met_radio_val = flag_list[0][0]
+            if len(flags_unresolved) > 0:
+                key_met_radio_val = flags_unresolved[0][0]
+            elif len(flags_new) > 0:
+                key_met_radio_val = flags_new[0][0]
+            else:
+                key_met_radio_val = flag_list[0][0]
         else:
             key_met_radio_val = no_update
 
-        return identity_val, has_flag, flag_list, key_met_radio_val
+        return has_flag, flag_list, key_met_radio_val
 
 @trend.callback(Output('download_trigger', 'data'),
                    [Input('sector', 'data'),
@@ -2649,8 +2647,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 Input('key_met_radios', 'value'),
                 Input('expand_hist', 'value'),
                 Input('hide_cd', 'value')],
-                [State('identity_val', 'data'),
-                State('has_flag', 'data'),
+                [State('has_flag', 'data'),
                 State('flag_list', 'data'),
                 State('store_orig_cols', 'data'),
                 State('curryr', 'data'),
@@ -2662,7 +2659,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Output Display")
-def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, identity_val, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
+def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
     
     input_id = get_input_id()
     
@@ -2715,15 +2712,18 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
 
         # If the user chooses to expand the history displayed in the datatable, ensure that the new shim periods get added, but do not lose the shims already entered if there are some
-        if input_id == "expand_hist":
+        if "full" in expand:
             shim_add = data.copy()
             shim_add = shim_add[['identity', 'currmon', 'yr'] + shim_cols]
             shim_add = shim_add[(shim_add['yr'] < curryr - 4) | ((shim_add['yr'] == curryr - 4) & (shim_add['currmon'] < 12))]
             shim_add = shim_add[(shim_add['identity'] == drop_val)]
             shim_add = shim_add.drop(['identity'], axis=1)
             shim_add[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
-            shim_add = shim_add.append(shim_data, ignore_index=True)
+            display(shim_data.head(1))
+            display(shim_add.head(1))
+            shim_add = shim_add.append(shim_data)
             shim_data = shim_add.copy()
+            display(shim_data.head(1))
             for col in shim_cols:
                 shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
             
@@ -2738,7 +2738,7 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
                 use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
         
         # If the user changed the sub they want to edit, reset the shim section and the preview dataset
-        if (len(preview_data) > 0 and  identity_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (shim_data.reset_index()['identity_row'].str.contains(identity_val).loc[0] == False):
+        if (len(preview_data) > 0 and  drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (shim_data.reset_index()['identity_row'].str.contains(drop_val).loc[0] == False):
             preview_data = pd.DataFrame()
             shim_data = data.copy()
             shim_data = shim_data[['identity', 'currmon', 'yr'] + shim_cols]
@@ -2815,10 +2815,7 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
         # Otherwise, set the display cols based on the current flag type for the sub
         if key_met_val is None:
             key_met_val = flag_list[0][0]
-        if input_id == "key_met_radios":
-            display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon)
-        else:
-            display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, flag_list[0][0], sector_val, curryr, currmon)
+        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon)
 
         display_data = display_frame(display_data, drop_val, display_cols, curryr, sector_val)
 
