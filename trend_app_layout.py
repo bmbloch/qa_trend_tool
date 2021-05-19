@@ -405,6 +405,7 @@ def get_app_layout():
                                                 {'label': 'mrent', 'value': 'g'},
                                                 {'label': 'erent', 'value': 'e'},
                                             ],
+                                    value='v',
                                     labelStyle={'display': 'block', 'margin': '0 10px 0 10px'}), 
                                     ], style={'display': 'none'}, id='key_met_radios_container'),
                             ], style={'display': 'block'}),
