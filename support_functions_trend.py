@@ -15,7 +15,7 @@ from init_load_trend import get_home
 # Function that filters the dataframe for the columns to display on the data tab to the user, based on what type of flag is currently being analyzed
 def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon):
     dataframe = dataframe_in.copy()
-    
+
     # Note: leave rol_vac and rol_G_mrent in so that it can be used to identify row where diff to rol is for highlighting purposes, will be dropped before final output of datatable
     if sector_val != "ind":
         display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
