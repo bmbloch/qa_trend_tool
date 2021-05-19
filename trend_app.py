@@ -2719,11 +2719,8 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
             shim_add = shim_add[(shim_add['identity'] == drop_val)]
             shim_add = shim_add.drop(['identity'], axis=1)
             shim_add[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
-            display(shim_data.head(1))
-            display(shim_add.head(1))
             shim_add = shim_add.append(shim_data)
             shim_data = shim_add.copy()
-            display(shim_data.head(1))
             for col in shim_cols:
                 shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
             
