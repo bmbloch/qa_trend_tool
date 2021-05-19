@@ -1361,7 +1361,7 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     threshs['v_diff'] = abs(threshs['met_v_scov_percentile'] - 0.30)
     threshs['r_diff'] = abs(threshs['met_r_scov_percentile'] - 0.30)
     v_threshold = min(max(threshs.sort_values(by=['v_diff'], ascending=[True]).reset_index().loc[0]['met_sur_v_cov_perc'], 0.04), 0.1)
-    r_threshold = min(max(threshs.sort_values(by=['r_diff'], ascending=[True]).reset_index().loc[0]['met_sur_v_cov_perc'], 0.04), 0.1)
+    r_threshold = min(max(threshs.sort_values(by=['r_diff'], ascending=[True]).reset_index().loc[0]['met_sur_r_cov_perc'], 0.04), 0.1)
     
     data = data_init.copy()
     if file_used == "oob":
@@ -1680,7 +1680,8 @@ def store_input_vals(url_input):
                  Output('scatter-type-radios', 'value'),
                  Output('v_threshold', 'data'),
                  Output('r_threshold', 'data'),
-                 Output('store_flag_cols', 'data')],
+                 Output('store_flag_cols', 'data'),
+                 Output('hide_cd_container', 'style')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
@@ -1752,12 +1753,17 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
 
             init_trigger = True
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols
+            if sector_val != "ind":
+                hide_cd_display = {'padding-left': '5px', 'width': '7%', 'display': 'inline-block', 'vertical-align': 'top'}
+            else:
+                 hide_cd_display = {'display': 'none'}
+
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols, hide_cd_display
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),
@@ -2641,7 +2647,8 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 Input('dropman', 'value'),
                 Input('store_all_buttons', 'data'),
                 Input('key_met_radios', 'value'),
-                Input('expand_hist', 'value')],
+                Input('expand_hist', 'value'),
+                Input('hide_cd', 'value')],
                 [State('identity_val', 'data'),
                 State('has_flag', 'data'),
                 State('flag_list', 'data'),
@@ -2655,7 +2662,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Output Display")
-def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, identity_val, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
+def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, identity_val, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
     
     input_id = get_input_id()
     
@@ -2791,7 +2798,7 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, identity
             display_data = preview_data.copy()
         else:
             display_data = data.copy()
-            display_data = display_data[(display_data['identity'] == drop_val)]    
+            display_data = display_data[(display_data['identity'] == drop_val)]
 
         shim_data_concat = shim_data.copy()
         if 'trunc' in expand and 'full' not in expand:
@@ -2915,15 +2922,27 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, identity
         # Drop the rol vars that were only included to help identify the flag row for highlighting purposes
         display_data = display_data.drop(['rol vac', 'rol G mrent'], axis=1)
 
+        # Do not include conv shim and demo shim columns if the user does not want to see them
+        if hide_cd[-1] == "Y":
+            display_cols = list(display_data.columns)
+            display_cols.remove('conv shim')
+            display_cols.remove('demo shim')
+            display_data['conv shim'], display_data['demo shim'] = display_data.pop('conv shim'), display_data.pop('demo shim')
+            for_highlight = display_data.copy()
+            for_highlight = for_highlight.drop(['conv shim', 'demo shim'], axis=1)
+        else:
+            display_cols = list(display_data.columns)
+            for_highlight = display_data.copy()
+
         type_dict_data, format_dict_data = get_types(sector_val)
-        highlighting_display = get_style("full", display_data, curryr, currmon, display_highlight_list, display_highlight_rows)
+        highlighting_display = get_style("full", for_highlight, curryr, currmon, display_highlight_list, display_highlight_rows)
 
         # Make the shim fields editable
-        edit_list = list(display_data.columns)
-        shim_list = list(shim_data_concat.columns)
+        all_cols = list(display_data.columns)
+        shim_cols = list(shim_data_concat.columns)
         edit_dict = {}
-        for x in edit_list:
-            if x in shim_list:
+        for x in all_cols:
+            if x in shim_cols:
                 edit_dict[x] = True
             else:
                 edit_dict[x] = False
@@ -2944,7 +2963,7 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, identity
                 col_header.append(data_title)
     
     return display_data.to_dict('rows'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
-                            for i in range(0, len(display_data.columns))], man_view_display, highlighting_display, key_metrics.to_dict('rows'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
+                            for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('rows'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
                             for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, key_met_2.to_dict('rows'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display, True
         
