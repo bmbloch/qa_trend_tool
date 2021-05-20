@@ -31,7 +31,7 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     if variable_fix == "c":
         key_met_cols = ['newncsf', 'newncava', 'ncrenlev', 'newncrev', 'cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']
     elif variable_fix == "v":
-        key_met_cols = ['vac_chg_12', 'sqvac_chg_12', 'ss_vac_chg', 'vac_roldiff', 'newncava', 'vacdrops', 'vacflats', 'vacincrs', 'met_sur_totabs', 'met_sur_v_cov_perc', 'met_avg_mos_to_last_vacsur', 'avail10d', 'sub_sur_totabs', 'sub_sur_v_cov_perc', 'sub_avg_mos_to_last_vacsur']
+        key_met_cols = ['vac_chg_12', 'sqvac_chg_12', 'ss_vac_chg', 'vac_roldiff', 'newncava', 'nc_surabs', 'vacdrops', 'vacflats', 'vacincrs', 'met_sur_totabs', 'met_sur_v_cov_perc', 'met_avg_mos_to_last_vacsur', 'avail10d', 'sub_sur_totabs', 'sub_sur_v_cov_perc', 'sub_avg_mos_to_last_vacsur']
 
         if sector_val != "apt":
             key_met_cols.remove('vac_chg_12')
