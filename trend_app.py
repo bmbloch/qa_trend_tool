@@ -153,6 +153,7 @@ def get_types(sector_val):
     type_dict['gap perc 95'] = 'numeric'
     type_dict['cons roldiff'] = 'numeric'
     type_dict['ncrenlev'] = 'numeric'
+    type_dict['nc surabs'] = 'numeric'
     
     type_dict['Subsector'] = 'text'
     type_dict['subsector'] = 'text'
@@ -195,6 +196,7 @@ def get_types(sector_val):
     format_dict['newncrev'] = Format(group=",")
     format_dict['newncsf'] = Format(group=",")
     format_dict['Surveyed Abs'] = Format(group=",")
+    format_dict['nc surabs'] = Format(group=",")
     
     format_dict['vac'] = FormatTemplate.percentage(2)
     format_dict['sq vac'] = FormatTemplate.percentage(2)
