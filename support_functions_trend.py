@@ -695,26 +695,24 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
         for index, row in diffs.iterrows():
             for col_name in list(diffs.columns):
                 row_to_fix_diffs = index
-                if math.isnan(row[col_name]) == True:
-                    break
-                else:
+                if math.isnan(row[col_name]) == False:
                     fix_val = row[col_name]
-                if col_name == "inv":
-                    col_issue_diffs = "i_flag"
-                elif col_name == "cons":
-                    col_issue_diffs = "c_flag"
-                elif col_name == "conv":
-                    col_issue_diffs = "a_flag"
-                elif col_name == "demo":
-                    col_issue_diffs = "d_flag"
-                elif col_name == "avail":
-                    col_issue_diffs = "v_flag"
-                elif col_name == "mrent":
-                    col_issue_diffs = "g_flag"
-                elif col_name == "merent":
-                    col_issue_diffs = "e_flag"
-                
-                data = insert_fix(data, row_to_fix_diffs, drop_val, fix_val, col_issue_diffs[0], curryr, currmon, sector_val, subsequent_chg)
+                    if col_name == "inv":
+                        col_issue_diffs = "i_flag"
+                    elif col_name == "cons":
+                        col_issue_diffs = "c_flag"
+                    elif col_name == "conv":
+                        col_issue_diffs = "a_flag"
+                    elif col_name == "demo":
+                        col_issue_diffs = "d_flag"
+                    elif col_name == "avail":
+                        col_issue_diffs = "v_flag"
+                    elif col_name == "mrent":
+                        col_issue_diffs = "g_flag"
+                    elif col_name == "merent":
+                        col_issue_diffs = "e_flag"
+                    
+                    data = insert_fix(data, row_to_fix_diffs, drop_val, fix_val, col_issue_diffs[0], curryr, currmon, sector_val, subsequent_chg)
 
         has_diff = 1
     else:
