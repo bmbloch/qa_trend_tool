@@ -2840,7 +2840,8 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
                                                   'c_met_sur_v_cov_perc': 'c_met_sur_v_cov', 'c_sub_sur_v_cov_perc': 'c_sub_sur_v_cov', 'n_met_sur_v_cov_perc': 'n_met_sur_v_cov', 'n_sub_sur_v_cov_perc': 'n_sub_sur_v_cov', 'nc_met_sur_v_cov_perc': 'nc_met_sur_v_cov', 'nc_sub_sur_v_cov_perc': 'nc_sub_sur_v_cov'})
             for x in list(key_met_2.columns):
                 key_met_2.rename(columns={x: x.replace("_", " ")}, inplace=True)
-            key_met_2 = key_met_2.rename(columns={'n met g renx mo wgt': 'n met grenx mo wgt', 'n sub g renx mo wgt': 'n sub grenx mo wgt', 
+            key_met_2 = key_met_2.rename(columns={'c met g renx mo wgt': 'c met grenx mo wgt', 'c sub g renx mo wgt': 'c sub grenx mo wgt',
+                                                  'n met g renx mo wgt': 'n met grenx mo wgt', 'n sub g renx mo wgt': 'n sub grenx mo wgt', 
                                                   'nc met g renx mo wgt': 'nc met grenx mo wgt', 'nc sub g renx mo wgt': 'nc sub grenx mo wgt'})
 
             highlighting_key2 = get_style("partial", key_met_2, curryr, currmon, [], [])
