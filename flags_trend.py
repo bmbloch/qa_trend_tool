@@ -97,6 +97,9 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     calc_names.append('calc_vsurabs')
     data['v_flag_surabs'] = np.where((abs(data['abs'] - data['sub_sur_totabs_fill'] - data['nc_surabs']) / data['inv'] >= 0.005) & (data['curr_tag'] == 1), 1, 0)
     
+    # Dont flag if abs is higher than avail10d and totsurabs and moving it closer to total would move the vacancy further away from sqvac
+    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] > data['sqvac']) & (data['abs'] > data['sub_sur_totabs']) & (data['abs'] <= data['avail10d']) & (data['abs'] < 0), 0, data['v_flag_surabs'])
+    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] < data['sqvac']) & (data['abs'] < data['sub_sur_totabs']) & (data['abs'] >= data['avail10d']) & (data['abs'] > 0), 0, data['v_flag_surabs'])
 
     # Flag cases where the portion of published absorption not based on surveys is not in line with the published rent growth
     data['calc_vrsent'] = abs(data['abs'] - data['sub_sur_totabs_fill'])
@@ -169,7 +172,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     data['sub_g_renx_mo_wgt_fill'] = data['sub_g_renx_mo_wgt'].fillna(0)
     data['met_g_renx_mo_wgt_fill'] = data['met_g_renx_mo_wgt'].fillna(0)
     data['g_flag_large'] = np.where(((data['G_mrent'] > 0.015) | (data['G_mrent'] < -0.007)) & (data['g_flag_consp'] == 0) & (data['curr_tag'] == 1), 1, 0)
-
+    
     # Dont flag if there is survey data to back it up with enough coverage
     data['g_flag_large'] = np.where((data['g_flag_large'] == 1) & (data['sub_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent'] > 0) & (data['sub_g_renx_mo_wgt_fill'] > 0) & (data['sub_g_renx_mo_wgt_fill'] + 0.002 >= data['G_mrent']), 0, data['g_flag_large'])
     data['g_flag_large'] = np.where((data['g_flag_large'] == 1) & (data['sub_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent'] < 0) & (data['sub_g_renx_mo_wgt_fill'] < 0) & (data['sub_g_renx_mo_wgt_fill'] - 0.002 <= data['G_mrent']), 0, data['g_flag_large'])
