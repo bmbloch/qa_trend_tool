@@ -670,7 +670,10 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
         diffs['avail'] = np.nan
     if "inv" in list(diffs.columns) or "cons" in list(diffs.columns) or "conv" in list(diffs.columns) or "demo" in list(diffs.columns):
         check_avail = data_update.copy()
-        check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False) | (check_avail['conv'].isnull() == False) | (check_avail['demo'].isnull() == False))]
+        if sector_val != "ind":
+            check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False) | (check_avail['conv'].isnull() == False) | (check_avail['demo'].isnull() == False))]
+        else:
+            check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False))]
         check_avail = check_avail[['avail']]
         check_avail = check_avail.rename(columns={'avail': 'avail_check'})
         diffs = diffs.join(check_avail)
