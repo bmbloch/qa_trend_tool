@@ -1229,10 +1229,11 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                 update_data.loc[index, 'i_user'] = user
             if math.isnan(row['cons']) == False:
                 update_data.loc[index, 'c_user'] = user
-            if math.isnan(row['conv']) == False:
-                update_data.loc[index, 'i_user'] = user
-            if math.isnan(row['demo']) == False:
-                update_data.loc[index, 'i_user'] = user
+            if sector_val != "ind":
+                if math.isnan(row['conv']) == False:
+                    update_data.loc[index, 'i_user'] = user
+                if math.isnan(row['demo']) == False:
+                    update_data.loc[index, 'i_user'] = user
             if math.isnan(row['vac']) == False or math.isnan(row['vac_chg']) == False or math.isnan(row['avail']) == False or math.isnan(row['abs']) == False:
                 update_data.loc[index, 'v_user'] = user
             if math.isnan(row['mrent']) == False or math.isnan(row['G_mrent']) == False:
@@ -2835,8 +2836,8 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
         type_dict_metrics, format_dict_metrics = get_types(sector_val)
 
         if sector_val == "ret" and len(key_met_2) > 0:
-            key_met_2 = key_met_2.rename(columns={'n_met_sur_r_cov_perc': 'n_met_sur_r_cov', 'n_sub_sur_r_cov_perc': 'n_sub_sur_r_cov', 'nc_met_sur_r_cov_perc': 'nc_met_sur_r_cov', 'nc_sub_sur_r_cov_perc': 'nc_sub_sur_r_cov',
-                                                  'n_met_sur_v_cov_perc': 'n_met_sur_v_cov', 'n_sub_sur_v_cov_perc': 'n_sub_sur_v_cov', 'nc_met_sur_v_cov_perc': 'nc_met_sur_v_cov', 'nc_sub_sur_v_cov_perc': 'nc_sub_sur_v_cov'})
+            key_met_2 = key_met_2.rename(columns={'c_met_sur_r_cov_perc': 'c_met_sur_r_cov', 'c_sub_sur_r_cov_perc': 'c_sub_sur_r_cov', 'n_met_sur_r_cov_perc': 'n_met_sur_r_cov', 'n_sub_sur_r_cov_perc': 'n_sub_sur_r_cov', 'nc_met_sur_r_cov_perc': 'nc_met_sur_r_cov', 'nc_sub_sur_r_cov_perc': 'nc_sub_sur_r_cov',
+                                                  'c_met_sur_v_cov_perc': 'c_met_sur_v_cov', 'c_sub_sur_v_cov_perc': 'c_sub_sur_v_cov', 'n_met_sur_v_cov_perc': 'n_met_sur_v_cov', 'n_sub_sur_v_cov_perc': 'n_sub_sur_v_cov', 'nc_met_sur_v_cov_perc': 'nc_met_sur_v_cov', 'nc_sub_sur_v_cov_perc': 'nc_sub_sur_v_cov'})
             for x in list(key_met_2.columns):
                 key_met_2.rename(columns={x: x.replace("_", " ")}, inplace=True)
             key_met_2 = key_met_2.rename(columns={'n met g renx mo wgt': 'n met grenx mo wgt', 'n sub g renx mo wgt': 'n sub grenx mo wgt', 
