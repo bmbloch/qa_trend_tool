@@ -2664,7 +2664,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Output Display")
-def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
     
     input_id = get_input_id()
     
@@ -2717,7 +2717,7 @@ def output_data(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd,
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
 
         # If the user chooses to expand the history displayed in the datatable, ensure that the new shim periods get added, but do not lose the shims already entered if there are some
-        if "full" in expand:
+        if "full" in expand and (shim_data.reset_index().loc[0]['yr'] > curryr - 4 or ((shim_data.reset_index().loc[0]['yr'] == curryr - 4) and (shim_data.reset_index().loc[0]['currmon'] == 12))):
             shim_add = data.copy()
             shim_add = shim_add[['identity', 'currmon', 'yr'] + shim_cols]
             shim_add = shim_add[(shim_add['yr'] < curryr - 4) | ((shim_add['yr'] == curryr - 4) & (shim_add['currmon'] < 12))]
