@@ -222,6 +222,9 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll['effrevenue'] = roll['inv'] * roll['merent']
     roll['oobaskrevenue'] = roll['inv_oob'] * roll['mrent_oob']
 
+    if drop_val[:2] == "US":
+        roll['sqaskrev'] = roll['sqsren'] * roll['sqinv']
+
     roll['rol_avail'] = roll['inv'] * roll['rol_vac']
     if sector_val == "apt":
         roll['rol_avail'] = round(roll['rol_avail'], 0)
@@ -235,10 +238,16 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
 
     cols_to_roll = ['inv', 'rol_inv', 'inv_oob', 'cons', 'rol_cons', 'cons_oob', 'avail', 'avail_oob', 'rol_avail', 'occ', 'abs', 'rol_abs', 'askrevenue', 'effrevenue', 'rolaskrevenue', 'roleffrevenue', 'oobaskrevenue']
     
+    if drop_val[:2] == "US":
+        cols_to_roll += ['sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sqaskrev']
+
     roll[cols_to_roll] = roll.groupby([identity_filt, 'yr', 'currmon'])[cols_to_roll].transform('sum')
 
     if filt_type == "reg":
         roll = roll.drop_duplicates([identity_filt, 'yr', 'currmon'])
+
+    if drop_val[:2] == "US":
+        roll['sqabs'] = np.where((roll['sqabs'] == 0) & (roll['yr'] <= curryr - 2), np.nan, roll['sqabs'])
 
     roll['vac'] = round(roll['avail'] / roll['inv'], 4)
     roll['vac_oob'] = round(roll['avail_oob'] / roll['inv_oob'], 4)
@@ -246,12 +255,22 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll['rol_vac'] = round(roll['rol_avail'] / roll['rol_inv'], 4)
     roll['rol_vac_chg'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), roll['rol_vac'] - roll['rol_vac'].shift(1), np.nan)
     roll['vac_chg_oob'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), roll['vac_oob'] - roll['vac_oob'].shift(1), np.nan)
-    
+
+    if drop_val[:2] == "US":
+        roll['sqvac'] = round(roll['sqavail'] / roll['sqinv'], 4)
+        roll['sqvac_chg'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)) & (roll['sqavail'] != 0) & (roll['sqavail'].shift(1) != 0), roll['sqvac'] - roll['sqvac'].shift(1), np.nan)
+        roll['sqvac_chg'] = np.where((roll[identity_filt] == roll[identity_filt].shift(3)) & (roll['sqvac'] != 0) & (roll['sqvac'].shift(3) != 0) & (roll['sqvac'].shift(1).isnull() == True), roll['sqvac'] - roll['sqvac'].shift(3), roll['sqvac_chg'])
+        
     roll['mrent'] = round(roll['askrevenue'] / roll['inv'],2)
     roll['merent'] = round(roll['effrevenue'] / roll['inv'],2)
     roll['rol_mrent'] = round(roll['rolaskrevenue'] / roll['rol_inv'],2)
     roll['mrent_oob'] = round(roll['oobaskrevenue'] / roll['inv'],2)
     roll['rol_merent'] = round(roll['roleffrevenue'] / roll['rol_inv'],2)
+
+    if drop_val[:2] == "US":
+        roll['sqsren'] = round(roll['sqaskrev'] / roll['sqinv'],2)
+        roll['sq_Gmrent'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)) & (roll['sqsren'] != 0) & (roll['sqsren'].shift(1) != 0), (roll['sqsren'] - roll['sqsren'].shift(1)) / roll['sqsren'].shift(1), np.nan)
+        roll['sq_Gmrent'] = np.where((roll[identity_filt] == roll[identity_filt].shift(3)) & (roll['sqsren'] != 0) & (roll['sqsren'].shift(3) != 0) & (roll['sqsren'].shift(1).isnull() == True), (roll['sqsren'] - roll['sqsren'].shift(3)) / roll['sqsren'].shift(3), roll['sq_Gmrent'])
     
     roll['G_mrent'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), (roll['mrent'] - roll['mrent'].shift(1)) / roll['mrent'].shift(1), np.nan)
     roll['G_merent'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), (roll['merent'] - roll['merent'].shift(1)) / roll['merent'].shift(1), np.nan)
@@ -278,10 +297,12 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll['rol_G_mrent'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_G_mrent'])
     roll['rol_G_merent'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_G_merent'])
          
-    if filt_type == "reg":
+    if filt_type == "reg" and drop_val[:2] != "US":
         cols_to_display = ['identity_us', 'subsector', 'metcode', 'yr', 'currmon', 'inv', 'metsqinv', 'cons', 'rol_cons', 'metsqcons', 'vac', 'vac_chg', 'rol_vac', 'rol_vac_chg', 'metsqvacchg', 'abs', 'rol_abs', 'metsqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'metsqsren', 'metsq_Gmrent', 'merent', 'G_merent', 'rol_G_merent', 'gap', 'gap_chg', 'rol_mrent', 'rol_inv', 'rol_gap', 'rol_gap_chg']
         if 'met_sur_totabs' in list(roll.columns):
             cols_to_display += ['met_sur_totabs', 'met_g_renx_mo_wgt']
+    elif filt_type == "reg" and drop_val[:2] == "US":
+        cols_to_display = ['identity_us', 'subsector', 'metcode', 'yr', 'currmon', 'inv', 'sqinv', 'cons', 'rol_cons', 'sqcons', 'vac', 'vac_chg', 'rol_vac', 'rol_vac_chg', 'sqvac_chg', 'abs', 'rol_abs', 'sqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'rol_G_merent', 'gap', 'gap_chg', 'rol_mrent', 'rol_inv', 'rol_gap', 'rol_gap_chg']
     else:
         cols_to_display = ['subsector', 'metcode', 'subid', 'yr', 'currmon', 'inv', 'sqinv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg']
     cols_to_display += ['cons_oob', 'vac_oob', 'vac_chg_oob', 'mrent_oob', 'G_mrent_oob']
