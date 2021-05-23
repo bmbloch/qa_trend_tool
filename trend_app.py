@@ -3019,7 +3019,7 @@ def set_rolldrop(submit_button, sector_val, drop_val, curryr, currmon, success_i
                 Input('store_submit_button', 'data'),
                 Input('store_preview_button', 'data'),
                 Input('roll_view', 'value'),
-                Input('yr_filt', 'value'),
+                Input('currmon_filt', 'value'),
                 Input('rank_toggle', 'value'),
                 Input('display_trigger', 'data')],
                 [State('store_orig_cols', 'data'),

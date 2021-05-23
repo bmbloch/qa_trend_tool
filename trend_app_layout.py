@@ -512,7 +512,7 @@ def get_app_layout():
                                 ], style={'width': '20%', 'padding-left': '10px', 'padding-top': '5px', 'display': 'inline-block', 'vertical-align': 'top'}),
                         html.Div([
                                 daq.ToggleSwitch(
-                                    id='yr_filt',
+                                    id='currmon_filt',
                                     label=['All', 'Currmon'],
                                     value=False,
                                     style={'width': '5px', 'margin': 'auto'},
