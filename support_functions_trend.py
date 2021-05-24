@@ -884,7 +884,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     dataframe['sum_skips'] = np.where((dataframe['flag_skip'] != ''), dataframe['sum_commas'] + 1, dataframe['sum_skips'])
     dataframe['total_flags'] = dataframe.groupby('identity')['sum_flags'].transform('sum')
     dataframe['total_skips'] = dataframe.groupby('identity')['sum_skips'].transform('sum')
-    dataframe['flags_left'] = dataframe['total_flags'] - dataframe['total_skips']
+    dataframe['flags_left'] = round(dataframe['total_flags'] - dataframe['total_skips'],0)
     dataframe = dataframe[dataframe['flags_left'] > 0]
 
     if len(dataframe) == 0:
