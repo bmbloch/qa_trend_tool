@@ -1805,7 +1805,7 @@ def output_flags(sector_val, init_flags_triggered, all_buttons, curryr, currmon,
                 State('currmon', 'data'),
                 State('init_trigger', 'data')])
 #@Timer("Confirm Finalizer")
-def confirm_finalizer(sector_val, submit_button, download_button, curryr, currmon, success_init):
+def confirm_finalizer(sector_val, submit_button, finalize_button, curryr, currmon, success_init):
     input_id = get_input_id()
 
     if sector_val is None or success_init == False:
