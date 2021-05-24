@@ -144,7 +144,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     calc_names.append('calc_grol')
     data['g_flag_rol'] = np.where((data['yr'] >= 2009) & (abs(data['G_mrent'] - data['rol_G_mrent']) >= 0.001) & (data['newncrev'] == data['newncrev'].shift(1)) & (data['curr_tag'] == 0) & (data['G_mrent'] == data['G_mrent_oob']), 1, 0)
     
-    # Additional check that does not require rent chg to match rol rent chg, to alert the user if there was a very large restatement by a shim
+    # Additional check that does not require rent chg to match oob rent chg, to alert the user if there was a very large restatement by a shim
     data['g_flag_rol'] = np.where((data['yr'] >= 2009) & (abs(data['G_mrent'] - data['rol_G_mrent']) >= 0.001) & (data['newncrev'] == data['newncrev'].shift(1)) & (data['curr_tag'] == 0) & (abs(data['G_mrent'] - data['G_mrent_oob']) >= 0.05), 1, data['g_flag_rol'])
 
 
