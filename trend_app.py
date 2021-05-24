@@ -2214,7 +2214,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
 
-        output_cols = ['identity', 'subsector', 'metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'inv_oob', 'cons_oob', 'avail_oob', 'vac_oob', 'G_mrent_oob', 'G_merent_oob', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']
+        output_cols = ['identity', 'subsector', 'metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 'gap', 'conv', 'demo', 'gap_chg', 'inv_oob', 'cons_oob', 'avail_oob', 'vac_oob', 'G_mrent_oob', 'G_merent_oob', 'conv_oob', 'demo_oob', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']
 
         edits_output = data.copy()
         edits_output = edits_output[output_cols]
