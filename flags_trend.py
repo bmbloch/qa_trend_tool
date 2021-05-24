@@ -88,7 +88,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Flag if there is a large difference between published abs and sq abs
     data['calc_vsqabs'] = abs(data['abs'] - data['sqabs']) / data['inv']
     calc_names.append('calc_vsqabs')
-    data['v_flag_sqabs'] = np.where((abs(data['abs'] - data['sqabs']) / data['inv'] >= 0.005) & (data['curr_tag'] == 1), 1, 0)
+    data['v_flag_sqabs'] = np.where((abs(data['abs'] - data['sqabs']) / data['inv'] >= 0.005) & (data['curr_tag'] == 1) & (data['avail_oob'] == data['avail']), 1, 0)
     
 
     # Flag if there is a large difference between published abs and surveyed abs
