@@ -2216,6 +2216,12 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
 
         output_cols = ['identity', 'subsector', 'metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 'gap', 'conv', 'demo', 'gap_chg', 'inv_oob', 'cons_oob', 'avail_oob', 'vac_oob', 'G_mrent_oob', 'G_merent_oob', 'conv_oob', 'demo_oob', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']
 
+        if sector_val == "ind":
+            output_cols.remove("conv")
+            output_cols.remove("demo")
+            output_cols.remove("conv_oob")
+            output_cols.remove("demo_oob")
+
         edits_output = data.copy()
         edits_output = edits_output[output_cols]
         edits_output['inv_cons_comment'] = np.where(edits_output['inv_cons_comment'] == "Enter Inv or Cons Shim Note Here", '', edits_output['inv_cons_comment'])
