@@ -245,13 +245,13 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     calc_names.append('calc_ehigh')
     data['e_flag_high'] =  np.where((data['gap'] > 0.30) & (data['gap'] > data['gap'].shift(1)) & ((data['curr_tag'] == 1) | (data['newncrev'] > 0)), 1, 0)
 
-    # Flag if gap chg, which is modeled based on absorption, is moving strongly and the sub is already in the 5% percentile tail
-    data['e_flag_perc'] =  np.where((data['curr_tag'] == 1) & (data['gap'] > data['gap_perc_5']) & (round(data['gap_chg'],3) > 0), 1, 0)
-    data['e_flag_perc'] =  np.where((data['curr_tag'] == 1) & (data['gap'] < data['gap_perc_95']) & (round(data['gap_chg'],3) < 0), 2, data['e_flag_perc'])
+    # Flag if gap chg, which is modeled based on absorption, is moving further into the extreme percentile tails of gap dist
+    data['e_flag_perc'] =  np.where((data['curr_tag'] == 1) & (data['gap'] > data['gap_perc_5']) & (data['gap_chg'] >= 0.001), 1, 0)
+    data['e_flag_perc'] =  np.where((data['curr_tag'] == 1) & (data['gap'] < data['gap_perc_95']) & (data['gap_chg'] <= -0.001), 2, data['e_flag_perc'])
 
 
-    data['calce_eperc'] = np.where((data['e_flag_perc'] == 1), abs(data['gap'] - data['gap_perc_5']), np.nan)
-    data['calc_eperc'] = np.where((data['e_flag_perc'] == 2), abs(data['gap'] - data['gap_perc_95']), data['calce_eperc'])
+    data['calc_eperc'] = np.where((data['e_flag_perc'] == 1), abs(data['gap'] - data['gap_perc_5']), np.nan)
+    data['calc_eperc'] = np.where((data['e_flag_perc'] == 2), abs(data['gap'] - data['gap_perc_95']), data['calc_eperc'])
     calc_names.append('calc_eperc')
     data['e_flag_perc'] = np.where((data['e_flag_perc'] > 1), 1, data['e_flag_perc'])
 
