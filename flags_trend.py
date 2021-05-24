@@ -213,9 +213,9 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] > 0) & (data['G_mrent'] > data['sub_g_renx_mo_wgt_fill'] / 2), 1, data['g_flag_surdiff'])
 
     threshold = 0.001
-    data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (data['G_mrent'] > data['us_g_renx_mo_wgt'] + threshold) & (round(data['us_g_renx_mo_wgt'],3) >= 0), 3, data['g_flag_surdiff'])
+    data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) > round(data['us_g_renx_mo_wgt'],3) + threshold) & (round(data['us_g_renx_mo_wgt'],3) >= 0), 3, data['g_flag_surdiff'])
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) < 0) & (round(data['us_g_renx_mo_wgt'],3) >= 0) & (abs(data['G_mrent'] - data['us_g_renx_mo_wgt']) > 0.002), 3, data['g_flag_surdiff'])
-    data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (data['G_mrent'] < data['us_g_renx_mo_wgt'] - threshold) & (round(data['us_g_renx_mo_wgt'],3) < 0), 3, data['g_flag_surdiff'])
+    data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) < round(data['us_g_renx_mo_wgt'],3) - threshold) & (round(data['us_g_renx_mo_wgt'],3) < 0), 3, data['g_flag_surdiff'])
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) > 0) & (round(data['us_g_renx_mo_wgt'],3) <= 0) & (abs(data['G_mrent'] - data['us_g_renx_mo_wgt']) > 0.002), 3, data['g_flag_surdiff'])
 
     # Dont flag if there is very strong survey magnitude and enough is being applied in this month given the coverage
