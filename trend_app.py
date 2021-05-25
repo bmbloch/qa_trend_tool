@@ -2140,12 +2140,17 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
 
         # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
         check_skips = data.copy()
+        
+        rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+        test_cols = [x + "_test" for x in rol_flag_cols]
+        check_skips[test_cols] = check_skips.groupby('identity')[rol_flag_cols].transform('sum')
+        for x, y in zip(rol_flag_cols, test_cols):
+            check_skips[x] = np.where((check_skips[y] > 0) & (check_skips[x] == 0) & (check_skips['yr'] == curryr) & (check_skips['currmon'] == currmon), 1, check_skips[x])
+        
+        check_skips[flag_cols]
         check_skips = check_skips[(check_skips['identity'] == init_drop_val) & (check_skips['curr_tag'] == 1)]
         skips = list(check_skips['flag_skip'])
-        if len(check_skips) > 0:
-            no_check = ['c_flag_rolv', 'c_flag_rolg', 'v_flag_rol', 'g_flag_rol', 'v_flag_low']
-            skips = [x for x in skips if x not in no_check]
-            
+        if len(check_skips) > 0:           
             flags_only = check_skips.copy()
             flags_only = flags_only[flag_cols]
             flags = check_skips.apply(lambda row: row[row != 0].index, axis=1).values[0]
