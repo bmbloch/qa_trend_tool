@@ -870,6 +870,8 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     has_flag = 0
     if filt == True:
         dataframe = dataframe[dataframe['identity'] == identity_val]
+    else:
+        first_sub = dataframe.reset_index().loc[0]['identity']
 
     cols_to_keep = flag_cols + ['identity', 'flag_skip']
     dataframe = dataframe[cols_to_keep]
@@ -889,11 +891,11 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     
     if len(dataframe) == 0:
         if filt == True:
-            identity_val = identity_val
             has_flag = 2
             flag_list = ['v_flag']
-        else: 
-            identity_val = False
+        else:
+            if identity_val is None:
+                identity_val = first_sub
             has_flag = 0
             flag_list = ['v_flag']
     else:
@@ -915,13 +917,12 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
             has_flag = 0
             if filt == True:
                 flag_list = ['v_flag']
-                identity_val = identity_val
                 has_flag = 2
-            else: 
+            else:
+                if identity_val is None:
+                    identity_val = dataframe.reset_index().loc[0]['identity']  
                 flag_list = ['v_flag']
-                identity_val = False
         
-
     return flag_list, identity_val, has_flag
 
 # This function rolls up the edited data to the metro and US level for presentation to econ
