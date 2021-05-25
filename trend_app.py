@@ -2104,10 +2104,10 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         elif input_id == "dropflag":
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         else:
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update
 
 
 @trend.callback([Output('dropman', 'value'),
