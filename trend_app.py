@@ -2148,9 +2148,8 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
             
             flags_only = check_skips.copy()
             flags_only = flags_only[flag_cols]
-            flags = check_skips.apply(lambda row: row[row == 1].index, axis=1).values[0]
-            flags = [x for x in flags]
-            
+            flags = check_skips.apply(lambda row: row[row != 0].index, axis=1).values[0]
+            flags = [x for x in flags if x in flag_cols]
             remove_skips = [x for x in skips if x not in flags]
             if len(remove_skips) > 0:
                 new_skips = [x for x in skips if x in flags]
