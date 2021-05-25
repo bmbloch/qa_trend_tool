@@ -2325,6 +2325,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
             temp = temp.set_index('identity_met')
             review_packet = review_packet.join(temp, on='identity_met')
 
+
             # Note: DQ only included properties with a lagged survey within the sq window, so will drop any ids that do not have surveys with a non nan currmon var value
             temp = msq_input.copy()
             temp['balance_test'] = temp['submkt'].str.slice(0,2)
@@ -2342,7 +2343,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
             temp = temp.drop_duplicates('identity_met')
             temp = temp.set_index('identity_met')
             review_packet = review_packet.join(temp, on='identity_met')
-        elif sector_val == "apt" or sector_val == "off":
+        elif sector_val == "apt" or sector_val == "off" or (sector_val == "ind" and currmon not in [2,3,6,9,12]):
             review_packet['sur_vacsurvey_coverpct'] = review_packet['met_sur_v_cov_perc']
             review_packet['sur_rentsurvey_coverpct'] = review_packet['met_sur_r_cov_perc']
             review_packet['sur_rentchgs_avgmos_tolastsur'] = review_packet['met_avg_mos_to_last_rensur']
