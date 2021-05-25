@@ -17,6 +17,7 @@ def calc_flag_ranking(dataframe_in, flag_names, calc_names):
     dataframe[temp_names] = dataframe[calc_names].rank(ascending=False, method='first')
     dataframe[flag_names] = np.where(dataframe[flag_names] == 0, 0, dataframe[temp_names])
     dataframe = dataframe.drop(calc_names, axis=1)
+    dataframe = dataframe.drop(temp_names, axis=1)
     
     return dataframe
 
