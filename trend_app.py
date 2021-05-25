@@ -962,7 +962,7 @@ def set_ts_bar(fig, data_in, var_1, var_2, curryr, currmon, type_value, bar_colo
     if type_value == "s":
         data = data[(data['yr'] == curryr) & (data['currmon'] == currmon)]
 
-    if var_2 == "dqren10d" or var_2 == "sub_g_renx_mo_wgt":
+    if var_2 == "dqren10d" or var_2 == "sub_g_renx_mo_wgt" or var_2 == "met_g_renx_mo_wgt":
         template = '%{x}: ' + '%{text:.2%}<extra></extra>'
     else:
         template = '%{x}: ' + '%{text:,}<extra></extra>'
