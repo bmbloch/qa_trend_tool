@@ -316,7 +316,7 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
 
 def live_flag_count(dataframe, sector_val, flag_cols): 
 
-    rol_flag_cols = [x for x in flag_cols if "rol" in x]
+    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low"]
     test_flag_cols = [x + "_test" for x in rol_flag_cols]
     dataframe[test_flag_cols] = dataframe.groupby('identity')[rol_flag_cols].transform('sum')
     for x, y in zip(rol_flag_cols, test_flag_cols):
