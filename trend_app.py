@@ -2130,9 +2130,10 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 State('init_trigger', 'data'),
                 State('v_threshold', 'data'),
                 State('r_threshold', 'data'),
-                State('store_flag_cols', 'data')])
+                State('store_flag_cols', 'data'),
+                State('dropman', 'value')])
 #@Timer("Set Shim Drop")
-def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols):
+def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, init_drop_val):
     
     if sector_val is None or success_init == False:
         raise PreventUpdate
@@ -2144,7 +2145,7 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
         data = drop_cols(data)
         data = calc_stats(data, curryr, currmon, 1, sector_val)
         data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
-        flag_list, drop_val, has_flag = flag_examine(data, False, False, curryr, currmon, flag_cols)
+        flag_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
     
         use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
 
