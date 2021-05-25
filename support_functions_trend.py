@@ -826,10 +826,13 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
         dataframe['G_mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] == index_row), (dataframe['mrent'] - dataframe['mrent'].shift(1)) / dataframe['mrent'].shift(1), dataframe['G_mrent'])
         if subsequent_chg == "r":
             dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
+            dataframe['mrent'] = round(dataframe['mrent'], 2)
         elif subsequent_chg == "s":
-            dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['identity'] == dataframe['identity'].shift(-1)), dataframe['mrent'].shift(1) * (1 + dataframe['sq_Gmrent']), dataframe['mrent'])
-            dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['identity'] != dataframe['identity'].shift(-1)), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
-        dataframe['mrent'] = round(dataframe['mrent'], 2)
+            for index_val in range(index_row + 1, l_index_row + 1):
+                dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val) & (dataframe['identity'] == dataframe['identity'].shift(-1)), dataframe['mrent'].shift(1) * (1 + dataframe['sq_Gmrent']), dataframe['mrent'])
+                dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val) & (dataframe['identity'] != dataframe['identity'].shift(-1)), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
+                dataframe['mrent'] = round(dataframe['mrent'], 2)
+            dataframe['G_mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] > index_row), (dataframe['mrent'] - dataframe['mrent'].shift(1)) / dataframe['mrent'].shift(1), dataframe['G_mrent'])
         dataframe['merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row) & (np.isnan(dataframe['merent']) == False), dataframe['mrent'] - (dataframe['gap'] * dataframe['mrent']), dataframe['merent'])
         dataframe['merent'] = round(dataframe['merent'], 2)
         dataframe['G_merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row) & (np.isnan(dataframe['G_merent']) == False), (dataframe['merent'] - dataframe['merent'].shift(1)) / dataframe['merent'].shift(1), dataframe['G_merent'])
