@@ -242,7 +242,16 @@ def get_app_layout():
                                             {'label': ' Full History', 'value': 'full'},
                                             ],
                                 labelStyle={'display': 'block'}), 
-                        ],  style={'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top'}),
+                            ],  style={'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top'}),
+                        html.Div([
+                            dcc.Checklist(
+                                id='show_skips',
+                                value=["N"],
+                                options=[
+                                            {'label': ' Show Skips', 'value': 'Y'},
+                                            ],
+                                labelStyle={'display': 'block'}), 
+                            ],  style={'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top'}),
                         html.Div([
                             dcc.Checklist(
                                 id='hide_cd',
