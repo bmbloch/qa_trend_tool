@@ -3518,7 +3518,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
 
         # Determine the init hover if nothing was hovered over yet, and also change the hover from what was previously hovered over if there is a variable change and the identity no longer has a diff to published for types r, q, and s
         no_diff_points = False
-        if hoverData == None and type_value != "c":
+        if type_value != "c":
             temp = graph.copy()
             if type_value == "r":
                 temp = temp[(temp['yr'] >= curryr - 1) | ((temp['yr'] == curryr - 2) & (temp['currmon'] >  0 + currmon))]
@@ -3531,7 +3531,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
             elif aggreg_met == True:
                 diff_list = list(temp['identity_met'])
             temp = temp.reset_index()
-            
+
             if len(temp) > 0:
                 no_diff_points = False
                 if hoverData is None:
