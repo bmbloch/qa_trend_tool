@@ -2150,6 +2150,44 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
         data = drop_cols(data)
         data = calc_stats(data, curryr, currmon, 1, sector_val)
         data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
+
+        # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
+        check_skips = data.copy()
+        check_skips = check_skips[(check_skips['identity'] == init_drop_val) & (check_skips['curr_tag'] == 1)]
+        skips = list(check_skips['flag_skip'])
+        if len(check_skips) > 0:
+            no_check = ['c_flag_rolv', 'c_flag_rolg', 'v_flag_rol', 'g_flag_rol', 'v_flag_low']
+            skips = [x for x in skips if x not in no_check]
+            
+            flags_only = check_skips.copy()
+            flags_only = flags_only[flag_cols]
+            flags = check_skips.apply(lambda row: row[row == 1].index, axis=1).values[0]
+            flags = [x for x in flags]
+            
+            remove_skips = [x for x in skips if x not in flags]
+            if len(remove_skips) > 0:
+                new_skips = [x for x in skips if x in flags]
+                data.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] = ''
+                for x in skips:
+                    if x not in remove_skips:
+                        if data.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] == '':
+                                data.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] = x
+                        else:
+                            data.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] += ", " + x
+                
+                decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
+                decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] = ''
+                for x in skips:
+                    if x not in remove_skips:
+                        if decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] == '':
+                                decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] = x
+                        else:
+                            decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] += ", " + x
+                if len(remove_skips) == len(skips):
+                    decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skip_user'] = ''
+                use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
+
+
         flag_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
     
         use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
