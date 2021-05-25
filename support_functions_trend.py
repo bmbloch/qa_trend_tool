@@ -833,6 +833,9 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
         dataframe['merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row) & (np.isnan(dataframe['merent']) == False), dataframe['mrent'] - (dataframe['gap'] * dataframe['mrent']), dataframe['merent'])
         dataframe['merent'] = round(dataframe['merent'], 2)
         dataframe['G_merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row) & (np.isnan(dataframe['G_merent']) == False), (dataframe['merent'] - dataframe['merent'].shift(1)) / dataframe['merent'].shift(1), dataframe['G_merent'])
+        dataframe['gap'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), ((dataframe['merent'] - dataframe['mrent']) / dataframe['mrent']) * -1, dataframe['gap'])
+        dataframe['gap'] = round(dataframe['gap'], 4)
+        dataframe['gap_chg'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] == index_row), dataframe['gap'] - dataframe['gap'].shift(1), dataframe['gap_chg'])
     elif variable_fix == "e":
         dataframe.loc[index_row, 'merent'] = fix
         dataframe['G_merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] == index_row), (dataframe['merent'] - dataframe['merent'].shift(1)) / dataframe['merent'].shift(1), dataframe['G_merent'])
