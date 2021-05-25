@@ -1386,16 +1386,21 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     flag_cols = list(filter(r.match, data.columns))
 
 
-    rank_data_met = data.copy()
-    rank_data_met = summarize_flags_ranking(rank_data_met, sector_val, 'met', flag_cols)
-    rank_data_met = rank_data_met.rename(columns={'subsector': 'Subsector', 'metcode': 'Metcode'})
-    rank_data_sub = data.copy()
-    rank_data_sub = summarize_flags_ranking(rank_data_sub, sector_val, 'sub', flag_cols)
-    rank_data_sub = rank_data_sub.rename(columns={'subsector': 'Subsector', 'metcode': 'Metcode', 'subid': 'Subid'})
+    if file_used == "oob":
+        rank_data_met = data.copy()
+        rank_data_met = summarize_flags_ranking(rank_data_met, sector_val, 'met', flag_cols)
+        rank_data_met = rank_data_met.rename(columns={'subsector': 'Subsector', 'metcode': 'Metcode'})
+        rank_data_sub = data.copy()
+        rank_data_sub = summarize_flags_ranking(rank_data_sub, sector_val, 'sub', flag_cols)
+        rank_data_sub = rank_data_sub.rename(columns={'subsector': 'Subsector', 'metcode': 'Metcode', 'subid': 'Subid'})
 
-    sum_data = data.copy()
-    filt_cols = flag_cols + ['identity', 'identity_us', 'identity_met', 'subid', 'yr', 'currmon', 'subsector', 'metcode', 'curr_tag']
-    sum_data = sum_data[filt_cols]
+        sum_data = data.copy()
+        filt_cols = flag_cols + ['identity', 'identity_us', 'identity_met', 'subid', 'yr', 'currmon', 'subsector', 'metcode', 'curr_tag']
+        sum_data = sum_data[filt_cols]
+    else:
+        rank_data_met = use_pickle("in", "rank_data_met_" + sector_val, False, curryr, currmon, sector_val)
+        rank_data_sub = use_pickle("in", "rank_data_sub_" + sector_val, False, curryr, currmon, sector_val)
+        sum_data = use_pickle("in", "sum_data_" + sector_val, False, curryr, currmon, sector_val)
 
     # Create the national rollups of currmon survey data for rent and vac by subsector
     nat_data_rent = data.copy()
