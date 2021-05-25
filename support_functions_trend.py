@@ -316,7 +316,7 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
 
 def live_flag_count(dataframe, sector_val, flag_cols): 
 
-    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low"]
+    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
     test_flag_cols = [x + "_test" for x in rol_flag_cols]
     dataframe[test_flag_cols] = dataframe.groupby('identity')[rol_flag_cols].transform('sum')
     for x, y in zip(rol_flag_cols, test_flag_cols):
@@ -879,7 +879,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     cols_to_keep = flag_cols + ['identity', 'flag_skip']
     dataframe = dataframe[cols_to_keep]
     dataframe[flag_cols] = np.where((dataframe[flag_cols] > 0), 1, dataframe[flag_cols])
-    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low"]
+    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
     for x in rol_flag_cols:
         dataframe[x + "_test"] = dataframe.groupby('identity')[x].transform('sum')
         dataframe[x] = np.where(dataframe[x] == 1, dataframe[x] / dataframe[x + "_test"], dataframe[x])
