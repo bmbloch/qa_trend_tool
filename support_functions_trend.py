@@ -865,11 +865,6 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     
     return dataframe
 
-import numpy as np
-import pandas as pd
-import re
-from IPython.core.display import display, HTML
-
 # Function to identify if a submarket has a flag for review
 def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     dataframe = data.copy()
