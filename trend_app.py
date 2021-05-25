@@ -1305,7 +1305,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         else:
             decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skipped'] = decision_data_update['skipped'].loc[drop_val + str(curryr) + str(currmon)] + ", " + flag_name
             decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skip_user'] = decision_data_update['skip_user'].loc[drop_val + str(curryr) + str(currmon)] + ", " + user
-
+    
     return decision_data_update
 
 # This function filters out submarkets flagged for a specific flag chosen by the user on the Home tab, and creates the necessary table and styles for display
@@ -1479,7 +1479,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         if has_diff == 1 or len(skip_list) > 0:
             decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
         if has_diff == 1:      
-            update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False)
+            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False)
 
         if flag_list[0] != "v_flag" and len(skip_list) > 0:
             test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
