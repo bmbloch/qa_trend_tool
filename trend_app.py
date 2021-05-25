@@ -1963,9 +1963,6 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 Output('store_flag_unresolve', 'data'),
                 Output('store_flag_new', 'data'),
                 Output('store_flag_skips', 'data'),
-                Output('countdown', 'data'),
-                Output('countdown', 'columns'),
-                Output('countdown_container', 'style'),
                 Output('flag_filt', 'data'),
                 Output('flag_filt', 'columns'),
                 Output('flag_filt', 'style_table'),
@@ -2057,16 +2054,6 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             preview_data = pd.DataFrame()
             shim_data = pd.DataFrame()
 
-        if input_id == "submit-button" or input_id == "init_trigger":
-            countdown = data.copy()
-            countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
-            countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
-            countdown = live_flag_count(countdown, sector_val, flag_cols)
-
-            type_dict_countdown, format_dict_countdown = get_types(sector_val)
-
-            countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
-
         if input_id != "preview-button":
             flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag)
 
@@ -2112,12 +2099,9 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             flags_resolved = []
             flags_unresolved = []
             flags_new = []
-
-        # Return statement is conditional on input_id - only want to update the flag countdown related outputs if this is a non-preview callback trigger
         
         if input_id == "submit-button" or input_id == "init_trigger":
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
         elif input_id == "dropflag":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
@@ -2126,7 +2110,10 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 
-@trend.callback(Output('dropman', 'value'),
+@trend.callback([Output('dropman', 'value'),
+                Output('countdown', 'data'),
+                Output('countdown', 'columns'),
+                Output('countdown_container', 'style')],
                 [Input('sector', 'data'),
                 Input('init_trigger', 'data'),
                 Input('store_submit_button', 'data')],
@@ -2187,12 +2174,19 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
                     decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skip_user'] = ''
                 use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
+        countdown = data.copy()
+        countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
+        countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
+        countdown = live_flag_count(countdown, sector_val, flag_cols)
+        type_dict_countdown, format_dict_countdown = get_types(sector_val)
+        countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
         flag_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
     
         use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
 
-        return drop_val   
+        return drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
+                    for i in range(0, len(countdown.columns))], countdown_display
 
 
 @trend.callback([Output('has_flag', 'data'),
