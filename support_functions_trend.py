@@ -886,7 +886,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     dataframe['total_skips'] = dataframe.groupby('identity')['sum_skips'].transform('sum')
     dataframe['flags_left'] = round(dataframe['total_flags'] - dataframe['total_skips'],0)
     dataframe = dataframe[dataframe['flags_left'] > 0]
-
+    
     if len(dataframe) == 0:
         if filt == True:
             identity_val = identity_val
@@ -894,6 +894,8 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
             flag_list = ['v_flag']
         else: 
             identity_val = False
+            has_flag = 0
+            flag_list = ['v_flag']
     else:
         if filt == False:
             identity_val = dataframe.reset_index().loc[0]['identity']
