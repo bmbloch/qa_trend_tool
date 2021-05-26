@@ -1748,7 +1748,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             oob_data.replace([np.inf, -np.inf], np.nan, inplace=True)
             use_pickle("out", "main_data_" + sector_val, oob_data, curryr, currmon, sector_val)
 
-            flag_list = get_issue(False, False, False, False, False, False, False, False, False, False, "list", sector_val)
+            flag_list = get_issue(False, False, False, False, False, False, False, False, False, False, False, False, "list", sector_val)
             flag_list_all = list(flag_list.keys())
 
             
@@ -2185,7 +2185,7 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
         type_dict_countdown, format_dict_countdown = get_types(sector_val)
         countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
-        flag_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
+        flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
     
         use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
 
@@ -2195,6 +2195,7 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
 
 @trend.callback([Output('has_flag', 'data'),
                 Output('flag_list', 'data'),
+                Output('p_skip_list', 'data'),
                 Output('key_met_radios', 'value')],
                 [Input('dropman', 'value'),
                 Input('sector', 'data'),
@@ -2223,7 +2224,7 @@ def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, c
             data = calc_stats(data, curryr, currmon, 1, sector_val)
             data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
-        flag_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
+        flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
 
         # Reset the radio button to the correct variable based on the new flag
         if has_flag == 1:
@@ -2236,7 +2237,7 @@ def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, c
         else:
             key_met_radio_val = no_update
 
-        return has_flag, flag_list, key_met_radio_val
+        return has_flag, flag_list, p_skip_list, key_met_radio_val
 
 @trend.callback(Output('download_trigger', 'data'),
                    [Input('sector', 'data'),
@@ -2700,9 +2701,11 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 Input('store_all_buttons', 'data'),
                 Input('key_met_radios', 'value'),
                 Input('expand_hist', 'value'),
-                Input('hide_cd', 'value')],
+                Input('hide_cd', 'value'),
+                Input('show_skips', 'value')],
                 [State('has_flag', 'data'),
                 State('flag_list', 'data'),
+                State('p_skip_list', 'data'),
                 State('store_orig_cols', 'data'),
                 State('curryr', 'data'),
                 State('currmon', 'data'),
@@ -2713,7 +2716,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, has_flag, flag_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
     
     input_id = get_input_id()
     
@@ -2800,7 +2803,11 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
         # Get the Divs that will display the current flags at the sub, as well as the metrics to highlight based on the flag
-        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue(data_full, has_flag, flag_list, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), "specific", sector_val)
+        if "Y" in show_skips:
+            show_skips = True
+        else:
+            show_skips = False
+        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue(data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), "specific", sector_val)
         if len(issue_description_noprev) == 0:
             style_noprev = {'display': 'none'}
         else:

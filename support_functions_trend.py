@@ -433,7 +433,7 @@ def summarize_flags(dataframe_in, sum_val, flag_cols):
 
 
 # Return a more verbose description of the flag to the user
-def get_issue(dataframe, has_flag, flag_list, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, preview_status, type_return, sector_val):
+def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, preview_status, type_return, sector_val):
 
     # This dict holds a more verbose explanation of the flags, so that it can be printed to the user for clarity
     issue_descriptions = {
@@ -496,7 +496,6 @@ def get_issue(dataframe, has_flag, flag_list, flags_resolved, flags_unresolved, 
         highlighting['v_flag_level'] = ['vac'], ['sub sur totabs', 'avail10d'], ['sq vac']
     else:
         highlighting['v_flag_level'] = ['avail'], ['sub sur totabs', 'avail10d'], ['sq avail']
-
     if type_return == "specific":
         if has_flag == 0:
             issue_description_noprev = "You have cleared all the flags"
@@ -506,7 +505,7 @@ def get_issue(dataframe, has_flag, flag_list, flags_resolved, flags_unresolved, 
             issue_description_unresolved = []
             issue_description_new = []
             issue_description_skipped = []
-        elif has_flag == 2:
+        elif has_flag == 2 and (show_skips == False or len(p_skip_list) == 0):
             issue_description_noprev = "No flags for this submarket"
             display_issue_cols = []
             key_metric_issue_cols = []
@@ -514,6 +513,35 @@ def get_issue(dataframe, has_flag, flag_list, flags_resolved, flags_unresolved, 
             issue_description_unresolved = []
             issue_description_new = []
             issue_description_skipped = []
+        elif has_flag == 2 and show_skips == True and len(p_skip_list) > 0:
+            display_issue_cols = []
+            key_metric_issue_cols = []
+            issue_description_resolved = []
+            issue_description_unresolved = []
+            issue_description_new = []
+            issue_description_skipped = []
+            issue_description_noprev = html.Div([
+                                        html.Div([
+                                            dbc.Container(
+                                            [
+                                                dbc.Checklist(
+                                                    id="flag_descriptions_noprev",
+                                                    options=[
+                                                            {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
+                                                            for i in p_skip_list
+                                                            ],
+                                                    inline=True
+                                                            ),  
+                                                    
+                                            ]
+                                            + [
+                                                dbc.Tooltip(issue_descriptions[i], target=f"label-{i}")
+                                                for i in p_skip_list
+                                            ],
+                                            fluid=True),
+                                                
+                                        ]), 
+                                    ])
         elif has_flag == 1:
             if preview_status == 0:
                 issue_description_resolved = []
@@ -869,8 +897,12 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
 def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
     dataframe = data.copy()
     has_flag = 0
+    skip_list = []
     if filt == True:
         dataframe = dataframe[dataframe['identity'] == identity_val]
+        skip_list = list(dataframe.loc[identity_val + str(curryr) + str(currmon)][['flag_skip']])
+        if skip_list[0] == '':
+            skip_list = []
     else:
         first_sub = dataframe.reset_index().loc[0]['identity']
 
@@ -924,7 +956,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
                     identity_val = dataframe.reset_index().loc[0]['identity']  
                 flag_list = ['v_flag']
         
-    return flag_list, identity_val, has_flag
+    return flag_list, skip_list, identity_val, has_flag
 
 # This function rolls up the edited data to the metro and US level for presentation to econ
 def create_review_packet(data_in, curryr, currmon, sector_val):
@@ -1063,7 +1095,7 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
         met_roll['final_Gmrent_ytd'] = met_roll['G_mrent']
         met_roll['final_Gmerent_ytd'] = met_roll['G_merent']
         
-    
+
     if sector_val != "ind":
         cols_to_display = ['sector', 'subsector', 'tier', 'metcode', 'metro', 'state', 'region', 'yr', 'qtr', 'currmon', 'final_inv', 'sq_ids', 'sq_inv', 'final_cons', 
         'sq_cons', 'sq_ncabs', 'sq_nc_vac_coverpct', 'final_cons_last3mos',	'final_cons_ytd', 'final_conv',	'final_demo', 'final_vac', 'final_vac_chg',

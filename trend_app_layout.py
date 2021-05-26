@@ -22,6 +22,7 @@ def get_app_layout():
             dcc.Store(id='currmon'),
             dcc.Store(id='store_msq_load'),
             dcc.Store(id='flag_list'),
+            dcc.Store(id='p_skip_list'),
             dcc.Store(id='identity_val'),
             dcc.Store(id='has_flag'),
             dcc.Store(id='input_file'),
