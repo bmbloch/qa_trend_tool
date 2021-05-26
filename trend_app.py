@@ -34,7 +34,7 @@ from flags_trend import calc_flags
 from support_functions_trend import set_display_cols, display_frame, gen_metrics, drop_cols, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue, get_diffs, rank_it, flag_examine, create_review_packet
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
-#from timer_trend import Timer
+from timer_trend import Timer
 
 
 # Function that determines the data type - int, float, etc - so that the correct format can be set for the app display
@@ -1181,7 +1181,7 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
         elif direction == "out":
             dataframe.to_pickle(file_path)
 
-#@Timer("Update Decision Log")
+@Timer("Update Decision Log")
 def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, button, flag_name):
     if button == "submit":
         # Identify where the trend series has changed for key variables
@@ -1437,7 +1437,7 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 
     return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, flag_cols
 
-#@Timer("Submit Update")
+@Timer("Submit Update")
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
 def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg):
 
@@ -1541,7 +1541,7 @@ def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig
     return flags_resolved, flags_unresolved, new_flags
 
 # # This function produces the outputs needed for the update_data callback if the preview button is clicked
-#@Timer("Preview Update")
+@Timer("Preview Update")
 def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):  
     
 
@@ -1615,7 +1615,7 @@ trend.layout = html.Div([
 # Check to see what url the user entered into the web browser, and return the relevant page based on their choice
 @trend.callback(Output('page-content','children'),
                   [Input('url','pathname')])
-#@Timer("URL Check")
+@Timer("URL Check")
 def router(pathname):
     if pathname[0:5] == '/home':
         return app_layout()
@@ -1635,7 +1635,7 @@ def router(pathname):
                     State('login-curryr','value'),
                     State('login-currmon','value'),
                     State('msq_load','value')])
-#@Timer("Login Auth")
+@Timer("Login Auth")
 def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load):
 
     if n_clicks is None or n_clicks==0:
@@ -1666,7 +1666,7 @@ def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load):
                  Output('currmon', 'data'),
                  Output('store_msq_load', 'data')],
                  [Input('url', 'search')])
-#@Timer("Store Input Vals")
+@Timer("Store Input Vals")
 def store_input_vals(url_input):
     if url_input is None:
         raise PreventUpdate
@@ -1697,7 +1697,7 @@ def store_input_vals(url_input):
                  Input('currmon', 'data'),
                  Input('store_msq_load', 'data')],
                  [State('store_flag_cols', 'data')])
-#@Timer("Initial Data Load")
+@Timer("Initial Data Load")
 def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
 
     if sector_val is None:
@@ -1783,7 +1783,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                   State('currmon', 'data'),
                   State('init_trigger', 'data'),
                   State('store_flag_cols', 'data')])
-#@Timer("Output Flags XLS")
+@Timer("Output Flags XLS")
 def output_flags(sector_val, init_flags_triggered, all_buttons, curryr, currmon, success_init, flag_cols):
     
     if sector_val is None or success_init == False:
@@ -1809,7 +1809,7 @@ def output_flags(sector_val, init_flags_triggered, all_buttons, curryr, currmon,
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data')])
-#@Timer("Confirm Finalizer")
+@Timer("Confirm Finalizer")
 def confirm_finalizer(sector_val, submit_button, finalize_button, curryr, currmon, success_init):
     input_id = get_input_id()
 
@@ -1829,7 +1829,7 @@ def confirm_finalizer(sector_val, submit_button, finalize_button, curryr, currmo
                 State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data')])
-#@Timer("Finalize Econ")
+@Timer("Finalize Econ")
 def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
 
     if sector_val is None or success_init == False:
@@ -1997,7 +1997,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('v_threshold', 'data'),
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data')])
-#@Timer("Update Data")
+@Timer("Update Data")
 def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
     
     input_id = get_input_id()
@@ -2127,7 +2127,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data'),
                 State('dropman', 'value')])
-#@Timer("Set Shim Drop")
+@Timer("Set Shim Drop")
 def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, init_drop_val):
     
     if sector_val is None or success_init == False:
@@ -2212,7 +2212,7 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
                 State('store_flag_cols', 'data'),
                 State('store_flag_unresolve', 'data'),
                 State('store_flag_new', 'data')])
-#@Timer("Calc Stats and Flags")
+@Timer("Calc Stats and Flags")
 def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new):
     if sector_val is None or success_init == False:
         raise PreventUpdate
@@ -2249,7 +2249,7 @@ def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, c
                    [State('curryr', 'data'),
                    State('currmon', 'data'),
                    State('init_trigger', 'data')])
-#@Timer("Output Edits XLS")
+@Timer("Output Edits XLS")
 def output_edits(sector_val, submit_button, download_button, curryr, currmon, success_init):
     input_id = get_input_id()
     if sector_val is None or success_init == False:
@@ -2600,7 +2600,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
                 State('currmon', 'data'),
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
-#@Timer("Display Summary")
+@Timer("Display Summary")
 def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_init, flag_cols):
     if sector_val is None or success_init == False:
         raise PreventUpdate
@@ -2660,7 +2660,7 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
                  Input('dropman', 'value'),
                  Input('sector', 'data')],
                  [State('init_trigger', 'data')])
-#@Timer("Remove Expand Hist")
+@Timer("Remove Expand Hist")
 def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
     if sector_val is None or success_init == False:
         raise PreventUpdate
@@ -2725,7 +2725,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('store_flag_skips', 'data'),
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
-#@Timer("Output Display")
+@Timer("Output Display")
 def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
     
     input_id = get_input_id()
@@ -3047,7 +3047,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data')])
-#@Timer("Set Rolldrop")
+@Timer("Set Rolldrop")
 def set_rolldrop(submit_button, sector_val, drop_val, curryr, currmon, success_init):
     
     if sector_val is None or success_init == False:
@@ -3099,7 +3099,7 @@ def set_rolldrop(submit_button, sector_val, drop_val, curryr, currmon, success_i
                 State('currmon', 'data'),
                 State('sector', 'data'),
                 State('init_trigger', 'data')])
-#@Timer("Output Rollup")
+@Timer("Output Rollup")
 def output_rollup(roll_val, drop_val, roll_trigger, submit_button, preview_button, multi_view, currmon_view, rank_only, display_trigger, orig_cols, curryr, currmon, sector_val, success_init):
 
     if sector_val is None or success_init == False:
@@ -3271,7 +3271,7 @@ def output_rollup(roll_val, drop_val, roll_trigger, submit_button, preview_butto
                   State('currmon', 'data'),
                   State('init_trigger', 'data'),
                   State('dropman', 'value')])
-#@Timer("Finalize Shims")
+@Timer("Finalize Shims")
 def finalize_shims(shim_data, sector_val, curryr, currmon, success_init, drop_val):
   
     if sector_val is None or success_init == False:
@@ -3300,7 +3300,7 @@ def finalize_shims(shim_data, sector_val, curryr, currmon, success_init, drop_va
                 State('currmon', 'data'),
                 State('scatter-xaxis-var', 'value'),
                 State('init_trigger', 'data')])
-#@Timer("Get Scatter Drops")
+@Timer("Get Scatter Drops")
 def get_scatter_drops(type_value, aggreg_met, sector_val, curryr, currmon, x_var, success_init):
     
     if sector_val is None or success_init == False:
@@ -3383,7 +3383,7 @@ def get_scatter_drops(type_value, aggreg_met, sector_val, curryr, currmon, x_var
                 State('currmon', 'data'),
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
-#@Timer("Produce Scatter")
+@Timer("Produce Scatter")
 def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_met, sector_val, submit_button, curryr, currmon, success_init, flag_cols):
 
     if sector_val is None or success_init == False:
@@ -3535,7 +3535,7 @@ def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_m
                 State('scatter-type-radios', 'value'),
                 State('aggreg_level', 'value'),
                 State('init_trigger', 'data')])
-#@Timer("Produce Timeseries")
+@Timer("Produce Timeseries")
 def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_check, init_trigger, curryr, currmon, type_value, aggreg_met, success_init):
     
     if sector_val is None or success_init == False:
@@ -3862,7 +3862,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
 
 @trend.callback(Output('home-url','pathname'),
                   [Input('logout-button','n_clicks')])
-#@Timer("Logout")
+@Timer("Logout")
 def logout(n_clicks):
     '''clear the session and send user to login'''
     if n_clicks is None or n_clicks==0:
