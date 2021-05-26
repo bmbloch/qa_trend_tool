@@ -3009,7 +3009,13 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_
         edit_dict = {}
         for x in all_cols:
             if x in shim_cols:
-                edit_dict[x] = True
+                if x == "merent shim":
+                    if 'merent' in all_cols:
+                        edit_dict[x] = True
+                    else:
+                        edit_dict[x] = False
+                else:
+                    edit_dict[x] = True
             else:
                 edit_dict[x] = False
 
