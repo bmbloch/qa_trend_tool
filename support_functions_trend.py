@@ -791,6 +791,9 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     elif variable_fix == "v":
         orig_avail = dataframe.loc[row_to_fix]['avail']
         avail_diff = fix - orig_avail
+    # Since there is no way for a user to enter a null shim, and there may be cases where they want to actually have a null value (example: tier 3 subs where a mistaken shim was entered for merent, creating a value where there previously was not one) if the user enteres a zero for mrent or merent we will treat that as null out
+    elif (variable_fix == "g" or variable_fix == "e") and fix == 0:
+        fix = np.nan
 
     dataframe = dataframe.reset_index()
     index_row = dataframe.index[dataframe['identity_row'] == row_to_fix].tolist()[0]
