@@ -1819,7 +1819,6 @@ def confirm_finalizer(sector_val, submit_button, finalize_button, curryr, currmo
     elif input_id != "finalize-button":
         raise PreventUpdate
     else:
-        print("End Confirm Finalizer")
         return True
 
 @trend.callback([Output('finalize_trigger', 'data'),
