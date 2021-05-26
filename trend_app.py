@@ -1837,45 +1837,11 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
         raise PreventUpdate
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        
-        if sector_val == "ind":
-            output_cols = ['subsector', 'metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 'gap']
-        else:
-            output_cols = ['metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'conv', 'demo', 'vac', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 
-                           'rol_cons', 'rol_vac', 'rol_occ', 'rol_abs', 'rol_merent', 'sqinv', 'sqcons', 'sqvac', 'sqsren']
-        if sector_val == "ret":
-            output_cols = ['subsector'] + output_cols
-
-        finalized = data.copy()
-        finalized = finalized[output_cols]
-
-        # Append the deep history (prior to 2008 q4) to the edits period
-        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_deep_hist.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-        deep_hist = pd.read_pickle(file_path)
-        deep_hist = deep_hist[output_cols]
-        finalized = finalized.append(deep_hist, ignore_index=True)
-        finalized.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
-        
-        if sector_val == "ind":
-            finalized = finalized.rename(columns={'G_mrent': 'g_mrent', 'G_merent': 'g_merent'})
-            finalized.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
-        elif sector_val == "apt":
-            finalized = finalized.rename(columns={'rol_cons': 'cons_pub', 'rol_vac': 'vac_pub', 'rol_occ': 'occ_pub', 'rol_abs': 'abs_pub', 'rol_merent': 'merent_pub', 'sqinv': 'sqinvoob', 'sqcons': 'sqconsoob', 'sqvac': 'sqvacoob', 'sqsren': 'sqsrenoob'})
-            finalized['msa_level'] = np.where(finalized['subid'] == 90, 3, 1)
-            finalized.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
-        elif sector_val == "off":
-            finalized = finalized.rename(columns={'rol_cons': 'cons_pub', 'rol_vac': 'vac_pub', 'rol_occ': 'occ_pub', 'rol_abs': 'abs_pub', 'rol_merent': 'merent_pub', 'sqinv': 'sqinvoob', 'sqcons': 'sqconsoob', 'sqvac': 'sqvacoob', 'sqsren': 'sqsrenoob'})
-            finalized['msa_level'] = np.where((finalized['subid'] == 81) | (finalized['subid'] == 82), 3, 1)
-            finalized.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
-        elif sector_val == "ret":
-            finalized = finalized.rename(columns={'G_mrent': 'g_mrent', 'G_merent': 'g_merent', 'rol_cons': 'cons_pub', 'rol_vac': 'vac_pub', 'rol_occ': 'occ_pub', 'rol_abs': 'abs_pub', 'rol_merent': 'merent_pub', 'sqinv': 'sqinvoob', 'sqcons': 'sqconsoob', 'sqvac': 'sqvacoob', 'sqsren': 'sqsrenoob'})
-
-        finalized['currmon'] = np.where(finalized['currmon'] == 13, np.nan, finalized['currmon'])
 
         # Check for illogical values; alert the user if found and do not allow the trend to be finalized
         alert_display = False
         alert_text = ""
-        vac_check = finalized.copy()
+        vac_check = data.copy()
         if sector_val == "ind" or sector_val == "ret":
             vac_check['identity'] = vac_check['metcode'] + vac_check['subid'].astype(str) + vac_check['subsector']
         else:
@@ -1887,7 +1853,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             alert_display = True
             alert_text = "The following subs have illogical vacancy level values. Cannot finalize the trend until they have been fixed: " + ', '.join(map(str, subs_flagged)) 
         else:
-            gap_check = finalized.copy()
+            gap_check = data.copy()
             if sector_val == "ind" or sector_val == "ret":
                 gap_check['identity'] = gap_check['metcode'] + gap_check['subid'].astype(str) + gap_check['subsector']
             else:
@@ -1899,6 +1865,40 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 alert_text = "The following subs have illogical gap level values. Cannot finalize the trend until they have been fixed: " + ', '.join(map(str, subs_flagged)) 
         
         if alert_display == False:
+            if sector_val == "ind":
+                output_cols = ['subsector', 'metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 'gap']
+            else:
+                output_cols = ['metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'conv', 'demo', 'vac', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 
+                            'rol_cons', 'rol_vac', 'rol_occ', 'rol_abs', 'rol_merent', 'sqinv', 'sqcons', 'sqvac', 'sqsren']
+            if sector_val == "ret":
+                output_cols = ['subsector'] + output_cols
+
+            finalized = data.copy()
+            finalized = finalized[output_cols]
+
+            # Append the deep history (prior to 2008 q4) to the edits period
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_deep_hist.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
+            deep_hist = pd.read_pickle(file_path)
+            deep_hist = deep_hist[output_cols]
+            finalized = finalized.append(deep_hist, ignore_index=True)
+            finalized.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
+            
+            if sector_val == "ind":
+                finalized = finalized.rename(columns={'G_mrent': 'g_mrent', 'G_merent': 'g_merent'})
+                finalized.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
+            elif sector_val == "apt":
+                finalized = finalized.rename(columns={'rol_cons': 'cons_pub', 'rol_vac': 'vac_pub', 'rol_occ': 'occ_pub', 'rol_abs': 'abs_pub', 'rol_merent': 'merent_pub', 'sqinv': 'sqinvoob', 'sqcons': 'sqconsoob', 'sqvac': 'sqvacoob', 'sqsren': 'sqsrenoob'})
+                finalized['msa_level'] = np.where(finalized['subid'] == 90, 3, 1)
+                finalized.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
+            elif sector_val == "off":
+                finalized = finalized.rename(columns={'rol_cons': 'cons_pub', 'rol_vac': 'vac_pub', 'rol_occ': 'occ_pub', 'rol_abs': 'abs_pub', 'rol_merent': 'merent_pub', 'sqinv': 'sqinvoob', 'sqcons': 'sqconsoob', 'sqvac': 'sqvacoob', 'sqsren': 'sqsrenoob'})
+                finalized['msa_level'] = np.where((finalized['subid'] == 81) | (finalized['subid'] == 82), 3, 1)
+                finalized.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
+            elif sector_val == "ret":
+                finalized = finalized.rename(columns={'G_mrent': 'g_mrent', 'G_merent': 'g_merent', 'rol_cons': 'cons_pub', 'rol_vac': 'vac_pub', 'rol_occ': 'occ_pub', 'rol_abs': 'abs_pub', 'rol_merent': 'merent_pub', 'sqinv': 'sqinvoob', 'sqcons': 'sqconsoob', 'sqvac': 'sqvacoob', 'sqsren': 'sqsrenoob'})
+
+            finalized['currmon'] = np.where(finalized['currmon'] == 13, np.nan, finalized['currmon'])
+
             if sector_val == "ind":
                 for subsector in ["DW", "F"]:
                     finalized_copy = finalized.copy()
