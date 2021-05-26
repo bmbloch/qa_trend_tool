@@ -2989,7 +2989,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         display_data = display_data.drop(['rol vac', 'rol G mrent'], axis=1)
 
         # Do not include conv shim and demo shim columns if the user does not want to see them
-        if show_cd[-1] == "N":
+        if show_cd[-1] == "N" and sector_val != "ind":
             display_cols = list(display_data.columns)
             display_cols.remove('conv shim')
             display_cols.remove('demo shim')
