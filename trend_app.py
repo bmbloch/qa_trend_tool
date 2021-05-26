@@ -1854,6 +1854,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             alert_text = "The following subs have illogical vacancy level values. Cannot finalize the trend until they have been fixed: " + ', '.join(map(str, subs_flagged)) 
         else:
             gap_check = data.copy()
+            # EM said wants to have the ability to finalize even if there are negative gaps if they are in tertiary subs, since at this point those erents are not published anywhere
+            if sector_val == "apt":
+                gap_check = gap_check[gap_check['tier'] != 3]
             if sector_val == "ind" or sector_val == "ret":
                 gap_check['identity'] = gap_check['metcode'] + gap_check['subid'].astype(str) + gap_check['subsector']
             else:
