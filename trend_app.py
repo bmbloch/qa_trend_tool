@@ -3135,10 +3135,9 @@ def output_rollup(roll_val, drop_val, roll_trigger, submit_button, preview_butto
 
             rolled_rank = rollup(roll, roll_val, curryr, currmon, sector_val, "reg")
 
-        if (sector_val == "apt" or sector_val == "off" or sector_val == "ret") and roll_val[:2] != "US":
-            testing_sub = data[data['identity_met'] == roll_val].reset_index().loc[0]['subid']
-            if (sector_val == "apt" and testing_sub == 90) or (sector_val == "off" and (testing_sub == 81 or testing_sub == 82)) or (sector_val == "ret" and testing_sub == 70):
-                rolled = rolled.drop(['merent', 'G_merent', 'rol_G_merent', 'gap', 'gap_chg'], axis=1)        
+        
+        if rolled['merent'].isnull().all(axis=0) == True:
+            rolled = rolled.drop(['merent', 'G_merent', 'rol_G_merent', 'gap', 'gap_chg'], axis=1)        
         
         if roll_val[:2] == "US":
             data_vac_roll, data_rent_roll = sub_met_graphs(rolled, "nat", curryr, currmon, sector_val)

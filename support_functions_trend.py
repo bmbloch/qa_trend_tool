@@ -16,13 +16,15 @@ from init_load_trend import get_home
 def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon):
     dataframe = dataframe_in.copy()
 
+    dataframe = dataframe[dataframe['identity'] == identity_val]
+
     # Note: leave rol_vac and rol_G_mrent in so that it can be used to identify row where diff to rol is for highlighting purposes, will be dropped before final output of datatable
     if sector_val != "ind":
         display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
     else:
         display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
     
-    if ('90' in identity_val and sector_val == "apt") or (sector_val == "off" and ('81' in identity_val or '82' in identity_val)) or (('70' in identity_val and sector_val == "ret")):
+    if dataframe['merent'].isnull().all(axis=0) == True:
         display_cols.remove('merent')
         display_cols.remove('G_merent')
         display_cols.remove('gap')
@@ -44,7 +46,6 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     elif variable_fix == "e":
         key_met_cols = ['gmerent_roldiff', 'gap_perc_5', 'gap_perc_95']
 
-    dataframe = dataframe[dataframe['identity'] == identity_val]
     dataframe['cons_roldiff'] = dataframe['cons_roldiff'].fillna(method='ffill')
     dataframe['vac_roldiff'] = dataframe['vac_roldiff'].fillna(method='ffill')
     dataframe['gmrent_roldiff'] = dataframe['gmrent_roldiff'].fillna(method='ffill')
@@ -90,14 +91,8 @@ def display_frame(dataframe, identity_val, display_cols, curryr, sector_val):
     dataframe = dataframe.reset_index()
     dataframe = dataframe.rename(columns={"index": "identity_row"})
     dataframe = dataframe.set_index("identity")
-    if (sector_val == "apt" and identity_val[:-2] == '90') or (sector_val == "off" and (identity_val[:-2] == '81' or identity_val[:-2] == '82')) or (sector_val == "ret" and identity_val[:-2] == '70'):
-        display_cols.remove('merent')
-        display_cols.remove('G_merent')
-        display_cols.remove('rol_G_merent')
-        display_cols.remove('gap')
-        display_cols.remove('gap_chg')
-    dataframe = dataframe[display_cols]
     dataframe = dataframe.loc[identity_val]
+    dataframe = dataframe[display_cols]
     dataframe = dataframe.reset_index()
     dataframe = dataframe.set_index("identity_row")
     dataframe = dataframe.drop(['identity'], axis =1)
@@ -146,10 +141,6 @@ def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
             rank = data.copy()
             #rank = rank[rank['identity_met'] == roll_val]
             rank = rank[rank['curr_tag'] == 1]
-            if rank.reset_index().loc[0]['subid'] == 90 or rank.reset_index().loc[0]['subid'] == 82 or rank.reset_index().loc[0]['subid'] == 81 or rank.reset_index().loc[0]['subid'] == 70:
-                has_no_gap = True
-            else:
-                has_no_gap = False
         elif x == "identity_met":
             rank = rolled.copy()
             rank = rank[(rank['yr'] == curryr) & (rank['currmon'] == currmon)]
@@ -164,8 +155,6 @@ def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
         if values == False:
         
             calc_cols = ['cons', 'vac_chg', 'abs', 'G_mrent', 'gap_chg']
-            if has_no_gap == True:
-                calc_cols.remove('gap_chg')
             rank_cols = []
             for y in calc_cols:
                 col_name = y + "_rank"
