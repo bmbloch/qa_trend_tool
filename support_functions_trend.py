@@ -823,10 +823,15 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     elif variable_fix == "a" or variable_fix == "d":
         if variable_fix == "a":
             dataframe.loc[index_row, 'conv'] = fix
+            dataframe['inv'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['inv'] + cv_diff, dataframe['inv'])
+            if cv_diff > 0:
+                dataframe['occ'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['occ'] + cv_diff, dataframe['occ'])
+            else:
+                dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['avail'] + cv_diff, dataframe['avail'])
         elif variable_fix == "d":
             dataframe.loc[index_row, 'demo'] = fix
-        dataframe['inv'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['inv'] + cv_diff, dataframe['inv'])
-        dataframe['occ'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['occ'] + cv_diff, dataframe['occ'])
+            dataframe['inv'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['inv'] + cv_diff, dataframe['inv'])
+            dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['avail'] + cv_diff, dataframe['avail'])
         dataframe['vac'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), dataframe['avail'] / dataframe['inv'], dataframe['vac'])
         dataframe['vac'] = round(dataframe['vac'], 4)
         dataframe['vac_chg'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row), dataframe['vac'] - dataframe['vac'].shift(1), dataframe['vac_chg'])
