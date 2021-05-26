@@ -255,13 +255,13 @@ def get_app_layout():
                             ],  style={'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top'}),
                         html.Div([
                             dcc.Checklist(
-                                id='hide_cd',
+                                id='show_cd',
                                 value=["N"],
                                 options=[
-                                            {'label': ' Hide CD Shim', 'value': 'Y'},
+                                            {'label': ' Show CD Shim', 'value': 'Y'},
                                             ],
                                 labelStyle={'display': 'block'}), 
-                        ],  style={'display': 'none'}, id='hide_cd_container'),
+                        ],  style={'display': 'none'}, id='show_cd_container'),
                         html.Div([
                             html.P(id='flag_description_noprev')
                                 ], style={'display': 'none'}, id='noprev_container'),

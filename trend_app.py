@@ -1691,7 +1691,7 @@ def store_input_vals(url_input):
                  Output('v_threshold', 'data'),
                  Output('r_threshold', 'data'),
                  Output('store_flag_cols', 'data'),
-                 Output('hide_cd_container', 'style')],
+                 Output('show_cd_container', 'style')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
@@ -1764,11 +1764,11 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             init_trigger = True
 
             if sector_val != "ind":
-                hide_cd_display = {'padding-left': '5px', 'width': '7%', 'display': 'inline-block', 'vertical-align': 'top'}
+                show_cd_display = {'padding-left': '5px', 'width': '7%', 'display': 'inline-block', 'vertical-align': 'top'}
             else:
-                 hide_cd_display = {'display': 'none'}
+                 show_cd_display = {'display': 'none'}
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols, hide_cd_display
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols, show_cd_display
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
@@ -2711,7 +2711,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 Input('store_all_buttons', 'data'),
                 Input('key_met_radios', 'value'),
                 Input('expand_hist', 'value'),
-                Input('hide_cd', 'value'),
+                Input('show_cd', 'value'),
                 Input('show_skips', 'value')],
                 [State('has_flag', 'data'),
                 State('flag_list', 'data'),
@@ -2726,7 +2726,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
     
     input_id = get_input_id()
     
@@ -2989,7 +2989,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, hide_
         display_data = display_data.drop(['rol vac', 'rol G mrent'], axis=1)
 
         # Do not include conv shim and demo shim columns if the user does not want to see them
-        if hide_cd[-1] == "Y":
+        if show_cd[-1] == "N":
             display_cols = list(display_data.columns)
             display_cols.remove('conv shim')
             display_cols.remove('demo shim')
