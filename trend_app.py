@@ -2260,6 +2260,13 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
 
+        metroll = data.copy()
+        if sector_val == "ret":
+            metroll['subsector'] = "Ret"
+        rolled = rollup(metroll, "temp", curryr, currmon, sector_val, "reg")
+        file_path = "{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_edits_trend_met.csv".format(get_home(), sector_val, curryr, currmon, sector_val)
+        rolled.to_csv(file_path, index=False, na_rep='')
+
         output_cols = ['identity', 'subsector', 'metcode', 'subid', 'subname', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'G_mrent', 'merent', 'G_merent', 'gap', 'conv', 'demo', 'gap_chg', 'inv_oob', 'cons_oob', 'avail_oob', 'vac_oob', 'G_mrent_oob', 'G_merent_oob', 'conv_oob', 'demo_oob', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']
 
         if sector_val == "ind":

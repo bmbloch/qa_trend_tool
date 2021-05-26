@@ -299,7 +299,9 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
         cols_to_display.remove('metcode')
     
     roll = roll[cols_to_display]
-    roll = roll[(roll['yr'] >= curryr - 3)]
+    
+    if drop_val != "temp":
+        roll = roll[(roll['yr'] >= curryr - 3)]
 
     return roll
 
