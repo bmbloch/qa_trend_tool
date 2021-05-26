@@ -533,6 +533,10 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                     ])
         elif has_flag == 1:
             if preview_status == 0:
+                if show_skips == True:
+                    flag_list_use = flag_list + p_skip_list
+                else:
+                    flag_list_use = flag_list
                 issue_description_resolved = []
                 issue_description_unresolved = []
                 issue_description_new = []
@@ -545,7 +549,7 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                                     id="flag_descriptions_noprev",
                                                     options=[
                                                             {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
-                                                            for i in flag_list
+                                                            for i in flag_list_use
                                                             ],
                                                     inline=True
                                                             ),  
@@ -553,7 +557,7 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                             ]
                                             + [
                                                 dbc.Tooltip(issue_descriptions[i], target=f"label-{i}")
-                                                for i in flag_list
+                                                for i in flag_list_use
                                             ],
                                             fluid=True),
                                                 
@@ -643,6 +647,10 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                     issue_description_new = []
 
                 if len(flags_skipped) > 0:
+                    if show_skips == True:
+                        flags_skipped_use = flags_skipped + p_skip_list
+                    else:
+                        flags_skipped_use = flags_skipped
                     issue_description_skipped = html.Div([
                                             html.Div([
                                                 dbc.Container(
@@ -653,7 +661,7 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                                                 {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
                                                                 for i in flags_skipped
                                                                 ],
-                                                        value=[f"skip-{i}" for i in flags_skipped],
+                                                        value=[f"skip-{i}" for i in flags_skipped_use],
                                                         inline=True,
                                                         labelStyle={'display': 'inline-block', 'margin': '0 10px 0 10px', 'color': 'black'},
                                                                 ),  
@@ -661,7 +669,7 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                                 ]
                                                 + [
                                                     dbc.Tooltip(issue_descriptions[i], target=f"label-{i}")
-                                                    for i in flags_skipped
+                                                    for i in flags_skipped_use
                                                 ],
                                                 fluid=True),
                                                     
