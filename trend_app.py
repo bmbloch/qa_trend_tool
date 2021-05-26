@@ -1510,7 +1510,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 
     return data, preview_data, shim_data, message, message_display
 
-def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, v_threshold, r_threshold, flag_cols):
+def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):
         
     resolve_test = preview_data.copy()
     resolve_test = drop_cols(resolve_test)
@@ -1532,7 +1532,7 @@ def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig
 
         flags_resolved = [x for x in test_flag_list if x not in flags_remaining and x not in skip_list]
         flags_unresolved = [x for x in test_flag_list if x in flags_remaining and x not in skip_list]
-        new_flags = [x for x in flags_remaining if x not in orig_flag_list and x not in skip_list]
+        new_flags = [x for x in flags_remaining if x not in orig_flag_list and x not in skip_list and x not in p_skip_list]
     else:
         flags_resolved = test_flag_list
         flags_unresolved = []
@@ -1542,7 +1542,7 @@ def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig
 
 # # This function produces the outputs needed for the update_data callback if the preview button is clicked
 #@Timer("Preview Update")
-def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, orig_flag_list, skip_list, v_threshold, r_threshold, flag_cols):  
+def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):  
     
 
     # At this point, will just always allow the button to be clicked, even if there are no edits entered, as want to allow the user to undo a previewed shim. Can think about a way to test if this is an undo vs a first time entry, but small potatoes as will only marginally increase speed
@@ -1574,7 +1574,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
             # Test if the flag will be resolved by the edit by re-running calc stats flag and the relevant flag function 
             # Dont run if the col_issue is simply v_flag, which is an indication that there are no flags at the sub even though an edit is being made
             if orig_flag_list[0] != "v_flag":
-                flags_resolved, flags_unresolved, new_flags = test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, v_threshold, r_threshold, flag_cols)                   
+                flags_resolved, flags_unresolved, new_flags = test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols)                   
             else:
                 flags_resolved = []
                 flags_unresolved = []
@@ -1987,6 +1987,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('dropman', 'value'),
                 State('expand_hist', 'value'),
                 State('flag_list', 'data'),
+                State('p_skip_list', 'data'),
                 State('init_trigger', 'data'),
                 State('flag_description_noprev', 'children'),
                 State('flag_description_resolved', 'children'),
@@ -1998,7 +1999,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data')])
 #@Timer("Update Data")
-def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
     
     input_id = get_input_id()
 
@@ -2049,7 +2050,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg)
 
         elif input_id == 'preview-button':
-            data, preview_data, shim_data, message, message_display, flags_resolved, flags_unresolved, flags_new = preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, flag_list, skip_list, v_threshold, r_threshold, flag_cols)
+            data, preview_data, shim_data, message, message_display, flags_resolved, flags_unresolved, flags_new = preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols)
         
         else:
             message = ''
