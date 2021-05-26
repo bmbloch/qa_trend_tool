@@ -312,6 +312,8 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             msq_data_in['currmon'] = np.where((msq_data_in['only_qtr'] == 1) & (msq_data_in['qtr'] == 2), 6, msq_data_in['currmon'])
             msq_data_in['currmon'] = np.where((msq_data_in['only_qtr'] == 1) & (msq_data_in['qtr'] == 3), 9, msq_data_in['currmon'])
             msq_data_in['currmon'] = np.where((msq_data_in['only_qtr'] == 1) & (msq_data_in['qtr'] == 4), 12, msq_data_in['currmon'])
+            msq_data_in['yr'] = msq_data_in['yr'].astype(int)
+            msq_data_in['qtr'] = msq_data_in['qtr'].astype(int)
             msq_data_in['currmon'] = msq_data_in['currmon'].astype(int)
 
             if sector_val == "ind":
@@ -447,7 +449,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             else:
                 drop_list = ['metcode', 'yr', 'qtr', 'currmon']
                 msq_data = msq_data[['join_ident'] + drop_list]
-                
+    
             msq_data = msq_data.join(msq_data1.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
             msq_data = msq_data.join(msq_data2.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
             msq_data = msq_data.join(msq_data3.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
