@@ -1181,7 +1181,6 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
         elif direction == "out":
             dataframe.to_pickle(file_path)
 
-@Timer("Update Decision Log")
 def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, button, flag_name):
     if button == "submit":
         # Identify where the trend series has changed for key variables
@@ -1444,7 +1443,6 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 
     return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, flag_cols
 
-@Timer("Submit Update")
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
 def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg):
 
@@ -1547,7 +1545,6 @@ def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig
     return flags_resolved, flags_unresolved, new_flags
 
 # # This function produces the outputs needed for the update_data callback if the preview button is clicked
-@Timer("Preview Update")
 def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):  
     
 

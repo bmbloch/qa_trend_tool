@@ -121,7 +121,6 @@ def gen_metrics(dataframe_in, identity_val, variable_fix, key_met_cols, curryr, 
     return dataframe_met
 
 # This function creates the rank table for key vars for subs within the met
-#@Timer("Rank it")
 def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
     frames = []
     
@@ -183,7 +182,6 @@ def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
 
     
 # This function will roll up the data on a metro or national level for review based on the selection of metro by the user on the Rollups tab
-#@Timer("Rollup")    
 def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll = dataframe.copy()
     

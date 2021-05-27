@@ -9,7 +9,6 @@ from timer_trend import Timer
 from support_functions_trend import get_issue
 
 
-#@Timer("Calc Flags")
 def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     
     data = data_in.copy()
