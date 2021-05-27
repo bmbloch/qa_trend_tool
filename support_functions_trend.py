@@ -1163,3 +1163,43 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
     met_roll['final_gap'] = round(met_roll['final_gap'], 4)
 
     return us_roll, met_roll
+
+def check_skips(dataframe_in, decision_data, curryr, currmon, sector_val, flag_cols, init_drop_val):
+    dataframe = dataframe_in.copy()
+        
+    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+    test_cols = [x + "_test" for x in rol_flag_cols]
+    dataframe[test_cols] = dataframe.groupby('identity')[rol_flag_cols].transform('sum')
+    for x, y in zip(rol_flag_cols, test_cols):
+        dataframe[x] = np.where((dataframe[y] > 0) & (dataframe[x] == 0) & (dataframe['yr'] == curryr) & (dataframe['currmon'] == currmon), 1, dataframe[x])
+    
+    dataframe[flag_cols]
+    dataframe = dataframe[(dataframe['identity'] == init_drop_val) & (dataframe['curr_tag'] == 1)]
+    skips = list(dataframe['flag_skip'])
+    if len(dataframe) > 0:           
+        flags_only = dataframe.copy()
+        flags_only = flags_only[flag_cols]
+        flags = dataframe.apply(lambda row: row[row != 0].index, axis=1).values[0]
+        flags = [x for x in flags if x in flag_cols]
+        remove_skips = [x for x in skips if x not in flags]
+        if len(remove_skips) > 0:
+            new_skips = [x for x in skips if x in flags]
+            dataframe_in.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] = ''
+            for x in skips:
+                if x not in remove_skips:
+                    if dataframe_in.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] == '':
+                            dataframe_in.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] = x
+                    else:
+                        dataframe_in.loc[init_drop_val + str(curryr) + str(currmon), 'flag_skip'] += ", " + x
+            
+            decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] = ''
+            for x in skips:
+                if x not in remove_skips:
+                    if decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] == '':
+                            decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] = x
+                    else:
+                        decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skipped'] += ", " + x
+            if len(remove_skips) == len(skips):
+                decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skip_user'] = ''
+
+    return dataframe_in, decision_data
