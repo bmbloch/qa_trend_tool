@@ -1339,7 +1339,7 @@ def filter_flags(dataframe_in, drop_flag):
         flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
         flag_filt = flag_filt.drop_duplicates('identity')
         flag_filt = flag_filt[['identity', drop_flag]]
-        flag_filt[drop_flag] = floag_filt[drop_flag].rank(ascending=True, method='first')
+        flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=True, method='first')
         flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
         flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
     elif len(flag_filt) == 0:
@@ -2142,10 +2142,11 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
         data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
         # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
-        if len(skip_list) > 0:
-            decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
-            data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, init_drop_val)
-            use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
+        if input_id == "store_submit_button":
+            if len(skip_list) > 0:
+                decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
+                data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, init_drop_val)
+                use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
         countdown = data.copy()
         countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
