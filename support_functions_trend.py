@@ -1203,3 +1203,24 @@ def check_skips(dataframe_in, decision_data, curryr, currmon, sector_val, flag_c
                 decision_data.loc[init_drop_val + str(curryr) + str(currmon), 'skip_user'] = ''
 
     return dataframe_in, decision_data
+
+def get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped):
+
+    if len(skip_input_noprev) > 0:
+        has_check = list(skip_input_noprev['props']['children'][0]['props']['children'][0]['props']['children'][0]['props'].keys())
+        if 'value' in has_check:
+            skip_list_temp = skip_input_noprev['props']['children'][0]['props']['children'][0]['props']['children'][0]['props']['value']
+            skip_list = [e[5:] for e in skip_list_temp]
+        else:
+            skip_list = []
+    else:
+        skip_list = []
+        for input_list in [skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped]:
+            if len(input_list) > 0:
+                has_check = list(input_list['props']['children'][0]['props']['children'][0]['props']['children'][0]['props'].keys())
+                if 'value' in has_check:
+                    skip_list_temp = input_list['props']['children'][0]['props']['children'][0]['props']['children'][0]['props']['value']
+                    skip_list_temp = [e[5:] for e in skip_list_temp]
+                    skip_list += skip_list_temp
+
+    return skip_list
