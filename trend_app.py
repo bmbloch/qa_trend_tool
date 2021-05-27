@@ -1324,24 +1324,30 @@ def filter_flags(dataframe_in, drop_flag):
 
     if drop_flag == "c_flag_sqdiff":
         flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=False, method='min')
-    
+
     if len(flag_filt) > 0:
         has_skip = flag_filt['flag_skip'].str.contains(drop_flag, regex=False)
         flag_filt['has_skip'] = has_skip
         flag_filt = flag_filt[flag_filt['has_skip'] == False]
-        flag_filt = flag_filt.drop(['flag_skip', 'has_skip'], axis=1)
-        flag_filt['Total Flags'] = flag_filt[drop_flag].count()
-        temp = flag_filt.copy()
-        temp = temp.reset_index()
-        temp = temp.head(1)
-        temp = temp[['Total Flags']]
-        flag_filt_title = "Total Flags: " + str(temp['Total Flags'].loc[0])
-        flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
-        flag_filt = flag_filt.drop_duplicates('identity')
-        flag_filt = flag_filt[['identity', drop_flag]]
-        flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=True, method='first')
-        flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
-        flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
+        if len(flag_filt) > 0:
+            flag_filt = flag_filt.drop(['flag_skip', 'has_skip'], axis=1)
+            flag_filt['Total Flags'] = flag_filt[drop_flag].count()
+            temp = flag_filt.copy()
+            temp = temp.reset_index()
+            temp = temp.head(1)
+            temp = temp[['Total Flags']]
+            flag_filt_title = "Total Flags: " + str(temp['Total Flags'].loc[0])
+            flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
+            flag_filt = flag_filt.drop_duplicates('identity')
+            flag_filt = flag_filt[['identity', drop_flag]]
+            flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=True, method='first')
+            flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
+            flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
+        else:
+            flag_filt_title =  'Total Flags: 0'
+            data_fill = {'Submarkets With Flag': ['No Submarkets Flagged'],
+                    'Flag Ranking': [0]}
+            flag_filt = pd.DataFrame(data_fill, columns=['Submarkets With Flag', 'Flag Ranking'])
     elif len(flag_filt) == 0:
         flag_filt_title =  'Total Flags: 0'
         data_fill = {'Submarkets With Flag': ['No Submarkets Flagged'],
@@ -1968,7 +1974,11 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 Output('flag_filt', 'data'),
                 Output('flag_filt', 'columns'),
                 Output('flag_filt', 'style_table'),
-                Output('flag_filt_container', 'style')],
+                Output('flag_filt_container', 'style'),
+                Output('dropman', 'value'),
+                Output('countdown', 'data'),
+                Output('countdown', 'columns'),
+                Output('countdown_container', 'style')],
                 [Input('submit-button', 'n_clicks'),
                 Input('preview-button', 'n_clicks'),
                 Input('dropflag', 'value'),
@@ -1996,9 +2006,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('subsequent_fix', 'value'),
                 State('v_threshold', 'data'),
                 State('r_threshold', 'data'),
-                State('store_flag_cols', 'data')])
+                State('store_flag_cols', 'data'),
+                State('dropman', 'value')])
 @Timer("Update Data")
-def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, init_drop_val):
     
     input_id = get_input_id()
 
@@ -2060,8 +2071,29 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         if input_id != "preview-button":
             flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag)
 
-        
-        if input_id == 'submit-button':
+        if input_id != "dropflag" and input_id != "preview-button":
+            # Re-calc stats and flags now that the data has been updated, or if this is the initial load
+            data = calc_stats(data, curryr, currmon, False, sector_val)
+            data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
+
+            # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
+            if input_id == "submit-button":
+                if len(skip_list) > 0:
+                    decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
+                    data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, init_drop_val)
+                    use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
+
+            # Update countdown table
+            countdown = data.copy()
+            countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
+            countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
+            countdown = live_flag_count(countdown, sector_val, flag_cols)
+            type_dict_countdown, format_dict_countdown = get_types(sector_val)
+            countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
+            
+            # Get the next sub flagged
+            flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
+            
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
         
         use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
@@ -2105,63 +2137,13 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         
         if input_id == "submit-button" or input_id == "init_trigger":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
-                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
+                    for i in range(0, len(countdown.columns))], countdown_display
         elif input_id == "dropflag":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
-                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update
         else:
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update
-
-
-@trend.callback([Output('dropman', 'value'),
-                Output('countdown', 'data'),
-                Output('countdown', 'columns'),
-                Output('countdown_container', 'style')],
-                [Input('sector', 'data'),
-                Input('init_trigger', 'data'),
-                Input('store_submit_button', 'data')],
-                [State('curryr', 'data'),
-                State('currmon', 'data'),
-                State('init_trigger', 'data'),
-                State('v_threshold', 'data'),
-                State('r_threshold', 'data'),
-                State('store_flag_cols', 'data'),
-                State('dropman', 'value'),
-                State('store_flag_skips', 'data')])
-@Timer("Set Shim Drop")
-def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, init_drop_val, skip_list):
-    
-    if sector_val is None or success_init == False:
-        raise PreventUpdate
-    else:
-        input_id = get_input_id()
-        data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-
-        # In order to get the next sub that is flagged, we need to recalc stats and flags to update the data to see if the old flag is removed.
-        data = calc_stats(data, curryr, currmon, False, sector_val)
-        data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
-
-        # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
-        if input_id == "store_submit_button":
-            if len(skip_list) > 0:
-                decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
-                data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, init_drop_val)
-                use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
-
-        countdown = data.copy()
-        countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
-        countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
-        countdown = live_flag_count(countdown, sector_val, flag_cols)
-        type_dict_countdown, format_dict_countdown = get_types(sector_val)
-        countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
-
-        flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
-    
-        use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
-
-        return drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display
-
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback([Output('has_flag', 'data'),
                 Output('flag_list', 'data'),
@@ -2179,19 +2161,13 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
                 State('store_flag_cols', 'data'),
                 State('store_flag_unresolve', 'data'),
                 State('store_flag_new', 'data')])
-@Timer("Calc Stats and Flags")
-def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new):
+@Timer("Process Man Drop")
+def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-
-        input_id = get_input_id()
-        # Call the recalc stats/flags functions so we can get the first flagged sub if this is the initial load. Otherwise the data was refreshed at the earlier callback
-        if input_id != 'dropman' and input_id != "store_preview_button":
-            data = calc_stats(data, curryr, currmon, False, sector_val)
-            data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
         flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
 
