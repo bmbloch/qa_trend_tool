@@ -30,7 +30,6 @@ def get_app_layout():
             dcc.Store(id='init_trigger', data=False),
             dcc.Store(id='out_flag_trigger'),
             dcc.Store(id='comment_trigger'),
-            dcc.Store(id='roll_trigger'),
             dcc.Store(id='download_trigger'),
             dcc.Store(id='display_trigger'),
             dcc.Store(id='finalize_trigger'),
@@ -42,8 +41,8 @@ def get_app_layout():
             dcc.Store(id='r_threshold'),
             dcc.Store('sector'),
             dcc.ConfirmDialog(id='manual_message'),
-            dcc.Tabs([
-                dcc.Tab(label='Home', children=[
+            dcc.Tabs(id ='tab_clicked', value ='home', children=[
+                dcc.Tab(label='Home', value='home', children=[
                     html.Div([
                         dbc.Alert(
                             "Something is wrong with the input file. Double check and re-start the program",
@@ -228,7 +227,7 @@ def get_app_layout():
                             ], style={'display': 'block'}),
                     ], style={'width': '65%', 'display': 'inline-block', 'vertical-align': 'top', 'padding-right': '30px', 'padding-left': '150px'}),
                     ]),
-                dcc.Tab(label='Data', children=[
+                dcc.Tab(label='Data', value='data', children=[
                     html.Div([
                         html.Div([
                             dcc.Dropdown(
@@ -441,7 +440,7 @@ def get_app_layout():
                                         ], style={'display': 'none'}, id='rent_series_container'),
                                     ], style={'display': 'block'}),
                             ]),
-                dcc.Tab(label='Graphs', children=[
+                dcc.Tab(label='Graphs', value='graphs', children=[
                     html.Div([
                         html.Div([
                             dcc.Dropdown(
@@ -505,7 +504,7 @@ def get_app_layout():
                             ], style={'display': 'none'}, id='y_ts_container'),
                         ], style={'display': 'inline-block', 'width': '49%', 'padding-left': '150px', 'vertical-align': 'top'}),   
                     ]),
-                dcc.Tab(label='Rollups', children=[
+                dcc.Tab(label='Rollups', value='rollups', children=[
                     html.Div([
                         html.Div([
                             dcc.Dropdown(

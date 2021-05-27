@@ -1697,7 +1697,8 @@ def store_input_vals(url_input):
                  Output('v_threshold', 'data'),
                  Output('r_threshold', 'data'),
                  Output('store_flag_cols', 'data'),
-                 Output('show_cd_container', 'style')],
+                 Output('show_cd_container', 'style'),
+                 Output('droproll', 'value')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
@@ -1774,12 +1775,12 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             else:
                  show_cd_display = {'display': 'none'}
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols, show_cd_display
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols, show_cd_display, default_drop
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),
@@ -2639,8 +2640,7 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 Output('key_met_radios_container', 'style'),
                 Output('submit_button_container', 'style'),
                 Output('preview_button_container', 'style'),
-                Output('subsequent_change_container', 'style'),
-                Output('display_trigger', 'data')],
+                Output('subsequent_change_container', 'style')],
                 [Input('sector', 'data'),
                 Input('dropman', 'value'),
                 Input('store_all_buttons', 'data'),
@@ -2971,34 +2971,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
                             for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
                             for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
-                            for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display, True
-        
-@trend.callback([Output('droproll', 'value'),
-                Output('roll_trigger', 'data')],
-                [Input('store_submit_button', 'data'),
-                Input('sector', 'data'),
-                Input('dropman', 'value')],
-                [State('curryr', 'data'),
-                State('currmon', 'data'),
-                State('init_trigger', 'data')])
-@Timer("Set Rolldrop")
-def set_rolldrop(submit_button, sector_val, drop_val, curryr, currmon, success_init):
-    
-    if sector_val is None or success_init == False:
-        raise PreventUpdate
-    else:
-
-        if sector_val == "ind":
-            if drop_val[-1:] == "F":
-                roll_val= drop_val[:2] + drop_val[-1:]
-            else:
-                roll_val= drop_val[:2] + drop_val[-2:]
-        elif sector_val == "ret":
-            roll_val = drop_val[:2] + "Ret"
-        else:
-            roll_val = drop_val[:2] + drop_val[-3:]
-
-        return roll_val, True
+                            for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
 
 @trend.callback([Output('vac_series_met', 'figure'),
                 Output('rent_series_met', 'figure'),
@@ -3020,23 +2993,22 @@ def set_rolldrop(submit_button, sector_val, drop_val, curryr, currmon, success_i
                 Output('rank_toggle_container', 'style'),
                 Output('roll_view', 'disabled')],
                 [Input('droproll', 'value'),
-                Input('dropman', 'value'),
-                Input('roll_trigger', 'data'),
-                Input('store_submit_button', 'data'),
-                Input('store_preview_button', 'data'),
                 Input('roll_view', 'value'),
                 Input('currmon_filt', 'value'),
                 Input('rank_toggle', 'value'),
-                Input('display_trigger', 'data')],
+                Input('display_trigger', 'data'),
+                Input('tab_clicked', 'value')],
                 [State('store_orig_cols', 'data'),
                 State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('sector', 'data'),
-                State('init_trigger', 'data')])
+                State('init_trigger', 'data'),
+                State('dropman', 'value')])
 @Timer("Output Rollup")
-def output_rollup(roll_val, drop_val, roll_trigger, submit_button, preview_button, multi_view, currmon_view, rank_only, display_trigger, orig_cols, curryr, currmon, sector_val, success_init):
+def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger, tab_val, orig_cols, curryr, currmon, sector_val, success_init, drop_val):
+    input_id = get_input_id()
 
-    if sector_val is None or success_init == False:
+    if sector_val is None or success_init == False or tab_val != "rollups":
         raise PreventUpdate
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -3312,15 +3284,16 @@ def get_scatter_drops(type_value, aggreg_met, sector_val, curryr, currmon, x_var
                 Input('flags_only', 'value'),
                 Input('aggreg_level', 'value'),
                 Input('sector', 'data'),
-                Input('store_submit_button', 'data')],
+                Input('store_submit_button', 'data'),
+                Input('tab_clicked', 'value')],
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data')])
 @Timer("Produce Scatter")
-def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_met, sector_val, submit_button, curryr, currmon, success_init, flag_cols):
+def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_met, sector_val, submit_button, tab_val, curryr, currmon, success_init, flag_cols):
 
-    if sector_val is None or success_init == False:
+    if sector_val is None or success_init == False or tab_val != "graphs":
         raise PreventUpdate
     else:
         graph_data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -3463,16 +3436,17 @@ def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_m
                 Input('scatter-yaxis-var', 'value'),
                 Input('sector', 'data'),
                 Input('store_scatter_check', 'data'),
-                Input('init_trigger', 'data')],
+                Input('init_trigger', 'data'),
+                Input('tab_clicked', 'value')],
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('scatter-type-radios', 'value'),
                 State('aggreg_level', 'value'),
                 State('init_trigger', 'data')])
 @Timer("Produce Timeseries")
-def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_check, init_trigger, curryr, currmon, type_value, aggreg_met, success_init):
+def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_check, init_trigger, tab_val, curryr, currmon, type_value, aggreg_met, success_init):
     
-    if sector_val is None or success_init == False:
+    if sector_val is None or success_init == False or tab_val != "graphs":
         raise PreventUpdate
     else:
         graph = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
