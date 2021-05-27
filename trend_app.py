@@ -2027,7 +2027,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         else:
             skip_list = []
 
-        # Add comments if applicable
+        # Save comments if applicable
         if input_id == 'submit-button':
             if cons_c[-9:] != "Note Here":
                 data.loc[drop_val + str(curryr) + str(currmon), 'inv_cons_comment'] = cons_c
@@ -2038,9 +2038,16 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             if erent_c[-9:] != "Note Here":
                 data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'erent_comment'] = erent_c
         
-        if input_id == 'submit-button' or input_id == 'preview-button':
+        # Load preview data if previewing
+        if input_id == 'preview-button':
             preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
+        else:
+            preview_data = pd.DataFrame()
+        
+        # Load shim data if previewing or submitting
+        if input_id == 'submit-button' or input_id == 'preview-button':
             shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
+   
 
         if input_id == 'submit-button':
             data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg)
