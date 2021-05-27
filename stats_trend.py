@@ -10,12 +10,23 @@ import math
 
 #from timer_trend import Timer
 
+# Function that drops columns of the dataframe that will be recalculated each time a sub is examined for flags
+def drop_cols(dataframe):
+    cols = list(dataframe.columns)
+    index = dataframe.columns.get_loc("Recalc Insert")
+    drop_list = cols[index :]
+    dataframe = dataframe.drop(columns = drop_list, axis = 1)
+        
+    return dataframe
 
 # This function will calculate the key metrics needed to assess viability of oob forecast
 def calc_stats(data, curryr, currmon, first, sector_val):
 
+    if first == False:    
+        data = drop_cols(data)
+
     # Calculate the 5 and 95 gap percentiles based on the initial levels prior to shims for use in flags (remember that a large gap is bad, so label bottom 5 with the 95 percentile value, and top 5 with the 5 percentile value)
-    if first == 0:
+    if first == True:
         data_filt = data.copy()
         if currmon == 1:
             data_filt = data_filt[(data_filt['yr'] == curryr - 1) & (data_filt['currmon'] == 12)]

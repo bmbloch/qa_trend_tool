@@ -10,7 +10,7 @@ import dash_core_components as dcc
 import itertools
 
 from init_load_trend import get_home
-#from timer_trend import Timer
+from timer_trend import Timer
 
 # Function that filters the dataframe for the columns to display on the data tab to the user, based on what type of flag is currently being analyzed
 def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon):
@@ -119,17 +119,6 @@ def gen_metrics(dataframe_in, identity_val, variable_fix, key_met_cols, curryr, 
         dataframe_met[z] = dataframe_met[z].apply(lambda x: '' if pd.isnull(x) else x)
     
     return dataframe_met
-
-# Function that drops columns of the dataframe that will be recalculated each time a sub is examined for flags
-def drop_cols(dataframe):
-        cols = dataframe.columns
-        for x in range(0, len(cols)):
-            if cols[x] == "Recalc Insert":
-                index = x
-        drop_list = cols[index :]
-        dataframe = dataframe.drop(columns = drop_list, axis = 1)
-        
-        return dataframe
 
 # This function creates the rank table for key vars for subs within the met
 #@Timer("Rank it")

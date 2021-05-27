@@ -31,7 +31,7 @@ from authenticate_trend import authenticate_user, validate_login_session
 from server_trend import trend, server
 from stats_trend import calc_stats
 from flags_trend import calc_flags
-from support_functions_trend import set_display_cols, display_frame, gen_metrics, drop_cols, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue, get_diffs, rank_it, flag_examine, create_review_packet
+from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue, get_diffs, rank_it, flag_examine, create_review_packet
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
 from timer_trend import Timer
@@ -1360,7 +1360,7 @@ def filter_flags(dataframe_in, drop_flag):
 #This function produces the items that need to be returned by the update_data callback if the user has just loaded the program
 def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 
-    data_init = calc_stats(data_init, curryr, currmon, 0, sector_val)
+    data_init = calc_stats(data_init, curryr, currmon, True, sector_val)
     
     threshs = data_init.copy()
     threshs['v_diff'] = abs(threshs['met_v_scov_percentile'] - 0.30)
@@ -1513,8 +1513,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):
         
     resolve_test = preview_data.copy()
-    resolve_test = drop_cols(resolve_test)
-    resolve_test = calc_stats(resolve_test, curryr, currmon, 1, sector_val)
+    resolve_test = calc_stats(resolve_test, curryr, currmon, False, sector_val)
     resolve_test = resolve_test[resolve_test['identity'] == drop_val]
     
     test_flag_list = [x for x in orig_flag_list if x not in skip_list]
@@ -2137,8 +2136,7 @@ def set_shim_drop(sector_val, init_fired, submit_button, curryr, currmon, succes
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
 
         # In order to get the next sub that is flagged, we need to recalc stats and flags to update the data to see if the old flag is removed.
-        data = drop_cols(data)
-        data = calc_stats(data, curryr, currmon, 1, sector_val)
+        data = calc_stats(data, curryr, currmon, False, sector_val)
         data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
         # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
@@ -2223,8 +2221,7 @@ def calc_stats_flags(drop_val, sector_val, init_fired, preview_status, curryr, c
         input_id = get_input_id()
         # Call the recalc stats/flags functions so we can get the first flagged sub if this is the initial load. Otherwise the data was refreshed at the earlier callback
         if input_id != 'dropman' and input_id != "store_preview_button":
-            data = drop_cols(data)
-            data = calc_stats(data, curryr, currmon, 1, sector_val)
+            data = calc_stats(data, curryr, currmon, False, sector_val)
             data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
         flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
