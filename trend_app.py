@@ -31,7 +31,7 @@ from authenticate_trend import authenticate_user, validate_login_session
 from server_trend import trend, server
 from stats_trend import calc_stats
 from flags_trend import calc_flags
-from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue, get_diffs, rank_it, flag_examine, create_review_packet, check_skips
+from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue, get_diffs, rank_it, flag_examine, create_review_packet, check_skips, get_user_skips
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
 from timer_trend import Timer
@@ -2023,34 +2023,20 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         if skip_input_noprev == "No flags for this submarket" or skip_input_noprev == "You have cleared all the flags":
             skip_list = []
         elif skip_input_noprev != None or skip_input_resolved != None or skip_input_unresolved != None or skip_input_new != None or skip_input_skipped != None:
-            if len(skip_input_noprev) > 0:
-                has_check = list(skip_input_noprev['props']['children'][0]['props']['children'][0]['props']['children'][0]['props'].keys())
-                if 'value' in has_check:
-                    skip_list_temp = skip_input_noprev['props']['children'][0]['props']['children'][0]['props']['children'][0]['props']['value']
-                    skip_list = [e[5:] for e in skip_list_temp]
-                else:
-                    skip_list = []
-            else:
-                skip_list = []
-                for input_list in [skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped]:
-                    if len(input_list) > 0:
-                        has_check = list(input_list['props']['children'][0]['props']['children'][0]['props']['children'][0]['props'].keys())
-                        if 'value' in has_check:
-                            skip_list_temp = input_list['props']['children'][0]['props']['children'][0]['props']['children'][0]['props']['value']
-                            skip_list_temp = [e[5:] for e in skip_list_temp]
-                            skip_list += skip_list_temp
+            skip_list = get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped)
         else:
             skip_list = []
 
+        # Add comments if applicable
         if input_id == 'submit-button':
-            data = data.reset_index()
-            data = data.set_index('identity')
-            data.loc[drop_val, 'inv_cons_comment'] = cons_c
-            data.loc[drop_val, 'avail_comment'] = avail_c
-            data.loc[drop_val, 'mrent_comment'] = mrent_c
-            data.loc[drop_val, 'erent_comment'] = erent_c
-            data = data.reset_index()
-            data = data.set_index('identity_row')
+            if cons_c[-9:] != "Note Here":
+                data.loc[drop_val + str(curryr) + str(currmon), 'inv_cons_comment'] = cons_c
+            if avail_c[-9:] != "Note Here":
+                data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'avail_comment'] = avail_c
+            if mrent_c[-9:] != "Note Here":
+                data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'mrent_comment'] = mrent_c
+            if erent_c[-9:] != "Note Here":
+                data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'erent_comment'] = erent_c
         
         if input_id == 'submit-button' or input_id == 'preview-button':
             preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -2866,11 +2852,10 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         # Retrieve the 4 shim comments from the dataframe and display them to the user
         comment = data.copy()
         comment = comment[(comment['identity'] == drop_val) & (comment['yr'] == curryr) & (comment['currmon'] == currmon)]
-        comment = comment.set_index('identity')
-        cons_comment = comment['inv_cons_comment'].loc[drop_val]
-        avail_comment = comment['avail_comment'].loc[drop_val]
-        mrent_comment = comment['mrent_comment'].loc[drop_val]
-        erent_comment = comment['erent_comment'].loc[drop_val]
+        cons_comment = comment['inv_cons_comment'].loc[drop_val + str(curryr) + str(currmon)]
+        avail_comment = comment['avail_comment'].loc[drop_val + str(curryr) + str(currmon)]
+        mrent_comment = comment['mrent_comment'].loc[drop_val + str(curryr) + str(currmon)]
+        erent_comment = comment['erent_comment'].loc[drop_val + str(curryr) + str(currmon)]
 
         if cons_comment == "":
             cons_comment = 'Enter Inv or Cons Shim Note Here'
