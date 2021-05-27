@@ -4,11 +4,11 @@ import re
 from IPython.core.display import display, HTML
 from pathlib import Path
 
-#from timer_trend import Timer
+from timer_trend import Timer
 from support_functions_trend import get_issue
 
 # This function sorts by the applicable flag and assigns an ascending ranking based on how far from the benchmark the sub is.
-#@Timer("Calc Flag Ranking")
+@Timer("Calc Flag Ranking")
 def calc_flag_ranking(dataframe_in, flag_names, calc_names):
     dataframe = dataframe_in.copy()
 
@@ -21,7 +21,7 @@ def calc_flag_ranking(dataframe_in, flag_names, calc_names):
     
     return dataframe
 
-#@Timer("Calc Flags")
+@Timer("Calc Flags")
 def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     
     data = data_in.copy()
