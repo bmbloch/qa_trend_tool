@@ -1339,6 +1339,7 @@ def filter_flags(dataframe_in, drop_flag):
         flag_filt.sort_values(by=['identity', drop_flag], ascending=[True, True], inplace=True)
         flag_filt = flag_filt.drop_duplicates('identity')
         flag_filt = flag_filt[['identity', drop_flag]]
+        flag_filt[drop_flag] = floag_filt[drop_flag].rank(ascending=True, method='first')
         flag_filt = flag_filt.rename(columns={'identity': 'Submarkets With Flag', drop_flag: 'Flag Ranking'})
         flag_filt.sort_values(by=['Flag Ranking'], inplace=True)
     elif len(flag_filt) == 0:
