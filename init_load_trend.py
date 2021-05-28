@@ -212,6 +212,8 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data['rol_gap_chg'] = np.where((data['identity'] == data['identity'].shift(1)), data['rol_gap'] - data['rol_gap'].shift(1), np.nan)
         data['rol_gap_chg'] = round(data['rol_gap_chg'], 4)
 
+        data['sq_Gmrent'] = round(data['sq_Gmrent'], 3)
+
         # Join the past sq_cons data in if this is run for apt
         if sector_val == "apt" and file_used == "oob":
             data = data.join(past_data)
