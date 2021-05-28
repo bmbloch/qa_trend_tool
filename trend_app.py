@@ -2509,14 +2509,14 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             key_met_2_display = {'display': 'none'}
 
         # Retrieve the 4 shim comments from the dataframe and display them to the user
-        comment = data.copy()
-        comment = comment[(comment['identity'] == drop_val) & (comment['yr'] == curryr) & (comment['currmon'] == currmon)]
-        cons_comment = comment['inv_cons_comment'].loc[drop_val + str(curryr) + str(currmon)]
-        avail_comment = comment['avail_comment'].loc[drop_val + str(curryr) + str(currmon)]
-        mrent_comment = comment['mrent_comment'].loc[drop_val + str(curryr) + str(currmon)]
-        erent_comment = comment['erent_comment'].loc[drop_val + str(curryr) + str(currmon)]
-
-        if sub_change == False:
+        if sub_change == True or init_comment_cons is None:
+            comment = data.copy()
+            comment = comment[(comment['identity'] == drop_val) & (comment['yr'] == curryr) & (comment['currmon'] == currmon)]
+            cons_comment = comment['inv_cons_comment'].loc[drop_val + str(curryr) + str(currmon)]
+            avail_comment = comment['avail_comment'].loc[drop_val + str(curryr) + str(currmon)]
+            mrent_comment = comment['mrent_comment'].loc[drop_val + str(curryr) + str(currmon)]
+            erent_comment = comment['erent_comment'].loc[drop_val + str(curryr) + str(currmon)]
+        elif sub_change == False:
             if init_comment_cons is not None:
                 cons_comment = init_comment_cons
             if init_comment_avail is not None:
