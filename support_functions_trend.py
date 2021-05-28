@@ -1224,7 +1224,6 @@ def get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved
 
     return skip_list
 
-@Timer("Sub Met Graphs")
 def sub_met_graphs(data, type_filt, curryr, currmon, sector_val):
     
     graph = data.copy()
@@ -1298,7 +1297,6 @@ def sub_met_graphs(data, type_filt, curryr, currmon, sector_val):
 
     return fig_vac, fig_rent
 
-@Timer("Sub Met Graphs")
 def set_y2_scale(data_in, type_filt, input_var, sector_val):
     data = data_in.copy()
     if type_filt == "sub":
