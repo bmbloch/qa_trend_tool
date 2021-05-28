@@ -346,21 +346,17 @@ def get_style(type_filt, dataframe_in, curryr, currmon, highlight_cols, highligh
     elif type_filt == "partial":
         style = [ 
                     {
-                        'if': {'column_id': list(dataframe.columns), 
-                        'filter_query': '{{{0}}} < 0'.format(x)
-                              },
-                        'color': 'red',
-                    }
+                        'if': {'column_id': str(x), 'filter_query': '{{{0}}} < 0'.format(x)},
+                            'color': 'red',
+                        } for x in dataframe.columns
                 ]
 
     elif type_filt == "metrics":
         style = [ 
                     {
-                        'if': {'column_id': list(dataframe.columns),
-                        'filter_query': '{{{0}}} < 0'.format(x)
-                              },
-                        'color': 'red',
-                    }
+                        'if': {'column_id': str(x), 'filter_query': '{{{0}}} < 0'.format(x)},
+                            'color': 'red',
+                        } for x in dataframe.columns
                 ] + [
                    {
                         'if': {'column_id': highlight_cols
