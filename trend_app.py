@@ -1003,12 +1003,11 @@ def filter_flags(dataframe_in, drop_flag):
 def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 
     data_init = calc_stats(data_init, curryr, currmon, True, sector_val)
-    
-    threshs = data_init.copy()
-    threshs['v_diff'] = abs(threshs['met_v_scov_percentile'] - 0.30)
-    threshs['r_diff'] = abs(threshs['met_r_scov_percentile'] - 0.30)
-    v_threshold = min(max(threshs.sort_values(by=['v_diff'], ascending=[True]).reset_index().loc[0]['met_sur_v_cov_perc'], 0.04), 0.1)
-    r_threshold = min(max(threshs.sort_values(by=['r_diff'], ascending=[True]).reset_index().loc[0]['met_sur_r_cov_perc'], 0.04), 0.1)
+
+    file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_surv_coverage.pickle".format(get_home(), sector_val))
+    cov_thresh = pd.read_pickle(file_path)
+    v_threshold = cov_thresh['v_cov'].loc[0]
+    r_threshold = cov_thresh['r_cov'].loc[0]
     
     data = data_init.copy()
     if file_used == "oob":
