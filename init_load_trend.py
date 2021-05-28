@@ -689,7 +689,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         nc_sur_props = nc_sur_props[['id', 'identity', 'nc_surabs', 'yearx', 'month']]
         ncsur_prop_dict = {}
         for index, row in nc_sur_props.iterrows():
-            ncsur_prop_dict[row['id']] = {'identity': row['identity'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
+            ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
 
     # If the input file did not load successfully, alert the user
     elif file_load_error == True:
