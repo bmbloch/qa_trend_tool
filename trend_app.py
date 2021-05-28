@@ -2306,9 +2306,10 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('comment_cons', 'value'),
                 State('comment_avail', 'value'),
                 State('comment_mrent', 'value'),
-                State('comment_erent', 'value'),])
+                State('comment_erent', 'value'),
+                State('ncsur_props', 'data')])
 @Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2492,6 +2493,15 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [])
         type_dict_metrics, format_dict_metrics = get_types(sector_val)
 
+        sub_ncprops_keys = [x for x in ncsur_props.keys() if x.split(",")[0] == drop_val]
+        if len(sub_ncprops_keys) > 0:
+            for key in sub_ncprops_keys:
+                if key == sub_ncprops_keys[0]:
+                    text = str(ncsur_props[key]['id']) + ", " + str(ncsur_props[key]['yearx']) + "m" + str(ncsur_props[key]['month']) + ", " + str(ncsur_props[key]['nc_surabs'])
+                else:
+                    text = text + "\n" + "\n" + str(ncsur_props[key]['id']) + ", " + str(ncsur_props[key]['yearx']) + "m" + str(ncsur_props[key]['month']) + ", " + str(ncsur_props[key]['nc_surabs'])
+            print(text)
+        
         if sector_val == "ret" and len(key_met_2) > 0:
             key_met_2 = key_met_2.rename(columns={'c_met_sur_r_cov_perc': 'c_met_sur_r_cov', 'c_sub_sur_r_cov_perc': 'c_sub_sur_r_cov', 'n_met_sur_r_cov_perc': 'n_met_sur_r_cov', 'n_sub_sur_r_cov_perc': 'n_sub_sur_r_cov', 'nc_met_sur_r_cov_perc': 'nc_met_sur_r_cov', 'nc_sub_sur_r_cov_perc': 'nc_sub_sur_r_cov',
                                                   'c_met_sur_v_cov_perc': 'c_met_sur_v_cov', 'c_sub_sur_v_cov_perc': 'c_sub_sur_v_cov', 'n_met_sur_v_cov_perc': 'n_met_sur_v_cov', 'n_sub_sur_v_cov_perc': 'n_sub_sur_v_cov', 'nc_met_sur_v_cov_perc': 'nc_met_sur_v_cov', 'nc_sub_sur_v_cov_perc': 'nc_sub_sur_v_cov'})
