@@ -41,12 +41,6 @@ def calc_stats(data, curryr, currmon, first, sector_val):
         data_95.columns = ['gap_perc_95']
         data = data.join(data_95, on='subsector')
 
-        # Get percentile of survey coverage for vac and rent on met level, to determine what an accepable coverage threshold is
-        data['met_v_scov_percentile'] = data[data['curr_tag'] == 1].drop_duplicates('identity_met').groupby('subsector')['met_sur_v_cov_perc'].rank(pct=True)
-        data['met_v_scov_percentile'] = round(data['met_v_scov_percentile'], 1)
-        data['met_r_scov_percentile'] = data[data['curr_tag'] == 1].drop_duplicates('identity_met').groupby('subsector')['met_sur_r_cov_perc'].rank(pct=True)
-        data['met_r_scov_percentile'] = round(data['met_r_scov_percentile'], 1)
-
     # Create a column called Recalc Insert, so that we can drop everything created after it from the dataframe and the stats can be recalculated after a fix is entered
     data['Recalc Insert'] = 0
     
