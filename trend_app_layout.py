@@ -41,6 +41,7 @@ def get_app_layout():
             dcc.Store(id='r_threshold'),
             dcc.Store(id='v_threshold_true'),
             dcc.Store(id='r_threshold_true'),
+            dcc.Store(id='ncsur_props'),
             dcc.Store('sector'),
             dcc.ConfirmDialog(id='manual_message'),
             dcc.Tabs(id ='tab_clicked', value ='home', children=[

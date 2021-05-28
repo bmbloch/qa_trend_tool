@@ -1332,7 +1332,8 @@ def store_input_vals(url_input):
                  Output('r_threshold_true', 'data'),
                  Output('store_flag_cols', 'data'),
                  Output('show_cd_container', 'style'),
-                 Output('droproll', 'value')],
+                 Output('droproll', 'value'),
+                 Output('ncsur_props', 'data')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
@@ -1344,7 +1345,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
     if sector_val is None:
         raise PreventUpdate
     else:
-        oob_data, orig_cols, file_used = initial_load(sector_val, curryr, currmon, msq_load)
+        oob_data, orig_cols, file_used, ncsur_prop_dict = initial_load(sector_val, curryr, currmon, msq_load)
         
         # Contniue with the callback if the input file loaded successfully
         if file_used != "error":
@@ -1409,12 +1410,12 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             else:
                  show_cd_display = {'display': 'none'}
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),

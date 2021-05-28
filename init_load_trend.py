@@ -671,6 +671,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             data_surabs['identity'] = data_surabs['metcode'] + data_surabs['subid'].astype(str) + data_surabs['type2']
 
         data_surabs['sum_nc_surabs'] = data_surabs.groupby('identity')['nc_surabs'].transform('sum')
+        data_surabs_all = data_surabs.copy()
         data_surabs = data_surabs[['identity', 'sum_nc_surabs']]
         data_surabs = data_surabs.rename(columns={'sum_nc_surabs': 'nc_surabs'})
         data_surabs = data_surabs.drop_duplicates('identity')
@@ -682,11 +683,18 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data_surabs = data_surabs.set_index('identity')
         data = data.join(data_surabs, on='identity')
         data['nc_surabs'] = data['nc_surabs'].fillna(0)
-        
+
+        nc_sur_props = data_surabs_all.copy()
+        nc_sur_props = nc_sur_props[nc_sur_props['nc_surabs'] > 0]
+        nc_sur_props = nc_sur_props[['id', 'identity', 'nc_surabs', 'yearx', 'month']]
+        ncsur_prop_dict = {}
+        for index, row in nc_sur_props.iterrows():
+            ncsur_prop_dict[row['id']] = {'identity': row['identity'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
+
     # If the input file did not load successfully, alert the user
     elif file_load_error == True:
         data = pd.DataFrame()
         orig_cols = []
         file_used = "error"
     
-    return data, orig_cols, file_used
+    return data, orig_cols, file_used, ncsur_prop_dict
