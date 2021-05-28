@@ -1661,17 +1661,6 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             skip_list = get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped)
         else:
             skip_list = []
-
-        # Save comments if applicable
-        if input_id == 'submit-button':
-            if cons_c[-9:] != "Note Here":
-                data.loc[drop_val + str(curryr) + str(currmon), 'inv_cons_comment'] = cons_c
-            if avail_c[-9:] != "Note Here":
-                data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'avail_comment'] = avail_c
-            if mrent_c[-9:] != "Note Here":
-                data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'mrent_comment'] = mrent_c
-            if erent_c[-9:] != "Note Here":
-                data.set_index('identity').loc[drop_val + str(curryr) + str(currmon), 'erent_comment'] = erent_c
         
         # Load preview data if previewing
         if input_id == 'preview-button':
@@ -1695,11 +1684,22 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             message_display = False
             preview_data = pd.DataFrame()
             shim_data = pd.DataFrame()
+        
+        # Save comments if this is a submit click
+        if message_display == False and input_id == 'submit-button':
+            if cons_c[-9:] != "Note Here":
+                data.loc[drop_val + str(curryr) + str(currmon), 'inv_cons_comment'] = cons_c
+            if avail_c[-9:] != "Note Here":
+                data.loc[drop_val + str(curryr) + str(currmon), 'avail_comment'] = avail_c
+            if mrent_c[-9:] != "Note Here":
+                data.loc[drop_val + str(curryr) + str(currmon), 'mrent_comment'] = mrent_c
+            if erent_c[-9:] != "Note Here":
+                data.loc[drop_val + str(curryr) + str(currmon), 'erent_comment'] = erent_c
 
         if input_id != "preview-button":
             flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag)
 
-        if input_id != "dropflag" and input_id != "preview-button":
+        if input_id != "dropflag" and input_id != "preview-button" and message_display == False:
             # Re-calc stats and flags now that the data has been updated, or if this is the initial load
             data = calc_stats(data, curryr, currmon, False, sector_val)
             data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
