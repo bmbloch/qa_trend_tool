@@ -822,20 +822,19 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
         elif direction == "out":
             dataframe.to_pickle(file_path)
 
-def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, button, flag_name):
-    if button == "submit":
-        # Identify where the trend series has changed for key variables
+# Identify where the trend series has changed for key variables
+def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, action, flag_name):
+    if action == "submit":
+
         decision_data_test = decision_data.copy()
         decision_data_test = decision_data_test[decision_data_test['identity'] == drop_val]
         
-        drop_list = []
-        for x in list(decision_data_test.columns):
-            if "new" in x:
-                drop_list.append(x)
+        drop_list = [x for x in list(decision_data_test.columns) if "new" in x]
         decision_data_test = decision_data_test.drop(drop_list, axis=1)
-        for x in list(decision_data_test.columns):
-            if "oob" in x:
-                decision_data_test = decision_data_test.rename(columns={x: x[:-4]})
+        
+        rename_dict = {x : x[:-4] for x in list(decision_data_test.columns) if "oob" in x}
+        decision_data_test = decision_data_test.rename(columns=rename_dict)
+        
         update_data = data.copy()
         update_data = update_data[update_data['identity'] == drop_val]
         if sector_val != "ind":
@@ -843,6 +842,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         else:
             update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], axis=1)
+        
         update_data['vac'] = round(update_data['vac'], 3)
         update_data['vac_chg'] = round(update_data['vac_chg'], 3)
         update_data['G_mrent'] = round(update_data['G_mrent'], 3)
@@ -887,25 +887,20 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         decision_data_fill = decision_data.copy()
         decision_data_fill = decision_data_fill[decision_data_fill['identity'] == drop_val]
         no_change_list = ['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'i_user', 'c_user', 'v_user', 'g_user', 'e_user']
-        for x in list(decision_data_fill.columns):
-            if "new" not in x:
-                if x not in no_change_list:
-                    decision_data_fill = decision_data_fill.drop([x], axis=1)
-            elif "new" in x:
-                decision_data_fill = decision_data_fill.rename(columns={x: x[:-4]})
+        drop_list_1 = [x for x in list(decision_data_fill.columns) if "new" not in x and x not in no_change_list]
+        decision_data_fill = decision_data_fill.drop(drop_list_1, axis=1)
+        rename_dict = {x : x[:-4] for x in list(decision_data_fill.columns) if "new" in x}
+        decision_data_fill = decision_data_fill.rename(columns=rename_dict)
+    
         # Since nan values wont replace non nan values when using combine first, replace them all with a crazy number that wont match a real value, and then replace back to nan after combined
-        all_cols = list(update_data.columns)
-        fill_list = [x for x in all_cols if x not in no_change_list]
+        fill_list = [x for x in list(update_data.columns) if x not in no_change_list]
         update_data[fill_list] = update_data[fill_list].fillna(9999999999999999)
         update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] = update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']].fillna("temp")
         update_data = update_data.combine_first(decision_data_fill)
-        for x in fill_list:
-            update_data[x] = np.where(update_data[x] == 9999999999999999, np.nan, update_data[x])
-        for x in ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
-            update_data[x] = np.where(update_data[x] == "temp", np.nan, update_data[x])
-        for x in list(update_data.columns):
-            if x not in no_change_list and "oob" not in x:
-                update_data = update_data.rename(columns={x: x + "_new"})
+        update_data[fill_list] = np.where(update_data[fill_list] == 9999999999999999, np.nan, update_data[fill_list])
+        update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] = np.where(update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] == "temp", np.nan, update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']])
+        rename_dict = {x : x + "_new" for x in list(update_data.columns) if "oob" not in x and x not in no_change_list}
+        update_data = update_data.rename(columns=rename_dict)
 
         # Because there are slight rounding differences, check if there is an actual change to the level var, and null out diff if no change
         for index, row in update_data.iterrows():
@@ -921,7 +916,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                 update_data.loc[index, 'G_merent_new'] = np.nan 
                 update_data.loc[index, 'gap_new'] = np.nan 
                 update_data.loc[index, 'e_user'] = np.nan 
-        
+
         # Replace the new values in the "new" columns in a trunc dataframe that also has the oob values
         decision_data_replace = decision_data.copy()
         decision_data_replace = decision_data_replace[decision_data_replace['identity'] == drop_val]
@@ -935,9 +930,9 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         decision_data_update = decision_data.copy()
         decision_data_update = decision_data_update[decision_data_update['identity'] != drop_val]
         decision_data_update = decision_data_update.append(decision_data_replace)
-        decision_data_update.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], inplace = True)
-    
-    elif button == "skip":
+        decision_data_update.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], inplace=True)
+
+    elif action == "skip":
         decision_data_update = decision_data.copy()
         if decision_data_update['skipped'].loc[drop_val + str(curryr) + str(currmon)] == '':
             decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skipped'] = flag_name
@@ -3431,7 +3426,7 @@ if __name__ == '__main__':
         for x in test_ports:
             try:
                 print("Trying port %d" % (x))
-                trend.run_server(port=x, host='0.0.0.0', debug=True)
+                trend.run_server(port=x, host='0.0.0.0')
                 break
             except:
                 print("Port being used, trying another")
