@@ -2382,13 +2382,14 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
 
         # Get the Divs that will display the current flags at the sub, as well as the metrics to highlight based on the flags
         if init_skips is not None and init_skips != "No flags for this submarket" and init_skips != "You have cleared all the flags" and sub_change == False:
-            init_skips = get_user_skips(init_skips, False, False, False, False)
+            init_skips = get_user_skips(init_skips, [], [], [], [])
         else:
             init_skips = []
         if "Y" in show_skips:
             show_skips = True
         else:
             show_skips = False
+            p_skip_list = []
         issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), init_skips)
         if len(issue_description_noprev) == 0:
             style_noprev = {'display': 'none'}

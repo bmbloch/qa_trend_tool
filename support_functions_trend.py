@@ -525,10 +525,6 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                     ])
         elif has_flag == 1:
             if preview_status == 0:
-                if show_skips == True:
-                    flag_list_use = flag_list + p_skip_list
-                else:
-                    flag_list_use = flag_list
                 issue_description_resolved = []
                 issue_description_unresolved = []
                 issue_description_new = []
@@ -540,8 +536,8 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                                 dbc.Checklist(
                                                     id="flag_descriptions_noprev",
                                                     options=[
-                                                            {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
-                                                            for i in flag_list_use
+                                                            {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}", "disabled": j}
+                                                            for i, j in zip(flag_list + p_skip_list, [False] * len(flag_list) + [True] * len(p_skip_list))
                                                             ],
                                                     inline=True,
                                                     value = ["skip-" + x for x in init_skips]
@@ -550,7 +546,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                             ]
                                             + [
                                                 dbc.Tooltip(issue_descriptions[i], target=f"label-{i}")
-                                                for i in flag_list_use
+                                                for i in flag_list + p_skip_list
                                             ],
                                             fluid=True),
                                                 
@@ -639,11 +635,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                 else:
                     issue_description_new = []
 
-                if len(flags_skipped) > 0:
-                    if show_skips == True:
-                        flags_skipped_use = flags_skipped + p_skip_list
-                    else:
-                        flags_skipped_use = flags_skipped
+                if len(flags_skipped) > 0 or len(p_skip_list) > 0:
                     issue_description_skipped = html.Div([
                                             html.Div([
                                                 dbc.Container(
@@ -651,10 +643,10 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                                     dbc.Checklist(
                                                         id="flag_descriptions_skipped",
                                                         options=[
-                                                                {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
-                                                                for i in flags_skipped
+                                                                {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}", "disabled": j}
+                                                                for i, j in zip(flags_skipped + p_skip_list, [False] * len(flags_skipped) + [True] * len(p_skip_list))
                                                                 ],
-                                                        value=[f"skip-{i}" for i in flags_skipped_use],
+                                                        value=[f"skip-{i}" for i in flags_skipped + p_skip_list],
                                                         inline=True,
                                                         labelStyle={'display': 'inline-block', 'margin': '0 10px 0 10px', 'color': 'black'},
                                                                 ),  
@@ -662,7 +654,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                                 ]
                                                 + [
                                                     dbc.Tooltip(issue_descriptions[i], target=f"label-{i}")
-                                                    for i in flags_skipped_use
+                                                    for i in flags_skipped + p_skip_list
                                                 ],
                                                 fluid=True),
                                                     
