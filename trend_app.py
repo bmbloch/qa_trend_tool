@@ -2300,9 +2300,13 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('store_flag_skips', 'data'),
                 State('init_trigger', 'data'),
                 State('store_flag_cols', 'data'),
-                State('flag_description_noprev', 'children')])
+                State('flag_description_noprev', 'children'),
+                State('comment_cons', 'value'),
+                State('comment_avail', 'value'),
+                State('comment_mrent', 'value'),
+                State('comment_erent', 'value'),])
 @Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2511,6 +2515,16 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         avail_comment = comment['avail_comment'].loc[drop_val + str(curryr) + str(currmon)]
         mrent_comment = comment['mrent_comment'].loc[drop_val + str(curryr) + str(currmon)]
         erent_comment = comment['erent_comment'].loc[drop_val + str(curryr) + str(currmon)]
+
+        if sub_change == False:
+            if init_comment_cons is not None:
+                cons_comment = init_comment_cons
+            if init_comment_avail is not None:
+                avail_comment = init_comment_avail
+            if init_comment_mrent is not None:    
+                mrent_comment = init_comment_mrent
+            if init_comment_erent is not None:
+                erent_comment = init_comment_erent
 
         if cons_comment == "":
             cons_comment = 'Enter Inv or Cons Shim Note Here'
