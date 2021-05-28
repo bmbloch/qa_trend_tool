@@ -8,6 +8,7 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_core_components as dcc
 import itertools
+import plotly.graph_objs as go 
 
 from init_load_trend import get_home
 from timer_trend import Timer
@@ -1222,3 +1223,365 @@ def get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved
                     skip_list += skip_list_temp
 
     return skip_list
+
+@Timer("Sub Met Graphs")
+def sub_met_graphs(data, type_filt, curryr, currmon, sector_val):
+    
+    graph = data.copy()
+    graph = graph[(graph['yr'] >= curryr - 1) | ((graph['yr'] == curryr - 2) & (graph['currmon'] >  0 + currmon))]
+
+    vac_range_list, vac_dtick, vac_tick_0 = set_y2_scale(graph, type_filt, "vac", sector_val)
+    rent_range_list, rent_dtick, rent_tick_0 = set_y2_scale(graph, type_filt, "mrent", sector_val)
+    
+    graph_copy = graph.copy()
+    
+    if type_filt == "sub":
+        graph = pd.melt(graph, id_vars=['subsector', 'metcode', 'subid', 'yr', 'currmon'])
+    elif type_filt == "met":
+        graph = pd.melt(graph, id_vars=['subsector', 'metcode', 'yr', 'currmon'])
+    elif type_filt == "nat":
+        graph = pd.melt(graph, id_vars=['identity_us', 'yr', 'currmon'])
+
+    for x in list(graph.columns):
+        if "rol" in x:
+            graph[x] = np.where((graph['yr'] == curryr) & (graph['currmon'] == currmon), np.nan, graph[x])
+    for x in list(graph_copy.columns):
+        if "rol" in x:
+            graph_copy[x] = np.where((graph_copy['yr'] == curryr) & (graph_copy['currmon'] == currmon), np.nan, graph_copy[x])
+
+    fig_vac = go.Figure()
+    fig_rent = go.Figure()
+    
+    if type_filt == "sub":
+        cons_range_list, bar_dtick, bar_tick0 = set_bar_scale(graph_copy, sector_val, ['cons', 'rol_cons', 'cons_oob'], ['inv', 'rol_inv', 'inv_oob'], False, curryr, currmon)
+    else:
+        cons_range_list, bar_dtick, bar_tick0 = set_bar_scale(graph_copy, sector_val, ['cons', 'rol_cons', 'cons_oob'], ['inv', 'rol_inv', 'inv'], False, curryr, currmon)
+
+    cons_oob_display = sub_met_graph_set_display(graph_copy, "cons_oob", type_filt)
+    cons_rol_display = sub_met_graph_set_display(graph_copy, "rol_cons", type_filt)
+    vac_oob_display = sub_met_graph_set_display(graph_copy, "vac_oob", type_filt)
+    vac_rol_display = sub_met_graph_set_display(graph_copy, "rol_vac", type_filt)
+
+    rent_oob_display = sub_met_graph_set_display(graph_copy, "mrent_oob", type_filt)
+    rent_rol_display = sub_met_graph_set_display(graph_copy, "rol_mrent", type_filt)
+
+    if sector_val == "apt":
+        rent_tick_format = '.0f'
+    else:
+        rent_tick_format = '.2f'
+
+    graph['x_axis'] = graph['yr'].astype(str) + "m" + graph['currmon'].astype(str)
+
+    # Note call sub_met_set_data for the pub trace last, so it will be the one to appear if overlapping with another trace
+    fig_vac = sub_met_set_data("bar", fig_vac, graph, "cons", 'mediumseagreen', 'cons', 'cons', 'y1', True, 'act')
+    fig_vac = sub_met_set_data("bar", fig_vac, graph, "rol_cons", 'palevioletred', 'rol_cons', 'rol_cons', 'y1', cons_rol_display, 'rol')
+    fig_vac = sub_met_set_data("scatter", fig_vac, graph, "rol_vac", 'red', 'rol_vac', 'rol_vac_chg', 'y2', vac_rol_display, 'rol')
+    fig_vac = sub_met_set_data("bar", fig_vac, graph, "cons_oob", 'lightskyblue', 'cons_oob', 'cons_oob', 'y1', cons_oob_display, 'oob')
+    fig_vac = sub_met_set_data("scatter", fig_vac, graph, "vac_oob", 'blue', 'vac_oob', 'vac_chg_oob', 'y2', vac_oob_display, 'oob')
+    fig_vac = sub_met_set_data("scatter", fig_vac, graph, "vac", 'darkgreen', 'vac', 'vac_chg', 'y2', True, 'act')
+
+    fig_rent = sub_met_set_data("bar", fig_rent, graph, "cons", 'mediumseagreen', 'cons', 'cons', 'y1', True, 'act')
+    fig_rent = sub_met_set_data("bar", fig_rent, graph, "rol_cons", 'palevioletred', 'rol_cons', 'rol_cons', 'y1', cons_rol_display, 'rol')
+    fig_rent = sub_met_set_data("scatter", fig_rent, graph, "rol_mrent", 'red', 'rol_mrent', 'rol_G_mrent', 'y2', rent_rol_display, 'rol')
+    fig_rent = sub_met_set_data("bar", fig_rent, graph, "cons_oob", 'lightskyblue', 'cons_oob', 'cons_oob', 'y1', cons_oob_display, 'oob')
+    fig_rent = sub_met_set_data("scatter", fig_rent, graph, "mrent_oob", 'blue', 'mrent_oob', 'G_mrent_oob', 'y2', rent_oob_display, 'oob')
+    fig_rent = sub_met_set_data("scatter", fig_rent, graph, "mrent", 'darkgreen', 'mrent', 'G_mrent', 'y2', True, 'act')
+       
+            
+    fig_vac = sub_met_set_layout(fig_vac, "Vacancy", cons_range_list, "Vacancy Level", vac_range_list, vac_dtick, vac_tick_0, ',.01%', bar_dtick)
+    fig_rent = sub_met_set_layout(fig_rent, "Market Rent", cons_range_list, "Rent Level", rent_range_list, rent_dtick, rent_tick_0, rent_tick_format, bar_dtick)
+
+    # if type_filt == "nat":
+    #     file_path_temp = "{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/".format(get_home(), sector_val, curryr, currmon)
+    #     fig_vac.write_html(file_path_temp + 'national_vac_series.html')
+    #     fig_rent.write_html(file_path_temp + 'national_rent_series.html')
+
+    return fig_vac, fig_rent
+
+@Timer("Sub Met Graphs")
+def set_y2_scale(data_in, type_filt, input_var, sector_val):
+    data = data_in.copy()
+    if type_filt == "sub":
+        data = pd.melt(data, id_vars=['subsector', 'metcode', 'subid', 'yr', 'currmon'])
+    elif type_filt == "met":
+        data = pd.melt(data, id_vars=['subsector', 'metcode', 'yr', 'currmon'])
+    elif type_filt == "nat":
+        data = pd.melt(data, id_vars=['subsector', 'yr', 'currmon'])
+
+    var = list(data[data['variable'] == input_var]['value'])
+
+    if type_filt != "ts":
+        if input_var == "vac":
+            rol_var = list(data[(data['variable'] == 'rolsvac') & (data['value'] != '')]['value'])
+            oob_var = list(data[(data['variable'] == 'vac_oob') & (data['value'] != '')]['value'])
+        elif input_var == "mrent":
+            rol_var = list(data[(data['variable'] == 'rolmrent') & (data['value'] != '')]['value'])
+            oob_var = list(data[(data['variable'] == 'mrent_oob') & (data['value'] != '')]['value'])
+        rol_var = [float(i) for i in rol_var]
+        oob_var = [float(i) for i in oob_var]
+        combined = var + rol_var + oob_var
+    elif type_filt == "ts":
+        combined = var
+
+    # Need to set this in conditional that checks to see if combined has data, since there will be times when there are no subs with diff to pub for the selected variable
+    if len(combined) > 0:
+        max_var = max(combined)
+        min_var = min(combined)
+
+        if "vac" in input_var or "gap" in input_var:
+            round_val = 2
+            tick_0 = max(min_var - 0.01, 0)
+            tick_1 = min(max_var + 0.01, 100)
+        else:
+            round_val = 2
+            tick_0 = min_var - round((max_var - min_var) / 5, round_val)
+            tick_1 = max_var + round((max_var - min_var) / 5, round_val)
+        range_list = [round(tick_0, round_val), round(tick_1, round_val)]
+        dtick = round((tick_1 - tick_0) / 5, round_val)
+
+    else:
+        if "vac" in input_var or "gap" in input_var:
+            range_list = [0, 0.04]
+            dtick = 0.01
+            tick_0 = 0
+        else:
+            range_list = [4, 7]
+            dtick = 1
+            tick_0 = 4
+
+
+    return range_list, dtick, tick_0
+
+# This function sets the scale and tick distance for bar graphs based on the variable's max percentage of inventory
+def set_bar_scale(data_in, sector_val, numer_list, denomer_list, type_value, curryr, currmon):
+    
+    data = data_in.copy()
+
+    if "rol_cons" in numer_list:
+        data['rol_inv'] = data['inv'] - (data['cons'] - data['rol_cons'])
+
+    if type_value == "s":
+        data = data[(data['yr'] == curryr) & (data['currmon'] == currmon)]
+    
+    if "dqren10d" not in numer_list and "sub_g_renx_mo_wgt" and "met_g_renx_mo_wgt" not in numer_list:
+        val_list = []
+        for x, y in zip(numer_list, denomer_list):
+            data[x + "_per_inv"] = data[x] / data[y]
+            val_list.append(list(data[x + "_per_inv"]))
+            
+        # Removing nans
+        combined = []
+        for x in val_list:
+            x = [y for y in x if y == y]
+            if len(x) > 0:
+                combined += x
+        combined = [float(i) for i in combined]
+
+        max_val = max(combined)
+        min_val = min(combined)
+        if abs(min_val) > max_val:
+            max_per_inv = min_val
+        else:
+            max_per_inv = max_val
+        
+        max_inv = max(list(data['inv']))
+        
+        if all(v == 0 for v in combined):
+            if sector_val != "apt":
+                range_list = [0, 400000]
+                dtick = 100000
+            elif sector_val == "apt":
+                range_list = [0, 4000]
+                dtick = 1000
+        else:
+            len_max = len(str(int((max_per_inv * max_inv))))
+            max_round = round((max_per_inv * max_inv), (len_max - 1) * -1)
+
+            if abs(max_per_inv) < 0.02:
+                bound = max_round * 2.5
+            elif abs(max_per_inv) >= 0.02 and max_per_inv < 0.05:
+                bound = max_round * 2
+            elif abs(max_per_inv) >= 0.05 and max_per_inv < 0.1:
+                bound = max_round * 1.5
+            else:
+                bound = max_round * 1
+  
+            below_zero = 0
+            above_zero = 0
+
+            for i in combined:
+                if float(i) < below_zero:
+                    below_zero = float(i)
+                if float(i) > above_zero:
+                    above_zero = float(i)
+            
+            if below_zero == 0:
+                range_list = [0, bound]
+            if above_zero == 0:
+                range_list = [bound, 0]
+            elif abs(below_zero) > above_zero and above_zero != 0:
+                len_rounder = len(str(int((above_zero * max_inv))))
+                range_list = [bound, round(above_zero * max_inv, (len_rounder - 2) * -1)]
+            elif above_zero >= abs(below_zero) and below_zero != 0:
+                len_rounder = len(str(int((below_zero * max_inv))))
+                range_list = [round(below_zero * max_inv, (len_rounder - 2) * -1), bound]
+
+            if sector_val == "ind":
+                limit_val = 20000
+            elif sector_val == "off" or sector_val == "ret":
+                limit_val = 10000
+            elif sector_val == "apt":
+                limit_val = 20
+            dtick = max(abs((range_list[0] - range_list[1]) / 5), limit_val)
+            len_dtick = len(str(int(dtick)))
+            if dtick != limit_val:
+                dtick = round(dtick, (len_dtick - 1) * -1)
+        
+        tick0 = range_list[0]
+
+    else:
+        data = data.reset_index()
+
+        var_1 = data[numer_list[0]].loc[0]
+        var_2 = data[numer_list[1]].loc[0]
+
+        percentile_var_1 = data[numer_list[0] + "_perc"].loc[0]
+        percentile_var_2 = data[numer_list[1] + "_perc"].loc[0]
+
+        if percentile_var_1 >= percentile_var_2:
+            use_percentile = percentile_var_1
+            use_var = var_1
+            other_var = var_2
+        else:
+            use_percentile = percentile_var_2
+            use_var = var_2
+            other_var = var_1
+
+        if use_percentile >= 0.75:
+            bound = use_var * (1 + 0.1)
+        elif use_percentile >= 0.50 and use_percentile < 0.75:
+            bound = use_var * (1 + 0.33)
+        elif use_percentile >= 0.25 and use_percentile < 0.50:
+            bound = use_var * (1 + 0.66)
+        else:
+            bound = use_var * (1 + 1)
+        
+        if var_1 * var_2 >= 0:
+            if var_1 < 0:
+                range_list = [bound, 0]
+            else:
+                range_list = [0, bound]
+        else:
+            if bound < 0 and abs(bound) > abs(other_var):
+                range_list = [bound, other_var]
+            elif bound > 0 and abs(bound) < abs(other_var):
+                range_list = [other_var, bound]
+        
+        dtick = abs((range_list[0] - range_list[1])) / 5
+        
+        tick0 = range_list[0]
+
+    return range_list, dtick, tick0
+
+def sub_met_graph_set_display(graph_in, var, type_filt):
+
+    graph = graph_in.copy()
+    
+    # Check to see if the rol and oob values equal the current published value. If they do, nan them out so that the trace wont be displayed on the graph
+    # Doesnt need to be equal, just no more than 10 basis points different
+    check_list = ['rol_cons', 'rol_vac', 'rol_mrent', 'cons_oob', 'vac_oob', 'mrent_oob']
+    var_list = ['cons', 'vac', 'mrent']
+        
+    for x, y in zip(check_list, var_list + var_list):
+        graph[x] = np.where((abs(graph[x] - graph[y]) < 0.001), np.nan, graph[x])
+    
+    if graph[var].isnull().all() == True:
+        if "oob" in var:
+            display = False
+        elif "rol" in var:
+            display = 'legendonly'
+    else:
+        if "oob" in var:
+            display = 'legendonly'
+        elif "rol" in var:
+            display = True
+
+    return display
+
+def sub_met_set_data(type_graph, fig, graph, var, color, l_name, tag, yaxis, display, group):
+
+    if type_graph == "bar":
+        fig.add_trace(
+            go.Bar(
+                x=list(graph['x_axis']),
+                y=list(graph[graph['variable'] == var]['value']),
+                name = l_name,
+                marker_color = color,
+                hovertemplate='%{x}, ' + '%{text:,}<extra></extra>',
+                text = ['{}'.format(i) for i in list(graph[graph['variable'] == tag]['value'])],
+                yaxis=yaxis,
+                visible= display,
+                legendgroup = group,
+                    )
+                )
+    elif type_graph == "scatter":
+        fig.add_trace(
+            go.Scatter(
+                x=list(graph['x_axis']),
+                y=list(graph[graph['variable'] == var]['value']),
+                line={'dash': 'dash', 'color': color},
+                name = l_name,
+                marker_color = color,
+                hovertemplate='%{x}, ' + '%{text:.2%}<extra></extra>',
+                text = ['{}'.format(i) for i in list(graph[graph['variable'] == tag]['value'])],
+                yaxis=yaxis,
+                visible= display,
+                legendgroup = group,
+                    )
+                )
+    return fig
+
+def sub_met_set_layout(fig, title, cons_range_list, y2_title, vac_range_list, dtick, tick0, tick_format, bar_dtick):
+    fig.update_layout(
+        title={
+            'text': title,
+            'y':0.85,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'},
+        legend=dict(
+            itemclick="toggleothers",
+            itemdoubleclick="toggle",
+            yanchor="bottom",
+            y=-.5,
+            xanchor="center",
+            x=0.5
+                ),
+        legend_orientation="h",
+        xaxis=dict(
+            dtick=1,
+            tickangle=-90
+                ),
+        yaxis=dict(
+            title= "Construction",
+            autorange=False,
+            range=cons_range_list,
+            dtick = bar_dtick,
+            tickformat=',',
+            side='left',
+            showgrid=False,
+                ),
+        yaxis2=dict(
+            title = y2_title,
+            side='right',
+            overlaying='y',
+            tickformat= tick_format,
+            range=vac_range_list,
+            fixedrange=True,
+            autorange=False,
+            dtick=dtick,
+            tick0=tick0
+                )
+            )
+
+    return fig
