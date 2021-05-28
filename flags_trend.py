@@ -255,7 +255,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
 
     data['calc_emdir'] = np.where(data['e_flag_mdir'] > 0, abs(data['G_mrent'] - data['G_merent']), np.nan)
 
-    flag_names = get_issue(False, False, False, False, False, False, False, False, False, False, False, False, "list", sector_val)
+    flag_names = get_issue("list", sector_val)
     flag_names = list(flag_names.keys())
 
     if sector_val == "apt":

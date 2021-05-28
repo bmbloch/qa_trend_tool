@@ -1383,7 +1383,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             oob_data.replace([np.inf, -np.inf], np.nan, inplace=True)
             use_pickle("out", "main_data_" + sector_val, oob_data, curryr, currmon, sector_val)
 
-            flag_list = get_issue(False, False, False, False, False, False, False, False, False, False, False, False, "list", sector_val)
+            flag_list = get_issue("list", sector_val)
             flag_list_all = list(flag_list.keys())
 
             
@@ -2219,17 +2219,18 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
 
 
 @trend.callback([Output('expand_hist', 'value'),
-                 Output('subsequent_fix', 'value')],
+                 Output('subsequent_fix', 'value'),
+                 Output('show_skips', 'value')],
                  [Input('store_submit_button', 'data'),
                  Input('dropman', 'value'),
                  Input('sector', 'data')],
                  [State('init_trigger', 'data')])
-@Timer("Remove Expand Hist")
-def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
+@Timer("Remove Options")
+def remove_options(submit_button, drop_val, sector_val, success_init):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:
-        return ['trunc'], 'r'
+        return ['trunc'], 'r', ['N']
 
 @trend.callback([Output('man_view', 'data'),
                 Output('man_view', 'columns'),
@@ -2287,10 +2288,10 @@ def remove_expand_hist(submit_button, drop_val, sector_val, success_init):
                 State('store_flag_new', 'data'),
                 State('store_flag_skips', 'data'),
                 State('init_trigger', 'data'),
-                State('store_flag_cols', 'data')])
+                State('store_flag_cols', 'data'),
+                State('flag_description_noprev', 'children')])
 @Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols):  
-    
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2365,7 +2366,11 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
         
         # If the user changed the sub they want to edit, reset the shim section and the preview dataset
-        if (len(preview_data) > 0 and  drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (shim_data.reset_index()['identity_row'].str.contains(drop_val).loc[0] == False):
+        if (len(preview_data) > 0 and  drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (shim_data.reset_index()['identity_row'].str.contains(drop_val).loc[0] == False) == True:
+            sub_change = True
+        else:
+            sub_change = False
+        if sub_change == True:
             preview_data = pd.DataFrame()
             shim_data = data.copy()
             shim_data = shim_data[['identity', 'currmon', 'yr'] + shim_cols]
@@ -2375,12 +2380,16 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
-        # Get the Divs that will display the current flags at the sub, as well as the metrics to highlight based on the flag
+        # Get the Divs that will display the current flags at the sub, as well as the metrics to highlight based on the flags
+        if init_skips is not None and init_skips != "No flags for this submarket" and init_skips != "You have cleared all the flags" and sub_change == False:
+            init_skips = get_user_skips(init_skips, False, False, False, False)
+        else:
+            init_skips = []
         if "Y" in show_skips:
             show_skips = True
         else:
             show_skips = False
-        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue(data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), "specific", sector_val)
+        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), init_skips)
         if len(issue_description_noprev) == 0:
             style_noprev = {'display': 'none'}
         else:

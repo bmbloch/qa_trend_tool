@@ -412,7 +412,7 @@ def summarize_flags(dataframe_in, sum_val, flag_cols):
 
 
 # Return a more verbose description of the flag to the user
-def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, preview_status, type_return, sector_val):
+def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_list=False, p_skip_list=False, show_skips=False, flags_resolved=False, flags_unresolved=False, flags_new=False, flags_skipped=False, curryr=False, currmon=False, preview_status=False, init_skips=False):
 
     # This dict holds a more verbose explanation of the flags, so that it can be printed to the user for clarity
     issue_descriptions = {
@@ -475,6 +475,7 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
         highlighting['v_flag_level'] = ['vac'], ['sub sur totabs', 'avail10d'], ['sq vac']
     else:
         highlighting['v_flag_level'] = ['avail'], ['sub sur totabs', 'avail10d'], ['sq avail']
+    
     if type_return == "specific":
         if has_flag == 0:
             issue_description_noprev = "You have cleared all the flags"
@@ -506,10 +507,11 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                                 dbc.Checklist(
                                                     id="flag_descriptions_noprev",
                                                     options=[
-                                                            {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
+                                                            {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}", "disabled": True}
                                                             for i in p_skip_list
                                                             ],
-                                                    inline=True
+                                                    inline=True,
+                                                    value = ["skip-" + x for x in p_skip_list]
                                                             ),  
                                                     
                                             ]
@@ -541,7 +543,8 @@ def get_issue(dataframe, has_flag, flag_list, p_skip_list, show_skips, flags_res
                                                             {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}"}
                                                             for i in flag_list_use
                                                             ],
-                                                    inline=True
+                                                    inline=True,
+                                                    value = ["skip-" + x for x in init_skips]
                                                             ),  
                                                     
                                             ]
@@ -950,7 +953,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
                 if identity_val is None:
                     identity_val = dataframe.reset_index().loc[0]['identity']  
                 flag_list = ['v_flag']
-        
+ 
     return flag_list, skip_list, identity_val, has_flag
 
 # This function rolls up the edited data to the metro and US level for presentation to econ
