@@ -157,6 +157,7 @@ def get_types(sector_val):
     type_dict['cons roldiff'] = 'numeric'
     type_dict['ncrenlev'] = 'numeric'
     type_dict['nc surabs'] = 'numeric'
+    type_dict['30 Perc Cov Pct'] = 'numeric'
     
     type_dict['Subsector'] = 'text'
     type_dict['subsector'] = 'text'
@@ -262,6 +263,7 @@ def get_types(sector_val):
     format_dict['nc sub sur v cov'] = FormatTemplate.percentage(1)
     format_dict['vac chg 12'] = FormatTemplate.percentage(1)
     format_dict['sqvac chg 12'] = FormatTemplate.percentage(1)
+    format_dict['30 Perc Cov Pct'] = FormatTemplate.percentage(1)
     
 
     format_dict['mrent'] = Format(precision=2, scheme=Scheme.fixed)
@@ -1004,6 +1006,8 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     cov_thresh = pd.read_pickle(file_path)
     v_threshold = cov_thresh['v_cov'].loc[0]
     r_threshold = cov_thresh['r_cov'].loc[0]
+    v_threshold_true = cov_thresh['v_cov_true'].loc[0]
+    r_threshold_true = cov_thresh['r_cov_true'].loc[0]
     
     data = data_init.copy()
     if file_used == "oob":
@@ -1072,7 +1076,7 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
         data.to_pickle(file_path)
         print("Orig Flags Saved")
 
-    return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, flag_cols
+    return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols
 
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
 def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg):
@@ -1324,6 +1328,8 @@ def store_input_vals(url_input):
                  Output('scatter-type-radios', 'value'),
                  Output('v_threshold', 'data'),
                  Output('r_threshold', 'data'),
+                 Output('v_threshold_true', 'data'),
+                 Output('r_threshold_true', 'data'),
                  Output('store_flag_cols', 'data'),
                  Output('show_cd_container', 'style'),
                  Output('droproll', 'value')],
@@ -1387,7 +1393,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             flag_list_all = list(flag_list.keys())
 
             
-            oob_data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, flag_cols = first_update(oob_data, file_used, sector_val, orig_cols, curryr, currmon)              
+            oob_data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols = first_update(oob_data, file_used, sector_val, orig_cols, curryr, currmon)              
             
             use_pickle("out", "main_data_" + sector_val, oob_data, curryr, currmon, sector_val)
             use_pickle("out", "rank_data_met_" + sector_val, rank_data_met, curryr, currmon, sector_val)
@@ -1403,12 +1409,12 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             else:
                  show_cd_display = {'display': 'none'}
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, flag_cols, show_cd_display, default_drop
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),
@@ -2163,9 +2169,11 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data'),
-                State('store_flag_cols', 'data')])
+                State('store_flag_cols', 'data'),
+                State('v_threshold_true', 'data'),
+                State('r_threshold_true', 'data')])
 @Timer("Display Summary")
-def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_init, flag_cols):
+def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_init, flag_cols, v_threshold_true, r_threshold_true):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:
@@ -2182,6 +2190,9 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
             sum_data = use_pickle("in", "sum_data_" + sector_val, False, curryr, currmon, sector_val)
             nat_data_vac = use_pickle("in", "nat_data_vac_" + sector_val, False, curryr, currmon, sector_val)
             nat_data_rent = use_pickle("in", "nat_data_rent_" + sector_val, False, curryr, currmon, sector_val)
+
+            nat_data_vac['30 Perc Cov Pct'] = v_threshold_true
+            nat_data_rent['30 Perc Cov Pct'] = r_threshold_true
 
             nat_data_vac = nat_data_vac.rename(columns={'us_sur_totabs': 'Surveyed Abs', 'us_mos_lvsurv': 'Months To Last Surv', 'us_sur_v_cov_perc': 'Survey Cover Pct', 'subsector': 'Subsector'})
             nat_data_rent = nat_data_rent.rename(columns={'us_g_renx_mo_wgt': 'Surveyed Month Rent Chg', 'us_mos_lrsurv': 'Months To Last Surv', 'us_sur_r_cov_perc': 'Survey Cover Pct', 'subsector': 'Subsector'})
