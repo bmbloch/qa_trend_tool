@@ -655,20 +655,20 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
         # Use the MSQ data set to calculate the total surveyed abs from NC properties in currmon for use in flags
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
-        data_surabs = pd.read_pickle(file_path)
+        msq_input = pd.read_pickle(file_path)
+        if sector_val == "apt" or sector_val == "off":
+            msq_input['identity'] = msq_input['metcode'] + msq_input['subid'].astype(str) + sector_val.title()
+        elif sector_val == "ret":
+            msq_input['identity'] = msq_input['metcode'] + msq_input['subid'].astype(str) + msq_input['type1']
+        elif sector_val == "ind":
+            msq_input['identity'] = msq_input['metcode'] + msq_input['subid'].astype(str) + msq_input['type2']
+        data_surabs = msq_input.copy()
         data_surabs['surveyed'] = np.where(data_surabs['availxM'] == 0, 1, 0)
         data_surabs['count_survs'] = data_surabs.groupby('id')['surveyed'].transform('sum')
         data_surabs['nc_first_surv'] = np.where((data_surabs['yr'] == curryr) & (data_surabs['currmon'] == currmon) & (data_surabs['count_survs'] == 1) & (data_surabs['availxM'] == 0) & (data_surabs['yearx'] >= curryr - 3), 1, 0)
         data_surabs = data_surabs[(data_surabs['yr'] == curryr) & (data_surabs['currmon'] == currmon)]
         data_surabs = data_surabs[((data_surabs['yearx'] == curryr) & (data_surabs['month'] == currmon)) | (data_surabs['nc_first_surv'] == 1)]
         data_surabs['nc_surabs'] = np.where((data_surabs['availxM'] == 0), data_surabs['sizex'] - data_surabs['totavailx'], 0)
-        
-        if sector_val == "apt" or sector_val == "off":
-            data_surabs['identity'] = data_surabs['metcode'] + data_surabs['subid'].astype(str) + sector_val.title()
-        elif sector_val == "ret":
-            data_surabs['identity'] = data_surabs['metcode'] + data_surabs['subid'].astype(str) + data_surabs['type1']
-        elif sector_val == "ind":
-            data_surabs['identity'] = data_surabs['metcode'] + data_surabs['subid'].astype(str) + data_surabs['type2']
 
         data_surabs['sum_nc_surabs'] = data_surabs.groupby('identity')['nc_surabs'].transform('sum')
         data_surabs_all = data_surabs.copy()
@@ -684,6 +684,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data = data.join(data_surabs, on='identity')
         data['nc_surabs'] = data['nc_surabs'].fillna(0)
 
+        # Get the ids that have greater than zero nc surabs, for display in tooltip for key metrics table
         nc_sur_props = data_surabs_all.copy()
         nc_sur_props = nc_sur_props[nc_sur_props['nc_surabs'] > 0]
         nc_sur_props = nc_sur_props[['id', 'identity', 'nc_surabs', 'yearx', 'month']]
@@ -691,10 +692,37 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         for index, row in nc_sur_props.iterrows():
             ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
 
+        # Use the MSQ data set to calculate the total surveyed abs for the 10 pool (surveyed this month, squared last month) in currmon and get the top ids for display in tooltip for key metrics table
+        sur_avail = msq_input.copy()
+        sur_avail['tot_size'] = sur_avail.groupby('identity')['sizex'].transform('sum')
+        sur_avail['10_tag'] = np.where((sur_avail['availxM'] == 0) & (sur_avail['availxM'].shift(1) == 1) & (sur_avail['id'] == sur_avail['id'].shift(1)) & (sur_avail['yr'] == curryr) & (sur_avail['currmon'] == currmon), 1, 0)
+        sur_avail = sur_avail[(sur_avail['10_tag'] == 1) | (sur_avail['10_tag'].shift(-1) == 1)]
+        sur_avail['abs'] = sur_avail['totavailx'].shift(1) - sur_avail['totavailx']
+        sur_avail = sur_avail[(sur_avail['yr'] == curryr) & (sur_avail['currmon'] == currmon)]
+        sur_avail = sur_avail[(sur_avail['sizex'] / sur_avail['tot_size'] > 0.02) & (abs(sur_avail['abs']) / sur_avail['sizex'] > 0.2)]
+        sur_avail = sur_avail[['id', 'identity', 'abs']]
+        avail_10_dict = {}
+        for index, row in sur_avail.iterrows():
+            avail_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'abs': row['abs']}
+
+        # Use the MSQ data set to calculate the total rent chg for the 10 pool (surveyed this month, squared last month) in currmon and get the top ids for display in tooltip for key metrics table
+        sur_rg = msq_input.copy()
+        sur_rg['tot_size'] = sur_rg.groupby('identity')['sizex'].transform('sum')
+        sur_rg['10_tag'] = np.where((sur_rg['renxM'] == 0) & (sur_rg['renxM'].shift(1) == 1) & (sur_rg['id'] == sur_rg['id'].shift(1)) & (sur_rg['yr'] == curryr) & (sur_rg['currmon'] == currmon), 1, 0)
+        sur_rg = sur_rg[(sur_rg['10_tag'] == 1) | (sur_rg['10_tag'].shift(-1) == 1)]
+        sur_rg['rg'] = (sur_rg['renx'] - sur_rg['renx'].shift(1)) / sur_rg['renx'].shift(1)
+        sur_rg = sur_rg[(sur_rg['yr'] == curryr) & (sur_rg['currmon'] == currmon)]
+        sur_rg = sur_rg[((sur_rg['sizex'] / sur_rg['tot_size'] > 0.02) & (abs(sur_rg['rg']) > 0.02)) | (abs(sur_rg['rg']) >= 0.05)]
+        sur_rg = sur_rg[['id', 'identity', 'rg']]
+        rg_10_dict = {}
+        for index, row in sur_rg.iterrows():
+            rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'rg': row['rg']}
+
+
     # If the input file did not load successfully, alert the user
     elif file_load_error == True:
         data = pd.DataFrame()
         orig_cols = []
         file_used = "error"
     
-    return data, orig_cols, file_used, ncsur_prop_dict
+    return data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, rg_10_dict
