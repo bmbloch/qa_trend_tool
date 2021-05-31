@@ -308,7 +308,7 @@ def get_types(sector_val):
     return type_dict, format_dict
 
 # Function that returns the highlighting style of the various dash datatables
-def get_style(type_filt, dataframe_in, curryr, currmon, highlight_cols, highlight_rows):
+def get_style(type_filt, dataframe_in, curryr, currmon, highlight_cols, highlight_rows, underline_cols=[]):
  
     dataframe = dataframe_in.copy()
     
@@ -335,11 +335,11 @@ def get_style(type_filt, dataframe_in, curryr, currmon, highlight_cols, highligh
                         'backgroundColor': 'yellow'
                         },
                     ] + [
-                   {
-                        'if': {
-                        'column_id': highlight_cols,
-                        'row_index': highlight_rows,
-                              },
+                        {
+                            'if': {
+                            'column_id': highlight_cols,
+                            'row_index': highlight_rows,
+                                },
                         'backgroundColor': 'LightGreen',
                     }
 
@@ -361,11 +361,20 @@ def get_style(type_filt, dataframe_in, curryr, currmon, highlight_cols, highligh
                         } for x in dataframe.columns
                 ] + [
                    {
-                        'if': {'column_id': highlight_cols
+                        'if': {
+                            'column_id': highlight_cols
                               },
                             'backgroundColor': 'LightGreen',
                     }
 
+                ] + [
+                    {
+                        'if': {
+                            'column_id': underline_cols
+                            },
+                        'textDecoration': 'underline',
+                        'textDecorationStyle': 'dotted',
+                    }
                 ]
     return style
     
@@ -2253,6 +2262,7 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 Output('key_metrics', 'columns'),
                 Output('key_metrics_container', 'style'),
                 Output('key_metrics', 'style_data_conditional'),
+                Output('key_metrics', 'tooltip_conditional'),
                 Output('key_metrics_2', 'data'),
                 Output('key_metrics_2', 'columns'),
                 Output('key_metrics_2_container', 'style'),
@@ -2490,17 +2500,31 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                                             'c sub g renx mo wgt': 'c sub grenx mo wgt','n met g renx mo wgt': 'n met grenx mo wgt','n sub g renx mo wgt': 'n sub grenx mo wgt',
                                             'nc met g renx mo wgt': 'nc met grenx mo wgt','nc sub g renx mo wgt': 'nc sub grenx mo wgt', 'G mrent 12': 'Gmrent 12'})
         
-        highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [])
-        type_dict_metrics, format_dict_metrics = get_types(sector_val)
-
         sub_ncprops_keys = [x for x in ncsur_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_ncprops_keys) > 0:
             for key in sub_ncprops_keys:
                 if key == sub_ncprops_keys[0]:
-                    text = str(ncsur_props[key]['id']) + ", " + str(ncsur_props[key]['yearx']) + "m" + str(ncsur_props[key]['month']) + ", " + str(ncsur_props[key]['nc_surabs'])
+                    text = '{}, {}m{}, {:,}'.format(ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
                 else:
-                    text = text + "\n" + "\n" + str(ncsur_props[key]['id']) + ", " + str(ncsur_props[key]['yearx']) + "m" + str(ncsur_props[key]['month']) + ", " + str(ncsur_props[key]['nc_surabs'])
-            print(text)
+                    text = '{}{}{}{}, {}m{}, {:,}'.format(text, "\n", "\n", ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
+            underline_cols = ['nc surabs']
+            tooltip_ncsurabs = [
+                                {'if': {'column_id': 'nc surabs'},
+                                    'type': 'markdown',
+                                    'value': text
+                                }
+                               ]
+        else:
+            underline_cols = []
+            tooltip_ncsurabs = [
+                                {'if': {'column_id': 'not active'},
+                                    'type': 'markdown',
+                                    'value': ''
+                                }
+                               ]
+        
+        highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
+        type_dict_metrics, format_dict_metrics = get_types(sector_val)
         
         if sector_val == "ret" and len(key_met_2) > 0:
             key_met_2 = key_met_2.rename(columns={'c_met_sur_r_cov_perc': 'c_met_sur_r_cov', 'c_sub_sur_r_cov_perc': 'c_sub_sur_r_cov', 'n_met_sur_r_cov_perc': 'n_met_sur_r_cov', 'n_sub_sur_r_cov_perc': 'n_sub_sur_r_cov', 'nc_met_sur_r_cov_perc': 'nc_met_sur_r_cov', 'nc_sub_sur_r_cov_perc': 'nc_sub_sur_r_cov',
@@ -2644,7 +2668,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
     
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
                             for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
-                            for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
+                            for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_ncsurabs, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
 
 @trend.callback([Output('vac_series_met', 'figure'),

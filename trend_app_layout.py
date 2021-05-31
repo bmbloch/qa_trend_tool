@@ -410,6 +410,7 @@ def get_app_layout():
                                     id='key_metrics',
                                     merge_duplicate_headers=True,
                                     style_header={'fontWeight': 'bold', 'textAlign': 'center', 'whiteSpace': 'normal'},
+                                    tooltip_duration=None,
                                                 ),
                                     ], style={'display': 'none'}, id='key_metrics_container'),
                             html.Div([
