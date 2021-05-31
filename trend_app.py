@@ -1342,7 +1342,9 @@ def store_input_vals(url_input):
                  Output('store_flag_cols', 'data'),
                  Output('show_cd_container', 'style'),
                  Output('droproll', 'value'),
-                 Output('ncsur_props', 'data')],
+                 Output('ncsur_props', 'data'),
+                 Output('avail_props', 'data'),
+                 Output('rg_props', 'data')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
@@ -1354,7 +1356,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
     if sector_val is None:
         raise PreventUpdate
     else:
-        oob_data, orig_cols, file_used, ncsur_prop_dict = initial_load(sector_val, curryr, currmon, msq_load)
+        oob_data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, rg_10_dict = initial_load(sector_val, curryr, currmon, msq_load)
         
         # Contniue with the callback if the input file loaded successfully
         if file_used != "error":
@@ -1419,12 +1421,12 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             else:
                  show_cd_display = {'display': 'none'}
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, rg_10_dict
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),
@@ -2317,9 +2319,11 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('comment_avail', 'value'),
                 State('comment_mrent', 'value'),
                 State('comment_erent', 'value'),
-                State('ncsur_props', 'data')])
+                State('ncsur_props', 'data'),
+                State('avail_props', 'data'),
+                State('rg_props', 'data')])
 @Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, avail_props, rg_props):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2500,29 +2504,51 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                                             'c sub g renx mo wgt': 'c sub grenx mo wgt','n met g renx mo wgt': 'n met grenx mo wgt','n sub g renx mo wgt': 'n sub grenx mo wgt',
                                             'nc met g renx mo wgt': 'nc met grenx mo wgt','nc sub g renx mo wgt': 'nc sub grenx mo wgt', 'G mrent 12': 'Gmrent 12'})
         
+        underline_cols = []
+        texts = []
         sub_ncprops_keys = [x for x in ncsur_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_ncprops_keys) > 0:
             for key in sub_ncprops_keys:
                 if key == sub_ncprops_keys[0]:
-                    text = '{}, {}m{}, {:,}'.format(ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
+                    text_ncsur = '{}, {}m{}, {:,}'.format(ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
                 else:
-                    text = '{}{}{}{}, {}m{}, {:,}'.format(text, "\n", "\n", ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
-            underline_cols = ['nc surabs']
-            tooltip_ncsurabs = [
-                                {'if': {'column_id': 'nc surabs'},
+                    text_ncsur = '{}{}{}{}, {}m{}, {:,}'.format(text, "\n", "\n", ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
+            texts.append(text_ncsur)
+            underline_cols += ['nc surabs']
+        sub_availprops_keys = [x for x in avail_props.keys() if x.split(",")[0] == drop_val]
+        if len(sub_availprops_keys) > 0:
+            for key in sub_availprops_keys:
+                if key == sub_availprops_keys[0]:
+                    text_avail = '{}, {:,}'.format(avail_props[key]['id'], avail_props[key]['abs'])
+                else:
+                    text_avail = '{}{}{}{}, {:,}'.format(text, "\n", "\n", avail_props[key]['id'], avail_props[key]['abs'])
+            texts.append(text_avail)
+            underline_cols += ['avail10d']
+        sub_rgprops_keys = [x for x in rg_props.keys() if x.split(",")[0] == drop_val]
+        if len(sub_rgprops_keys) > 0:
+            for key in sub_rgprops_keys:
+                if key == sub_rgprops_keys[0]:
+                    text_rg = '{}, {:.1%}'.format(rg_props[key]['id'], rg_props[key]['rg'])
+                else:
+                    text_rg = '{}{}{}{}, {:.1%}'.format(text, "\n", "\n", rg_props[key]['id'], rg_props[key]['rg'])
+            texts.append(text_rg)
+            underline_cols += ['dqren10d']
+
+        if len(underline_cols) > 0:
+            tooltip_key_metrics = [
+                                {'if': {'column_id': str(col)},
                                     'type': 'markdown',
                                     'value': text
-                                }
+                                } for col, text in zip(underline_cols, texts)
                                ]
         else:
-            underline_cols = []
-            tooltip_ncsurabs = [
+            tooltip_key_metrics = [
                                 {'if': {'column_id': 'not active'},
                                     'type': 'markdown',
                                     'value': ''
                                 }
                                ]
-        
+            
         highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
         type_dict_metrics, format_dict_metrics = get_types(sector_val)
         
@@ -2668,7 +2694,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
     
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
                             for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
-                            for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_ncsurabs, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
+                            for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_key_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
 
 @trend.callback([Output('vac_series_met', 'figure'),
