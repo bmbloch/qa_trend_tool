@@ -44,6 +44,7 @@ def get_app_layout():
             dcc.Store(id='ncsur_props'),
             dcc.Store(id='avail_props'),
             dcc.Store(id='rg_props'),
+            dcc.Store(id='newnc_props'),
             dcc.Store('sector'),
             dcc.ConfirmDialog(id='manual_message'),
             dcc.Tabs(id ='tab_clicked', value ='home', children=[

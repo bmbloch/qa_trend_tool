@@ -235,6 +235,65 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         if sector_val == "apt" and file_used == "oob":
             data = data.join(past_data)
 
+        # Load last month's archived msq data. This will allow us to identify what props are being rebenched in the nc window
+        if file_used == "oob" and load_trunc == False:
+            if currmon == 1:
+                p_mon = 12
+                p_yr = curryr - 1
+            else:
+                p_mon = currmon - 1
+                if sector_val == "ret" and p_mon < 10:
+                    p_mon = "0" + str(p_mon)
+                p_yr = curryr
+            if sector_val == "apt":
+                pathlist = Path("/home/central/square/data/{}/production/archive_{}_{}_final".format(sector_val, p_yr, p_mon)).glob('**/*msq.dta')
+            elif sector_val == "off":
+                pathlist = Path("/home/central/square/data/{}/production/archive/archive_{}m{}_final".format(sector_val, p_yr, p_mon)).glob('**/*msq.dta')
+            elif sector_val == "ind":
+                pathlist = Path("/home/central/square/data/{}/production/{}m{}_final_squaredmsqs".format(sector_val, p_yr, p_mon)).glob('**/*msq.dta')
+            elif sector_val == "ret":
+                pathlist = Path("/home/central/square/data/{}/production/archive_{}_{}_final".format(sector_val, p_yr, p_mon)).glob('**/*msq.dta')
+            paths = []
+            for path in pathlist:
+                paths.append(str(path))
+
+            pool = mp.Pool(mp.cpu_count())
+            result_async = [pool.apply_async(load_msqs, args = (sector_val, path, )) for path in
+                            paths]
+            results = [r.get() for r in result_async]
+
+            p_data_in = pd.DataFrame()
+            p_data_in = p_data_in.append(results, ignore_index=True)
+            p_data_in.sort_values(by=['metcode', 'id', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
+            p_data_in = p_data_in.reset_index(drop=True)
+
+            pool.close()
+            
+            if sector_val == "apt":
+                p_data_in = p_data_in.rename(columns={'totunitx': 'sizex', 'availx': 'totavailx', 'avgrenx': 'renx', 'avgrenxM': 'renxM'})
+            elif sector_val == "ind":
+                p_data_in = p_data_in.rename(columns={'ind_size': 'sizex'})
+            elif sector_val == "ret":
+                p_data_in = p_data_in.rename(columns={'availx': 'totavailx'})
+
+            if sector_val == "ind":
+                p_data_in['type2'] = np.where((p_data_in['type2'] == "D") | (p_data_in['type2'] == "W"), "DW", "F")
+
+            if sector_val == "ret":
+                p_data_in = p_data_in[(p_data_in['type1'] == "C") | (p_data_in['type1'] == "N")]
+            
+            if sector_val == "apt" or sector_val == "off":
+                p_data_in['identity_met'] = p_data_in['metcode'] + sector_val.title()
+            elif sector_val == "ret":
+                p_data_in['identity_met'] = p_data_in['metcode'] + p_data_in['type1']
+            elif sector_val == "ind":
+                p_data_in['identity_met'] = p_data_in['metcode'] + p_data_in['type2']
+
+            
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
+            p_data_in.to_pickle(file_path)
+
+        
         # Load all msqs for the sector and combine into one dataframe
         # Only need to do this if the msqs havent been refreshed, so analyst has option to skip this section and rely on the data that was saved upon first load of module
         if msq_load == "Y" or (file_used == "oob" and load_trunc == False):                
@@ -242,7 +301,6 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             pathlist = Path("/home/central/square/data/{}/production/msq/output".format(sector_val)).glob('**/*msq.dta')
             r = re.compile("..msq\.dta")
             paths = []
-            count = 0
             for path in pathlist:
                 path_in_str = str(path)
                 testing = path_in_str[-9:]
@@ -736,6 +794,27 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         for index, row in sur_rg.iterrows():
             rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'rg': row['rg']}
 
+        # Use last months final msq to determine what ids are new to the sq pool this month, and are in the nc rebench window
+        prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
+        curr = msq_input.copy()
+        curr = curr[(curr['yr'] == curryr) & (curr['currmon'] == currmon)]
+        curr = curr[curr['yearx'] >= curryr - 3]
+        curr['balance_test'] = curr['submkt'].str.slice(0,2)
+        curr = curr[curr['balance_test'] != '99']
+        curr = curr[['id', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
+        curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
+        prior = prior[['id']]
+        prior = prior.drop_duplicates('id')
+        prior['in_last_month'] = 1
+        prior = prior.set_index('id')
+        curr = curr.join(prior, on='id')
+        curr = curr[curr['in_last_month'].isnull() == True]
+        curr = curr[curr['currmon_tag'] == 0]
+        newnc_dict = {}
+        for index, row in curr.iterrows():
+            newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
+                                                                        'sizex': row['sizex'], 'totavailx': row['totavailx'], 'renx': row['renx']}
+        
 
     # If the input file did not load successfully, alert the user
     elif file_load_error == True:
@@ -743,4 +822,4 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         orig_cols = []
         file_used = "error"
     
-    return data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, rg_10_dict
+    return data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, rg_10_dict, newnc_dict
