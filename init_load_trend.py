@@ -9,8 +9,25 @@ from os.path import isfile, join
 from datetime import datetime
 import re
 import time
+import multiprocessing as mp
 
 from trend_process_sq_insight import process_sq_insight
+
+def load_msqs(sector_val, file_path):
+    cols_to_keep = ['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'metcode', 'subid', 'submkt', 'availxM', 'existsx']
+    if sector_val == "apt":
+        msq = pd.read_stata(file_path, columns= cols_to_keep + ['availx', 'totunitx', 'avgrenx', 'avgrenxM'])
+    elif sector_val == "ind":
+        msq = pd.read_stata(file_path, columns= cols_to_keep + ['type2', 'totavailx', 'ind_size', 'renx', 'renxM'])
+    elif sector_val == "off":
+        msq = pd.read_stata(file_path, columns=cols_to_keep + ['type2', 'totavailx', 'sizex', 'renx', 'renxM'])
+    elif sector_val == "ret":
+        msq = pd.read_stata(file_path, columns=cols_to_keep + ['type1', 'availx', 'sizex', 'nsizex', 'renx', 'renxM', 'nrenx', 'nrenxM'])
+    # Keep only relevant periods and rows that the property was in existance for
+    msq = msq[((msq['yr'] > 2008) | ((msq['yr'] == 2008) & (msq['qtr'] == 4)))]
+    msq = msq[msq['existsx'] == 1]
+
+    return msq
 
 def get_home():
     if os.name == "nt": return "//odin/reisadmin/"
@@ -218,13 +235,14 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         if sector_val == "apt" and file_used == "oob":
             data = data.join(past_data)
 
-        # Load the currmon row of all msqs to calculate extra data points and also the rollups
-        # This takes  awhile (loading stata dtas is slow) so will give the analyst the option to only refresh if there was an actual edit made to the msqs
-        if msq_load == "Y" or (file_used == "oob" and load_trunc == False):
-            print("start load msqs")
-            data_in = pd.DataFrame()
-            pathlist = Path("{}central/square/data/{}/production/msq/output".format(get_home(), sector_val)).glob('**/*.dta')
+        # Load all msqs for the sector and combine into one dataframe
+        # Only need to do this if the msqs havent been refreshed, so analyst has option to skip this section and rely on the data that was saved upon first load of module
+        if msq_load == "Y" or (file_used == "oob" and load_trunc == False):                
+
+            pathlist = Path("/home/central/square/data/{}/production/msq/output".format(sector_val)).glob('**/*msq.dta')
             r = re.compile("..msq\.dta")
+            paths = []
+            count = 0
             for path in pathlist:
                 path_in_str = str(path)
                 testing = path_in_str[-9:]
@@ -232,20 +250,20 @@ def initial_load(sector_val, curryr, currmon, msq_load):
                 modified = os.path.getmtime(path)
                 m_year, m_month, m_day = time.localtime(modified)[:-6]
                 if r.match(testing) != None and testing_folder == "output" and (m_year > curryr or (m_month >= currmon and m_year == curryr)):
-                    cols_to_keep = ['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'metcode', 'subid', 'submkt', 'availxM', 'existsx']
-                    if sector_val == "apt":
-                        test = pd.read_stata(path_in_str, columns= cols_to_keep + ['availx', 'totunitx', 'avgrenx', 'avgrenxM'])
-                    elif sector_val == "ind":
-                        test = pd.read_stata(path_in_str, columns= cols_to_keep + ['type2', 'totavailx', 'ind_size', 'renx', 'renxM'])
-                    elif sector_val == "off":
-                        test = pd.read_stata(path_in_str, columns=cols_to_keep + ['type2', 'totavailx', 'sizex', 'renx', 'renxM'])
-                    elif sector_val == "ret":
-                        test = pd.read_stata(path_in_str, columns=cols_to_keep + ['type1', 'availx', 'sizex', 'nsizex', 'renx', 'renxM', 'nrenx', 'nrenxM'])
-                    # Keep only relevant periods and rows that the property was in existance for
-                    test = test[((test['yr'] > 2008) | ((test['yr'] == 2008) & (test['qtr'] == 4)))]
-                    test = test[test['existsx'] == 1]
-                    data_in = data_in.append(test)
-            print("end load msqs")
+                    paths.append(path_in_str)
+
+            pool = mp.Pool(mp.cpu_count())
+            result_async = [pool.apply_async(load_msqs, args = (sector_val, path, )) for path in
+                            paths]
+            results = [r.get() for r in result_async]
+
+            data_in = pd.DataFrame()
+            data_in = data_in.append(results, ignore_index=True)
+            data_in.sort_values(by=['metcode', 'id', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
+            data_in = data_in.reset_index(drop=True)
+
+            pool.close()
+            
             if sector_val == "apt":
                 data_in = data_in.rename(columns={'totunitx': 'sizex', 'availx': 'totavailx', 'avgrenx': 'renx', 'avgrenxM': 'renxM'})
             elif sector_val == "ind":
