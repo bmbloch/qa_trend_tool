@@ -1343,8 +1343,10 @@ def store_input_vals(url_input):
                  Output('show_cd_container', 'style'),
                  Output('droproll', 'value'),
                  Output('ncsur_props', 'data'),
-                 Output('avail_props', 'data'),
-                 Output('rg_props', 'data'),
+                 Output('surv_avail_props', 'data'),
+                 Output('all_avail_props', 'data'),
+                 Output('surv_rg_props', 'data'),
+                 Output('all_rg_props', 'data'),
                  Output('newnc_props', 'data')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
@@ -1357,7 +1359,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
     if sector_val is None:
         raise PreventUpdate
     else:
-        oob_data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, rg_10_dict, newnc_dict = initial_load(sector_val, curryr, currmon, msq_load)
+        oob_data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict = initial_load(sector_val, curryr, currmon, msq_load)
         
         # Contniue with the callback if the input file loaded successfully
         if file_used != "error":
@@ -1422,12 +1424,12 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             else:
                  show_cd_display = {'display': 'none'}
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, rg_10_dict, newnc_dict
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),
@@ -2321,11 +2323,13 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('comment_mrent', 'value'),
                 State('comment_erent', 'value'),
                 State('ncsur_props', 'data'),
-                State('avail_props', 'data'),
-                State('rg_props', 'data'),
+                State('surv_avail_props', 'data'),
+                State('all_avail_props', 'data'),
+                State('surv_rg_props', 'data'),
+                State('all_rg_props', 'data'),
                 State('newnc_props', 'data')])
 @Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, avail_props, rg_props, newnc_props):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2517,24 +2521,42 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                     text_ncsur = '{}{}{}{}, {}m{}, {:,}'.format(text_ncsur, "\n", "\n", ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
             texts.append(text_ncsur)
             underline_cols += ['nc surabs']
-        sub_availprops_keys = [x for x in avail_props.keys() if x.split(",")[0] == drop_val]
+        sub_availprops_keys = [x for x in surv_avail_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_availprops_keys) > 0:
             for key in sub_availprops_keys:
                 if key == sub_availprops_keys[0]:
-                    text_avail = '{}, {:,}'.format(avail_props[key]['id'], avail_props[key]['abs'])
+                    text_avail = '{}, {:,}'.format(surv_avail_props[key]['id'], surv_avail_props[key]['abs'])
                 else:
-                    text_avail = '{}{}{}{}, {:,}'.format(text_avail, "\n", "\n", avail_props[key]['id'], avail_props[key]['abs'])
+                    text_avail = '{}{}{}{}, {:,}'.format(text_avail, "\n", "\n", surv_avail_props[key]['id'], surv_avail_props[key]['abs'])
             texts.append(text_avail)
             underline_cols += ['avail10d']
-        sub_rgprops_keys = [x for x in rg_props.keys() if x.split(",")[0] == drop_val]
+        sub_all_availprops_keys = [x for x in all_avail_props.keys() if x.split(",")[0] == drop_val]
+        if len(sub_all_availprops_keys) > 0:
+            for key in sub_all_availprops_keys:
+                if key == sub_all_availprops_keys[0]:
+                    text_all_avail = '{}, {:,}, {}'.format(all_avail_props[key]['id'], all_avail_props[key]['abs'], all_avail_props[key]['availxM'])
+                else:
+                    text_all_avail = '{}{}{}{}, {:,}, {}'.format(text_all_avail, "\n", "\n", all_avail_props[key]['id'], all_avail_props[key]['abs'], all_avail_props[key]['availxM'])
+            texts.append(text_all_avail)
+            underline_cols += ['ss vac chg']
+        sub_rgprops_keys = [x for x in surv_rg_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_rgprops_keys) > 0:
             for key in sub_rgprops_keys:
                 if key == sub_rgprops_keys[0]:
-                    text_rg = '{}, {:.1%}'.format(rg_props[key]['id'], rg_props[key]['rg'])
+                    text_rg = '{}, {:.1%}'.format(surv_rg_props[key]['id'], surv_rg_props[key]['rg'])
                 else:
-                    text_rg = '{}{}{}{}, {:.1%}'.format(text_rg, "\n", "\n", rg_props[key]['id'], rg_props[key]['rg'])
+                    text_rg = '{}{}{}{}, {:.1%}'.format(text_rg, "\n", "\n", surv_rg_props[key]['id'], surv_rg_props[key]['rg'])
             texts.append(text_rg)
             underline_cols += ['dqren10d']
+        sub_all_rgprops_keys = [x for x in all_rg_props.keys() if x.split(",")[0] == drop_val]
+        if len(sub_all_rgprops_keys) > 0:
+            for key in sub_all_rgprops_keys:
+                if key == sub_all_rgprops_keys[0]:
+                    text_all_rg = '{}, {:.1%}, {}'.format(all_rg_props[key]['id'], all_rg_props[key]['rg'], all_rg_props[key]['renxM'])
+                else:
+                    text_all_rg = '{}{}{}{}, {:.1%}, {}'.format(text_all_rg, "\n", "\n", all_rg_props[key]['id'], all_rg_props[key]['rg'], all_rg_props[key]['renxM'])
+            texts.append(text_all_rg)
+            underline_cols += ['ss rent chg']
         sub_newncprops_keys = [x for x in newnc_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_newncprops_keys) > 0:
             for key in sub_newncprops_keys:

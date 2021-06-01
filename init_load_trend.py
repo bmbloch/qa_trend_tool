@@ -768,7 +768,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         for index, row in nc_sur_props.iterrows():
             ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
 
-        # Use the MSQ data set to calculate the total surveyed abs for the 10 pool (surveyed this month, squared last month) in currmon and get the top ids for display in tooltip for key metrics table
+        # Use the MSQ data set to calculate the top ids for total surveyed abs for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
         sur_avail = msq_input.copy()
         sur_avail['tot_size'] = sur_avail.groupby('identity')['sizex'].transform('sum')
         sur_avail['10_tag'] = np.where((sur_avail['availxM'] == 0) & (sur_avail['availxM'].shift(1) == 1) & (sur_avail['id'] == sur_avail['id'].shift(1)) & (sur_avail['yr'] == curryr) & (sur_avail['currmon'] == currmon), 1, 0)
@@ -781,7 +781,20 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         for index, row in sur_avail.iterrows():
             avail_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'abs': row['abs']}
 
-        # Use the MSQ data set to calculate the total rent chg for the 10 pool (surveyed this month, squared last month) in currmon and get the top ids for display in tooltip for key metrics table
+        # Use the MSQ data set to calculate the top ids for rent chg regardless of survey status in currmon for display in tooltip for key metrics table
+        sq_avail = msq_input.copy()
+        sq_avail = sq_avail[((sq_avail['yr'] == curryr) & (sq_avail['currmon'] == currmon)) | ((sq_avail['yr'].shift(-1) == curryr) & (sq_avail['currmon'].shift(-1) == currmon))]
+        sq_avail['abs'] = np.where(sq_avail['id'] == sq_avail['id'].shift(1), sq_avail['totavailx'].shift(1) - sq_avail['totavailx'], np.nan)
+        sq_avail = sq_avail[(sq_avail['yr'] == curryr) & (sq_avail['currmon'] == currmon)]
+        sq_avail = sq_avail[['id', 'identity', 'abs', 'availxM']]
+        sq_avail = sq_avail[abs(sq_avail['abs']) > 0]
+        sq_avail.sort_values(by=['abs'], ascending=[False], key=abs, inplace=True)
+        sq_avail = sq_avail.groupby('identity').head(5).reset_index(drop=True)
+        sq_avail_dict = {}
+        for index, row in sq_avail.iterrows():
+            sq_avail_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'abs': row['abs'], 'availxM': row['availxM']}
+        
+        # Use the MSQ data set to calculate the top ids for rent chg for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
         sur_rg = msq_input.copy()
         sur_rg['tot_size'] = sur_rg.groupby('identity')['sizex'].transform('sum')
         sur_rg['10_tag'] = np.where((sur_rg['renxM'] == 0) & (sur_rg['renxM'].shift(1) == 1) & (sur_rg['id'] == sur_rg['id'].shift(1)) & (sur_rg['yr'] == curryr) & (sur_rg['currmon'] == currmon), 1, 0)
@@ -793,6 +806,19 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         rg_10_dict = {}
         for index, row in sur_rg.iterrows():
             rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'rg': row['rg']}
+
+        # Use the MSQ data set to calculate the top ids for rent chg regardless of survey status in currmon for display in tooltip for key metrics table
+        sq_rg = msq_input.copy()
+        sq_rg = sq_rg[((sq_rg['yr'] == curryr) & (sq_rg['currmon'] == currmon)) | ((sq_rg['yr'].shift(-1) == curryr) & (sq_rg['currmon'].shift(-1) == currmon))]
+        sq_rg['rg'] = np.where(sq_rg['id'] == sq_rg['id'].shift(1), (sq_rg['renx'] - sq_rg['renx'].shift(1)) / sq_rg['renx'].shift(1), np.nan)
+        sq_rg = sq_rg[(sq_rg['yr'] == curryr) & (sq_rg['currmon'] == currmon)]
+        sq_rg = sq_rg[['id', 'identity', 'rg', 'renxM']]
+        sq_rg = sq_rg[abs(sq_rg['rg']) > 0]
+        sq_rg.sort_values(by=['rg'], ascending=[False], key=abs, inplace=True)
+        sq_rg = sq_rg.groupby('identity').head(5).reset_index(drop=True)
+        sq_rg_dict = {}
+        for index, row in sq_rg.iterrows():
+            sq_rg_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
 
         # Use last months final msq to determine what ids are new to the sq pool this month, and are in the nc rebench window
         prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
@@ -822,4 +848,4 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         orig_cols = []
         file_used = "error"
     
-    return data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, rg_10_dict, newnc_dict
+    return data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, sq_avail_dict, rg_10_dict, sq_rg_dict, newnc_dict
