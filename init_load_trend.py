@@ -770,12 +770,13 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
         # Use the MSQ data set to calculate the top ids for total surveyed abs for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
         sur_avail = msq_input.copy()
-        sur_avail['tot_size'] = sur_avail.groupby('identity')['sizex'].transform('sum')
         sur_avail['10_tag'] = np.where((sur_avail['availxM'] == 0) & (sur_avail['availxM'].shift(1) == 1) & (sur_avail['id'] == sur_avail['id'].shift(1)) & (sur_avail['yr'] == curryr) & (sur_avail['currmon'] == currmon), 1, 0)
         sur_avail = sur_avail[(sur_avail['10_tag'] == 1) | (sur_avail['10_tag'].shift(-1) == 1)]
         sur_avail['abs'] = sur_avail['totavailx'].shift(1) - sur_avail['totavailx']
         sur_avail = sur_avail[(sur_avail['yr'] == curryr) & (sur_avail['currmon'] == currmon)]
-        sur_avail = sur_avail[(sur_avail['sizex'] / sur_avail['tot_size'] > 0.02) & (abs(sur_avail['abs']) / sur_avail['sizex'] > 0.2)]
+        sur_avail[abs(sur_avail['abs']) > 0]
+        sur_avail.sort_values(by=['abs'], ascending=[False], key=abs, inplace=True)
+        sur_avail = sur_avail.groupby('identity').head(5).reset_index(drop=True)
         sur_avail = sur_avail[['id', 'identity', 'abs']]
         avail_10_dict = {}
         for index, row in sur_avail.iterrows():
@@ -796,12 +797,14 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         
         # Use the MSQ data set to calculate the top ids for rent chg for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
         sur_rg = msq_input.copy()
-        sur_rg['tot_size'] = sur_rg.groupby('identity')['sizex'].transform('sum')
         sur_rg['10_tag'] = np.where((sur_rg['renxM'] == 0) & (sur_rg['renxM'].shift(1) == 1) & (sur_rg['id'] == sur_rg['id'].shift(1)) & (sur_rg['yr'] == curryr) & (sur_rg['currmon'] == currmon), 1, 0)
         sur_rg = sur_rg[(sur_rg['10_tag'] == 1) | (sur_rg['10_tag'].shift(-1) == 1)]
         sur_rg['rg'] = (sur_rg['renx'] - sur_rg['renx'].shift(1)) / sur_rg['renx'].shift(1)
         sur_rg = sur_rg[(sur_rg['yr'] == curryr) & (sur_rg['currmon'] == currmon)]
-        sur_rg = sur_rg[((sur_rg['sizex'] / sur_rg['tot_size'] > 0.02) & (abs(sur_rg['rg']) > 0.02)) | (abs(sur_rg['rg']) >= 0.05)]
+        sur_rg['rg'] = round(sur_rg['rg'], 3)
+        sur_rg = sur_rg[abs(sur_rg['rg']) > 0]
+        sur_rg.sort_values(by=['rg'], ascending=[False], key=abs, inplace=True)
+        sur_rg = sur_rg.groupby('identity').head(5).reset_index(drop=True)
         sur_rg = sur_rg[['id', 'identity', 'rg']]
         rg_10_dict = {}
         for index, row in sur_rg.iterrows():
@@ -813,6 +816,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         sq_rg['rg'] = np.where(sq_rg['id'] == sq_rg['id'].shift(1), (sq_rg['renx'] - sq_rg['renx'].shift(1)) / sq_rg['renx'].shift(1), np.nan)
         sq_rg = sq_rg[(sq_rg['yr'] == curryr) & (sq_rg['currmon'] == currmon)]
         sq_rg = sq_rg[['id', 'identity', 'rg', 'renxM']]
+        sq_rg['rg'] = round(sq_rg['rg'], 3)
         sq_rg = sq_rg[abs(sq_rg['rg']) > 0]
         sq_rg.sort_values(by=['rg'], ascending=[False], key=abs, inplace=True)
         sq_rg = sq_rg.groupby('identity').head(5).reset_index(drop=True)
