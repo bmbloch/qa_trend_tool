@@ -33,6 +33,7 @@ from stats_trend import calc_stats
 from flags_trend import calc_flags
 from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue 
 from support_functions_trend import get_diffs, rank_it, flag_examine, create_review_packet, check_skips, get_user_skips, sub_met_graphs
+from support_functions_trend import ncsur_tooltip, avail10_tooltip, all_avail_tooltip, ren10_tooltip, all_rent_tooltip, ncbackfill_tooltip
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
 from timer_trend import Timer
@@ -2510,69 +2511,39 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                                             'c sub g renx mo wgt': 'c sub grenx mo wgt','n met g renx mo wgt': 'n met grenx mo wgt','n sub g renx mo wgt': 'n sub grenx mo wgt',
                                             'nc met g renx mo wgt': 'nc met grenx mo wgt','nc sub g renx mo wgt': 'nc sub grenx mo wgt', 'G mrent 12': 'Gmrent 12'})
         
+        # Set up tooltips for key metrics table that will display key id level information
         underline_cols = []
-        texts = []
+        tables = []
         sub_ncabsprops_keys = [x for x in ncsur_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_ncabsprops_keys) > 0:
-            for key in sub_ncabsprops_keys:
-                if key == sub_ncabsprops_keys[0]:
-                    text_ncsur = '{}, {}m{}, {:,}'.format(ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
-                else:
-                    text_ncsur = '{}{}{}{}, {}m{}, {:,}'.format(text_ncsur, "\n", "\n", ncsur_props[key]['id'], ncsur_props[key]['yearx'], ncsur_props[key]['month'], ncsur_props[key]['nc_surabs'])
-            texts.append(text_ncsur)
-            underline_cols += ['nc surabs']
+            tables, underline_cols = ncsur_tooltip(ncsur_props, sub_ncabsprops_keys, tables, underline_cols)
+        
         sub_availprops_keys = [x for x in surv_avail_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_availprops_keys) > 0:
-            for key in sub_availprops_keys:
-                if key == sub_availprops_keys[0]:
-                    text_avail = '{}, {:,}'.format(surv_avail_props[key]['id'], surv_avail_props[key]['abs'])
-                else:
-                    text_avail = '{}{}{}{}, {:,}'.format(text_avail, "\n", "\n", surv_avail_props[key]['id'], surv_avail_props[key]['abs'])
-            texts.append(text_avail)
-            underline_cols += ['avail10d']
+            tables, underline_cols = avail10_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_cols)
+            
         sub_all_availprops_keys = [x for x in all_avail_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_all_availprops_keys) > 0:
-            for key in sub_all_availprops_keys:
-                if key == sub_all_availprops_keys[0]:
-                    text_all_avail = '{}, {:,}, {}'.format(all_avail_props[key]['id'], all_avail_props[key]['abs'], all_avail_props[key]['availxM'])
-                else:
-                    text_all_avail = '{}{}{}{}, {:,}, {}'.format(text_all_avail, "\n", "\n", all_avail_props[key]['id'], all_avail_props[key]['abs'], all_avail_props[key]['availxM'])
-            texts.append(text_all_avail)
-            underline_cols += ['ss vac chg']
+            tables, underline_cols = all_avail_tooltip(all_avail_props, sub_all_availprops_keys, tables, underline_cols)
+        
         sub_rgprops_keys = [x for x in surv_rg_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_rgprops_keys) > 0:
-            for key in sub_rgprops_keys:
-                if key == sub_rgprops_keys[0]:
-                    text_rg = '{}, {:.1%}'.format(surv_rg_props[key]['id'], surv_rg_props[key]['rg'])
-                else:
-                    text_rg = '{}{}{}{}, {:.1%}'.format(text_rg, "\n", "\n", surv_rg_props[key]['id'], surv_rg_props[key]['rg'])
-            texts.append(text_rg)
-            underline_cols += ['dqren10d']
+            tables, underline_cols = ren10_tooltip(surv_rg_props, sub_rgprops_keys, tables, underline_cols)
+        
         sub_all_rgprops_keys = [x for x in all_rg_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_all_rgprops_keys) > 0:
-            for key in sub_all_rgprops_keys:
-                if key == sub_all_rgprops_keys[0]:
-                    text_all_rg = '{}, {:.1%}, {}'.format(all_rg_props[key]['id'], all_rg_props[key]['rg'], all_rg_props[key]['renxM'])
-                else:
-                    text_all_rg = '{}{}{}{}, {:.1%}, {}'.format(text_all_rg, "\n", "\n", all_rg_props[key]['id'], all_rg_props[key]['rg'], all_rg_props[key]['renxM'])
-            texts.append(text_all_rg)
-            underline_cols += ['ss rent chg']
+            tables, underline_cols = all_rent_tooltip(all_rg_props, sub_all_rgprops_keys, tables, underline_cols)
+        
         sub_newncprops_keys = [x for x in newnc_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_newncprops_keys) > 0:
-            for key in sub_newncprops_keys:
-                if key == sub_newncprops_keys[0]:
-                    text_newnc = '{}, {}m{}, {:,}, {:,}, {:.3}'.format(newnc_props[key]['id'], newnc_props[key]['yearx'], newnc_props[key]['month'], newnc_props[key]['sizex'], newnc_props[key]['totavailx'], newnc_props[key]['renx'])
-                else:
-                    text_newnc = '{}{}{}{}, {}m{}, {:,}, {:,}, {:.3}'.format(text_newnc, "\n", "\n", newnc_props[key]['id'], newnc_props[key]['yearx'], newnc_props[key]['month'], newnc_props[key]['sizex'], newnc_props[key]['totavailx'], newnc_props[key]['renx'])
-            texts.append(text_newnc)
-            underline_cols += ['newncsf']
+            tables, underline_cols = ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols)
 
         if len(underline_cols) > 0:
             tooltip_key_metrics = [
                                 {'if': {'column_id': str(col)},
                                     'type': 'markdown',
-                                    'value': text
-                                } for col, text in zip(underline_cols, texts)
+                                    'value': table
+                                } for col, table in zip(underline_cols, tables)
                                ]
         else:
             tooltip_key_metrics = [
