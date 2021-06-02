@@ -9,6 +9,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import itertools
 import plotly.graph_objs as go 
+import textwrap
 
 from init_load_trend import get_home
 from timer_trend import Timer
@@ -1578,3 +1579,196 @@ def sub_met_set_layout(fig, title, cons_range_list, y2_title, vac_range_list, dt
             )
 
     return fig
+
+def ncsur_tooltip(ncsur_props, sub_ncabsprops_keys, tables, underline_cols):
+
+    for key in sub_ncabsprops_keys:
+        if key == sub_ncabsprops_keys[0]:
+            table_ncsur = textwrap.dedent(
+                                            '''
+                                            First Surv NC Prop Abs
+                                            | id   |  YrBuilt                |  Abs    |
+                                            |------|-------------------------|---------|
+                                            | {id} | {yearbuilt}m{monthbuilt}| {abs:,} | 
+                                            '''.format(
+                                                id=ncsur_props[key]['id'],
+                                                yearbuilt=ncsur_props[key]['yearx'],
+                                                monthbuilt=ncsur_props[key]['month'],
+                                                abs=ncsur_props[key]['nc_surabs']
+                                            )
+                                        )
+        else:
+            table_ncsur += textwrap.dedent(
+                                            '''
+                                            {id}     {yearbuilt}m{monthbuilt}     {abs:,}
+                                            '''.format(
+                                                id=ncsur_props[key]['id'],
+                                                yearbuilt=ncsur_props[key]['yearx'],
+                                                monthbuilt=ncsur_props[key]['month'],
+                                                abs=ncsur_props[key]['nc_surabs']
+                                                
+                                            )
+                                        )
+    tables.append(table_ncsur)
+    underline_cols += ['nc surabs']
+
+    return tables, underline_cols
+
+def avail10_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_cols):
+    for key in sub_availprops_keys:
+        if key == sub_availprops_keys[0]:
+            table_avail = textwrap.dedent(
+                                            '''
+                                            Top Props 10 Absorption
+                                            | id   |  Absorption | 
+                                            |------|-------------|
+                                            | {id} | {abs:,}     | 
+                                            '''.format(
+                                                id=surv_avail_props[key]['id'],
+                                                abs=surv_avail_props[key]['abs']
+                                            )
+                                        )
+        else:
+            table_avail += textwrap.dedent(
+                                            '''
+                                            {id}   {abs:,}
+                                            '''.format(
+                                                id=surv_avail_props[key]['id'],
+                                                abs=surv_avail_props[key]['abs']
+                                            )
+                                        )
+    tables.append(table_avail)
+    underline_cols += ['avail10d']
+
+    return tables, underline_cols
+
+def all_avail_tooltip(all_avail_props, sub_all_availprops_keys, tables, underline_cols):
+
+    for key in sub_all_availprops_keys:
+        if key == sub_all_availprops_keys[0]:
+            table_all_avail = textwrap.dedent(
+                                            '''
+                                            Top Props Absorption
+                                            | id   |  Absorption |  AvailxM |
+                                            |------|-------------|----------|
+                                            | {id} | {abs:,}     | {xm}     |
+                                            '''.format(
+                                                id=all_avail_props[key]['id'],
+                                                abs=all_avail_props[key]['abs'],
+                                                xm=all_avail_props[key]['availxM'] 
+                                            )
+                                        )
+        else:
+            table_all_avail += textwrap.dedent(
+                                            '''
+                                            {id}   {abs:,}   {xm}
+                                            '''.format(
+                                                id=all_avail_props[key]['id'],
+                                                abs=all_avail_props[key]['abs'],
+                                                xm=all_avail_props[key]['availxM']
+
+                                            )
+                                        )
+    tables.append(table_all_avail)
+    underline_cols += ['ss vac chg']
+
+    return tables, underline_cols
+
+def ren10_tooltip(surv_rg_props, sub_rgprops_keys, tables, underline_cols):
+
+    for key in sub_rgprops_keys:
+        if key == sub_rgprops_keys[0]:
+            table_surv_rg = textwrap.dedent(
+                                            '''
+                                            Top Props Rent 10 Chg
+                                            | id   |  Rent Chg  |
+                                            |------|------------|
+                                            | {id} | {rg:.1%}   |
+                                            '''.format(
+                                                id=surv_rg_props[key]['id'],
+                                                rg=surv_rg_props[key]['rg'],
+                                            )
+                                        )
+        else:
+            table_surv_rg += textwrap.dedent(
+                                            '''
+                                            {id}   {rg:.1%}
+                                            '''.format(
+                                                id=surv_rg_props[key]['id'],
+                                                rg=surv_rg_props[key]['rg'],
+                                            )
+                                        )
+    tables.append(table_surv_rg)
+    underline_cols += ['dqren10d']
+
+    return tables, underline_cols
+
+def all_rent_tooltip(all_rg_props, sub_all_rgprops_keys, tables, underline_cols):
+    for key in sub_all_rgprops_keys:
+        if key == sub_all_rgprops_keys[0]:
+            table_all_rent = textwrap.dedent(
+                                            '''
+                                            Top Props Rent Chg
+                                            | id   |  Rent Chg |  RenxM   |
+                                            |------|-----------|----------|
+                                            | {id} | {rg:.1%}  | {xm}     |
+                                            '''.format(
+                                                id=all_rg_props[key]['id'],
+                                                rg=all_rg_props[key]['rg'],
+                                                xm=all_rg_props[key]['renxM'] 
+                                            )
+                                        )
+        else:
+            table_all_rent += textwrap.dedent(
+                                            '''
+                                            {id}   {rg:.1%}     {xm}
+                                            '''.format(
+                                                id=all_rg_props[key]['id'],
+                                                rg=all_rg_props[key]['rg'],
+                                                xm=all_rg_props[key]['renxM']
+
+                                            )
+                                        )
+
+    tables.append(table_all_rent)
+    underline_cols += ['ss rent chg']
+
+    return tables, underline_cols
+
+def ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols):
+
+    for key in sub_newncprops_keys:
+            if key == sub_newncprops_keys[0]:
+                table_ncbackfill = textwrap.dedent(
+                                                '''
+                                                Top Props Absorption
+                                                | id   |  Yr Built               |  Size   | Totavail        |  Rent      |
+                                                |------|-------------------------|---------|-----------------|------------|
+                                                | {id} | {yearbuilt}m{monthbuilt}|  {size:,} | {totavail:,}  | {renx:.3}  |    
+                                                '''.format(
+                                                    id=newnc_props[key]['id'],
+                                                    yearbuilt=newnc_props[key]['yearx'],
+                                                    monthbuilt=newnc_props[key]['month'],
+                                                    size=newnc_props[key]['sizex'], 
+                                                    totavail=newnc_props[key]['totavailx'], 
+                                                    renx=newnc_props[key]['renx'],  
+                                                )
+                                            )
+            else:
+                table_ncbackfill += textwrap.dedent(
+                                                '''
+                                                {id} {yearbuilt}m{monthbuilt}  {size:,} {totavail:,} {renx:.3}  
+                                                '''.format(
+                                                    id=newnc_props[key]['id'],
+                                                    yearbuilt=newnc_props[key]['yearx'],
+                                                    monthbuilt=newnc_props[key]['month'],
+                                                    size=newnc_props[key]['sizex'], 
+                                                    totavail=newnc_props[key]['totavailx'], 
+                                                    renx=newnc_props[key]['renx'], 
+
+                                                )
+                                            )
+    tables.append(table_ncbackfill)
+    underline_cols += ['newncsf']
+
+    return tables, underline_cols
