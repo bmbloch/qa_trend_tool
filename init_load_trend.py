@@ -766,7 +766,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         nc_sur_props = nc_sur_props[['id', 'identity', 'nc_surabs', 'yearx', 'month']]
         ncsur_prop_dict = {}
         for index, row in nc_sur_props.iterrows():
-            ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
+            ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
 
         # Use the MSQ data set to calculate the top ids for total surveyed abs for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
         sur_avail = msq_input.copy()
@@ -780,7 +780,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         sur_avail = sur_avail[['id', 'identity', 'abs']]
         avail_10_dict = {}
         for index, row in sur_avail.iterrows():
-            avail_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'abs': row['abs']}
+            avail_10_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'abs': row['abs']}
 
         # Use the MSQ data set to calculate the top ids for rent chg regardless of survey status in currmon for display in tooltip for key metrics table
         sq_avail = msq_input.copy()
@@ -793,7 +793,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         sq_avail = sq_avail.groupby('identity').head(5).reset_index(drop=True)
         sq_avail_dict = {}
         for index, row in sq_avail.iterrows():
-            sq_avail_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'abs': row['abs'], 'availxM': row['availxM']}
+            sq_avail_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'abs': row['abs'], 'availxM': row['availxM']}
         
         # Use the MSQ data set to calculate the top ids for rent chg for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
         sur_rg = msq_input.copy()
@@ -808,7 +808,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         sur_rg = sur_rg[['id', 'identity', 'rg']]
         rg_10_dict = {}
         for index, row in sur_rg.iterrows():
-            rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'rg': row['rg']}
+            rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg']}
 
         # Use the MSQ data set to calculate the top ids for rent chg regardless of survey status in currmon for display in tooltip for key metrics table
         sq_rg = msq_input.copy()
@@ -822,7 +822,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         sq_rg = sq_rg.groupby('identity').head(5).reset_index(drop=True)
         sq_rg_dict = {}
         for index, row in sq_rg.iterrows():
-            sq_rg_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
+            sq_rg_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
 
         # Use last months final msq to determine what ids are new to the sq pool this month, and are in the nc rebench window
         prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
@@ -842,7 +842,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         curr = curr[curr['currmon_tag'] == 0]
         newnc_dict = {}
         for index, row in curr.iterrows():
-            newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'identity': row['identity'], 'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
+            newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
                                                                         'sizex': row['sizex'], 'totavailx': row['totavailx'], 'renx': row['renx']}
         
 
