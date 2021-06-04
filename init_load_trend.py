@@ -242,8 +242,6 @@ def initial_load(sector_val, curryr, currmon, msq_load):
                 p_yr = curryr - 1
             else:
                 p_mon = currmon - 1
-                if sector_val == "ret" and p_mon < 10:
-                    p_mon = "0" + str(p_mon)
                 p_yr = curryr
             if sector_val == "apt":
                 pathlist = Path("/home/central/square/data/{}/production/archive_{}_{}_final".format(sector_val, p_yr, p_mon)).glob('**/*msq.dta')
@@ -256,7 +254,6 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             paths = []
             for path in pathlist:
                 paths.append(str(path))
-
             pool = mp.Pool(mp.cpu_count())
             result_async = [pool.apply_async(load_msqs, args = (sector_val, path, )) for path in
                             paths]
