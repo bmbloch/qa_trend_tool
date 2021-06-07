@@ -32,7 +32,7 @@ from server_trend import trend, server
 from stats_trend import calc_stats
 from flags_trend import calc_flags
 from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue 
-from support_functions_trend import get_diffs, rank_it, flag_examine, create_review_packet, check_skips, get_user_skips, sub_met_graphs
+from support_functions_trend import get_diffs, rank_it, flag_examine, create_review_packet, check_skips, get_user_skips, sub_met_graphs, set_bar_scale, set_y2_scale
 from support_functions_trend import ncsur_tooltip, avail10_tooltip, all_avail_tooltip, ren10_tooltip, all_rent_tooltip, ncbackfill_tooltip
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
