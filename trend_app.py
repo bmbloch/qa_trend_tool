@@ -2719,24 +2719,25 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 Output('sub_rank_container', 'style'),
                 Output('met_rank_container', 'style'),
                 Output('rank_toggle_container', 'style'),
-                Output('roll_view', 'disabled')],
+                Output('roll_view', 'disabled'),
+                Output('first_roll', 'data')],
                 [Input('droproll', 'value'),
                 Input('roll_view', 'value'),
                 Input('currmon_filt', 'value'),
                 Input('rank_toggle', 'value'),
                 Input('display_trigger', 'data'),
-                Input('tab_clicked', 'value')],
+                Input('tab_clicked', 'value'),
+                Input('sector', 'data'),],
                 [State('store_orig_cols', 'data'),
                 State('curryr', 'data'),
                 State('currmon', 'data'),
-                State('sector', 'data'),
                 State('init_trigger', 'data'),
-                State('dropman', 'value')])
+                State('dropman', 'value'),
+                State('first_roll', 'data')])
 @Timer("Output Rollup")
-def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger, tab_val, orig_cols, curryr, currmon, sector_val, success_init, drop_val):
-    input_id = get_input_id()
+def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger, tab_val, sector_val, orig_cols, curryr, currmon, success_init, drop_val, first_load):
 
-    if sector_val is None or success_init == False or tab_val != "rollups":
+    if sector_val is None or success_init == False or (tab_val != "rollups" and first_load == False):
         raise PreventUpdate
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -2888,15 +2889,17 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
             disable_roll_view = True
         else:
             disable_roll_view = False
+
+        first_load = False
     
         if multi_view == False or roll_val[:2] == "US":
             return go.Figure(data=data_vac_roll), go.Figure(data=data_rent_roll), vac_series_met_display, rent_series_met_display, rolled.to_dict('records'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
-            for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, no_update, no_update, no_update, no_update, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, disable_roll_view
+            for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, no_update, no_update, no_update, no_update, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, disable_roll_view, first_load
         elif multi_view == True:
             return no_update, no_update, {'display': 'none'}, {'display': 'none'}, rolled.to_dict('records'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
             for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, met_rank.to_dict('records'), [{'name': ['Met Rank', met_rank.columns[i]], 'id': met_rank.columns[i], 'type': type_dict_rank[met_rank.columns[i]], 'format': format_dict_rank[met_rank.columns[i]]} 
                             for i in range(0, len(met_rank.columns))], sub_rank.to_dict('records'), [{'name': ['Sub Rank', sub_rank.columns[i]], 'id': sub_rank.columns[i], 'type': type_dict_rank[sub_rank.columns[i]], 'format': format_dict_rank[sub_rank.columns[i]]}
-                            for i in range(0, len(sub_rank.columns))], sub_rank_display, met_rank_display, rank_toggle_display, disable_roll_view
+                            for i in range(0, len(sub_rank.columns))], sub_rank_display, met_rank_display, rank_toggle_display, disable_roll_view, first_load
 
 @trend.callback(Output('store_shim_finals', 'data'),
                   [Input('man_view', 'data'),
@@ -3005,7 +3008,8 @@ def get_scatter_drops(type_value, aggreg_met, sector_val, curryr, currmon, x_var
 
 @trend.callback([Output('scatter_graph', 'figure'),
                 Output('store_scatter_check', 'data'),
-                Output('scatter_container', 'style')],
+                Output('scatter_container', 'style'),
+                Output('first_scatter', 'data')],
                 [Input('scatter-xaxis-var', 'value'),
                 Input('scatter-yaxis-var', 'value'),
                 Input('scatter-type-radios', 'value'),
@@ -3017,11 +3021,12 @@ def get_scatter_drops(type_value, aggreg_met, sector_val, curryr, currmon, x_var
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data'),
-                State('store_flag_cols', 'data')])
+                State('store_flag_cols', 'data'),
+                State('first_scatter', 'data')])
 @Timer("Produce Scatter")
-def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_met, sector_val, submit_button, tab_val, curryr, currmon, success_init, flag_cols):
+def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_met, sector_val, submit_button, tab_val, curryr, currmon, success_init, flag_cols, first_scatter):
 
-    if sector_val is None or success_init == False or tab_val != "graphs":
+    if sector_val is None or success_init == False or (tab_val != "graphs" and first_scatter == False):
         raise PreventUpdate
     else:
         graph_data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -3153,12 +3158,13 @@ def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_m
         # This works because it makes the callbacks that use elements produced in this callback have an input that is linked to an output of this callback, ensuring that they will only be fired once this one completes
         scatter_check = 1
 
-        return scatter_layout, scatter_check, {'width': '49%', 'display': 'inline-block', 'padding-left': '30px'}
+        return scatter_layout, scatter_check, {'width': '49%', 'display': 'inline-block', 'padding-left': '30px'}, False
 
 @trend.callback([Output('x_time_series', 'figure'),
                 Output('x_ts_container', 'style'),
                 Output('y_time_series', 'figure'),
-                Output('y_ts_container', 'style')],
+                Output('y_ts_container', 'style'),
+                Output('first_ts', 'data')],
                 [Input('scatter_graph', 'hoverData'),
                 Input('scatter-xaxis-var', 'value'),
                 Input('scatter-yaxis-var', 'value'),
@@ -3170,11 +3176,12 @@ def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_m
                 State('currmon', 'data'),
                 State('scatter-type-radios', 'value'),
                 State('aggreg_level', 'value'),
-                State('init_trigger', 'data')])
+                State('init_trigger', 'data'),
+                State('first_ts', 'data')])
 @Timer("Produce Timeseries")
-def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_check, init_trigger, tab_val, curryr, currmon, type_value, aggreg_met, success_init):
+def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_check, init_trigger, tab_val, curryr, currmon, type_value, aggreg_met, success_init, first_ts):
     
-    if sector_val is None or success_init == False or tab_val != "graphs":
+    if sector_val is None or success_init == False or (tab_val != "graphs" and first_ts == False):
         raise PreventUpdate
     else:
         graph = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -3494,7 +3501,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
                                     showgrid=False)
                                 )
 
-    return fig_x, x_ts_display, fig_y, y_ts_display
+    return fig_x, x_ts_display, fig_y, y_ts_display, False
 
 @trend.callback(Output('home-url','pathname'),
                   [Input('logout-button','n_clicks')])
