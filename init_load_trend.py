@@ -848,5 +848,11 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data = pd.DataFrame()
         orig_cols = []
         file_used = "error"
+        ncsur_prop_dict = {}
+        avail_10_dict = {}
+        sq_avail_dict = {}
+        rg_10_dict = {}
+        sq_rg_dict = {}
+        newnc_dict = {}
     
     return data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, sq_avail_dict, rg_10_dict, sq_rg_dict, newnc_dict
