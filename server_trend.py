@@ -1,7 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 
-trend = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+trend = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], title='Trend Review')
 
 trend.config.suppress_callback_exceptions = True
 
