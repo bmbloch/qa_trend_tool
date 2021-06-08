@@ -1629,7 +1629,8 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 Output('dropman', 'value'),
                 Output('countdown', 'data'),
                 Output('countdown', 'columns'),
-                Output('countdown_container', 'style')],
+                Output('countdown_container', 'style'),
+                Output('first_update', 'data')],
                 [Input('submit-button', 'n_clicks'),
                 Input('preview-button', 'n_clicks'),
                 Input('dropflag', 'value'),
@@ -1658,9 +1659,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('v_threshold', 'data'),
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data'),
-                State('dropman', 'value')])
+                State('first_update', 'data')])
 @Timer("Update Data")
-def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, init_drop_val):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update):
     
     input_id = get_input_id()
 
@@ -1715,7 +1716,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         if input_id != "preview-button":
             flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag)
 
-        if input_id != "dropflag" and input_id != "preview-button":
+        if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             # Re-calc stats and flags now that the data has been updated, or if this is the initial load
             if  message_display == False:
                 data = calc_stats(data, curryr, currmon, False, sector_val)
@@ -1725,7 +1726,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 if input_id == "submit-button":
                     if len(skip_list) > 0:
                         decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
-                        data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, init_drop_val)
+                        data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, drop_val)
                         use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
             # Update countdown table
@@ -1735,10 +1736,9 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown = live_flag_count(countdown, sector_val, flag_cols)
             type_dict_countdown, format_dict_countdown = get_types(sector_val)
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
-            
+
             # Get the next sub flagged
-            flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, init_drop_val, False, curryr, currmon, flag_cols)
-            
+            flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, False, curryr, currmon, flag_cols)
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
         
         use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
@@ -1780,15 +1780,15 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             flags_unresolved = []
             flags_new = []
         
-        if input_id == "submit-button" or input_id == "init_trigger":
+        if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display
+                    for i in range(0, len(countdown.columns))], countdown_display, False
         elif input_id == "dropflag":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
-                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update, False
         else:
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False
 
 @trend.callback([Output('has_flag', 'data'),
                 Output('flag_list', 'data'),
@@ -1813,7 +1813,6 @@ def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, c
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-
         flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
 
         # Reset the radio button to the correct variable based on the new flag
@@ -1842,7 +1841,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
     if sector_val is None or success_init == False:
         raise PreventUpdate
     # Need this callback to tie to update_data callback so the csv is not set before the data is actually updated, but dont want to call the set csv function each time submit is clicked, so only do that when the input id is for the download button
-    elif input_id == "store_submit_button":
+    elif input_id == "store_submit_button" or "sector":
         raise PreventUpdate
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -2262,8 +2261,8 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
 
 @trend.callback([Output('man_view', 'data'),
                 Output('man_view', 'columns'),
-                Output('man_view_container', 'style'),
                 Output('man_view', 'style_data_conditional'),
+                Output('man_view_container', 'style'),
                 Output('key_metrics', 'data'),
                 Output('key_metrics', 'columns'),
                 Output('key_metrics_container', 'style'),
@@ -2699,7 +2698,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 col_header.append(data_title)
     
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
-                            for i in range(0, len(display_cols))], man_view_display, highlighting_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
+                            for i in range(0, len(display_cols))], highlighting_display, man_view_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
                             for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_key_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
 

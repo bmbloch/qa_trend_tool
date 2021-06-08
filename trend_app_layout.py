@@ -50,6 +50,7 @@ def get_app_layout():
             dcc.Store(id='first_roll', data=True),
             dcc.Store(id='first_scatter', data=True),
             dcc.Store(id='first_ts', data=True),
+            dcc.Store(id='first_update', data=True),
             dcc.Store('sector'),
             dcc.ConfirmDialog(id='manual_message'),
             dcc.Tabs(id ='tab_clicked', value ='home', children=[
