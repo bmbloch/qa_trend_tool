@@ -2809,7 +2809,7 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
 
         
         if rolled['merent'].isnull().all(axis=0) == True:
-            rolled = rolled.drop(['merent', 'G_merent', 'rol_G_merent', 'gap', 'gap_chg'], axis=1)        
+            rolled = rolled.drop(['merent', 'G_merent', 'gap', 'gap_chg'], axis=1)        
         
         if currmon == 1:
             priormon = 12
