@@ -495,6 +495,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
             issue_description_new = []
             issue_description_skipped = []
         elif has_flag == 2 and show_skips == True and len(p_skip_list) > 0:
+            p_skip_list = p_skip_list[0].replace(' ', '').split(",")
             display_issue_cols = []
             key_metric_issue_cols = []
             issue_description_resolved = []
@@ -526,6 +527,12 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                     ])
         elif has_flag == 1:
             if preview_status == 0:
+                if show_skips == True:
+                    flags_use = flag_list + p_skip_list
+                    disabled_list = [False] * len(flag_list) + [True] * len(p_skip_list)
+                else:
+                    flags_use = flag_list
+                    disabled_list = [False] * len(flag_list)
                 issue_description_resolved = []
                 issue_description_unresolved = []
                 issue_description_new = []
@@ -538,7 +545,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                                     id="flag_descriptions_noprev",
                                                     options=[
                                                             {"label": f" {i[0]} {i[6:]}", "value": f"skip-{i}", "label_id": f"label-{i}", "disabled": j}
-                                                            for i, j in zip(flag_list + p_skip_list, [False] * len(flag_list) + [True] * len(p_skip_list))
+                                                            for i, j in zip(flags_use, disabled_list)
                                                             ],
                                                     inline=True,
                                                     value = ["skip-" + x for x in init_skips]
@@ -547,7 +554,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                             ]
                                             + [
                                                 dbc.Tooltip(issue_descriptions[i], target=f"label-{i}")
-                                                for i in flag_list + p_skip_list
+                                                for i in flags_use
                                             ],
                                             fluid=True),
                                                 
@@ -948,7 +955,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
                 if identity_val is None:
                     identity_val = dataframe.reset_index().loc[0]['identity']  
                 flag_list = ['v_flag']
- 
+
     return flag_list, skip_list, identity_val, has_flag
 
 # This function rolls up the edited data to the metro and US level for presentation to econ
@@ -1173,6 +1180,7 @@ def check_skips(dataframe_in, decision_data, curryr, currmon, sector_val, flag_c
     dataframe[flag_cols]
     dataframe = dataframe[(dataframe['identity'] == init_drop_val) & (dataframe['curr_tag'] == 1)]
     skips = list(dataframe['flag_skip'])
+    skips = skips[0].replace(' ', '').split(",")
     if len(dataframe) > 0:           
         flags_only = dataframe.copy()
         flags_only = flags_only[flag_cols]
