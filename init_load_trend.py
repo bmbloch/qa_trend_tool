@@ -726,7 +726,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         # Fill in nans for the first period abs in 2020q2 new subs
         data['abs'] = np.where((data['yr'] == 2019) & (data['currmon'] == 1) & (data['identity'] != data['identity'].shift(1)), np.nan, data['abs'])
 
-        # Use the MSQ data set to calculate the total surveyed abs from NC properties in currmon for use in flags
+        # Load MSQ Data
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
         msq_input = pd.read_pickle(file_path)
         if sector_val == "apt" or sector_val == "off":
@@ -735,13 +735,41 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             msq_input['identity'] = msq_input['metcode'] + msq_input['subid'].astype(str) + msq_input['type1']
         elif sector_val == "ind":
             msq_input['identity'] = msq_input['metcode'] + msq_input['subid'].astype(str) + msq_input['type2']
+
+        # Use last months final msq to determine what ids are new to the sq pool this month, and are in the nc rebench window
+        prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
+        curr = msq_input.copy()
+        curr = curr[(curr['yr'] == curryr) & (curr['currmon'] == currmon)]
+        curr = curr[curr['yearx'] >= curryr - 3]
+        curr['balance_test'] = curr['submkt'].str.slice(0,2)
+        curr = curr[curr['balance_test'] != '99']
+        curr = curr[['id', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
+        curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
+        prior = prior[['id']]
+        prior = prior.drop_duplicates('id')
+        prior['in_last_month'] = 1
+        prior = prior.set_index('id')
+        curr = curr.join(prior, on='id')
+        curr = curr[curr['in_last_month'].isnull() == True]
+        curr = curr[curr['currmon_tag'] == 0]
+        new_ids = list(curr['id'])
+        newnc_dict = {}
+        for index, row in curr.iterrows():
+            newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
+                                                                        'sizex': row['sizex'], 'totavailx': row['totavailx'], 'renx': row['renx']}
+        
+        # Use the MSQ data set to calculate the total surveyed abs from NC properties in currmon for use in flags
         data_surabs = msq_input.copy()
         data_surabs['surveyed'] = np.where(data_surabs['availxM'] == 0, 1, 0)
         data_surabs['count_survs'] = data_surabs.groupby('id')['surveyed'].transform('sum')
         data_surabs['nc_first_surv'] = np.where((data_surabs['yr'] == curryr) & (data_surabs['currmon'] == currmon) & (data_surabs['count_survs'] == 1) & (data_surabs['availxM'] == 0) & (data_surabs['yearx'] >= curryr - 3), 1, 0)
+        data_surabs['new_to_sq'] = np.where(data_surabs['id'].isin(new_ids), 1, 0)
+        data_surabs['currmon_abs'] = np.where((data_surabs['yr'] == curryr) & (data_surabs['currmon'] == currmon) & (data_surabs['new_to_sq'] == 1) & (data_surabs['totavailx'].shift(1).isnull() == False), data_surabs['totavailx'].shift(1) - data_surabs['totavailx'], np.nan)
         data_surabs = data_surabs[(data_surabs['yr'] == curryr) & (data_surabs['currmon'] == currmon)]
         data_surabs = data_surabs[((data_surabs['yearx'] == curryr) & (data_surabs['month'] == currmon)) | (data_surabs['nc_first_surv'] == 1)]
         data_surabs['nc_surabs'] = np.where((data_surabs['availxM'] == 0), data_surabs['sizex'] - data_surabs['totavailx'], 0)
+        data_surabs['nc_surabs'] = np.where((data_surabs['availxM'] == 0) & (data_surabs['new_to_sq'] == 1) & (data_surabs['totavailx'].shift(1).isnull() == False), data_surabs['currmon_abs'], data_surabs['nc_surabs'])
+        data_surabs['nc_surabs'] = np.where((data_surabs['new_to_sq'] == 1) & (data_surabs['nc_surabs'] < 0), 0, data_surabs['nc_surabs'])
 
         data_surabs['sum_nc_surabs'] = data_surabs.groupby('identity')['nc_surabs'].transform('sum')
         data_surabs_all = data_surabs.copy()
@@ -820,28 +848,6 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         sq_rg_dict = {}
         for index, row in sq_rg.iterrows():
             sq_rg_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
-
-        # Use last months final msq to determine what ids are new to the sq pool this month, and are in the nc rebench window
-        prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
-        curr = msq_input.copy()
-        curr = curr[(curr['yr'] == curryr) & (curr['currmon'] == currmon)]
-        curr = curr[curr['yearx'] >= curryr - 3]
-        curr['balance_test'] = curr['submkt'].str.slice(0,2)
-        curr = curr[curr['balance_test'] != '99']
-        curr = curr[['id', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
-        curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
-        prior = prior[['id']]
-        prior = prior.drop_duplicates('id')
-        prior['in_last_month'] = 1
-        prior = prior.set_index('id')
-        curr = curr.join(prior, on='id')
-        curr = curr[curr['in_last_month'].isnull() == True]
-        curr = curr[curr['currmon_tag'] == 0]
-        newnc_dict = {}
-        for index, row in curr.iterrows():
-            newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
-                                                                        'sizex': row['sizex'], 'totavailx': row['totavailx'], 'renx': row['renx']}
-        
 
     # If the input file did not load successfully, alert the user
     elif file_load_error == True:
