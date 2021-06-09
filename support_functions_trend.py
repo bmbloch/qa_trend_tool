@@ -1746,7 +1746,6 @@ def all_rent_tooltip(all_rg_props, sub_all_rgprops_keys, tables, underline_cols)
     return tables, underline_cols
 
 def ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols):
-
     for key in sub_newncprops_keys:
             if key == sub_newncprops_keys[0]:
                 table_ncbackfill = textwrap.dedent(
@@ -1761,7 +1760,7 @@ def ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols)
                                                     monthbuilt=newnc_props[key]['month'],
                                                     size=newnc_props[key]['sizex'], 
                                                     totavail=newnc_props[key]['totavailx'], 
-                                                    renx=newnc_props[key]['renx'],  
+                                                    renx=float(newnc_props[key]['renx']),  
                                                 )
                                             )
             else:
@@ -1774,7 +1773,7 @@ def ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols)
                                                     monthbuilt=newnc_props[key]['month'],
                                                     size=newnc_props[key]['sizex'], 
                                                     totavail=newnc_props[key]['totavailx'], 
-                                                    renx=newnc_props[key]['renx'], 
+                                                    renx=float(newnc_props[key]['renx']), 
 
                                                 )
                                             )
