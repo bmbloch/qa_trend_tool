@@ -1116,7 +1116,11 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         data_orig = data.copy()
         data_orig = data_orig[(data_orig['identity'] == drop_val)]
         if "trunc" in expand and "full" not in expand:
-            data_orig = data_orig[(data_orig['yr'] >= curryr - 3) | ((data_orig['yr'] == curryr - 4) & (data_orig['currmon'] == 12))]
+            if currmon == 1:
+                priormon = 12
+            else:
+                priormon = currmon - 1
+            data_orig = data_orig[(data_orig['yr'] == curryr) | ((data_orig['yr'] == curryr - 1) & (data_orig['currmon'] > priormon))]
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
@@ -1211,12 +1215,16 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
         data_orig = data.copy()
         data_orig = data_orig[(data_orig['identity'] == drop_val)]
         if "trunc" in expand and "full" not in expand:
-            data_orig = data_orig[(data_orig['yr'] >= curryr - 3) | ((data_orig['yr'] == curryr - 4) & (data_orig['currmon'] == 12))]
+            if currmon == 1:
+                priormon = 12
+            else:
+                priormon = currmon - 1
+            data_orig = data_orig[(data_orig['yr'] == curryr) | ((data_orig['yr'] == curryr - 1) & (data_orig['currmon'] > priormon))]
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg)
-        
+
         if has_diff == 1:
             
             # Test if the flag will be resolved by the edit by re-running calc stats flag and the relevant flag function 
@@ -1230,7 +1238,11 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
 
             preview_data = preview_data[(preview_data['identity'] == drop_val)]
             if "trunc" in expand and "full" not in expand:
-                preview_data = preview_data[(preview_data['yr'] >= curryr - 3) | ((preview_data['yr'] == curryr - 4) & (preview_data['currmon'] == 12))]
+                if currmon == 1:
+                    priormon = 12
+                else:
+                    priormon = currmon - 1
+                preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & (preview_data['currmon'] >= priormon))]
             preview_data['sub_prev'] = np.where(preview_data['identity'] == drop_val, 1, 0)
         else:
             preview_data = pd.DataFrame()
@@ -2354,19 +2366,29 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         data_full = data.copy() # Need this in case the flag is prior to trunc history, even if expand history not selected
         preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
         shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
-        
-        # If the user wants to see the full history for the submarket, use the full history, otherwise truncate the view to curryr - 3 plus last month of curryr - 4
-        if "full" in expand:
-            False
-        else:
-            data = data[(data['yr'] >= curryr - 3) | ((data['yr'] == curryr - 4) & (data['currmon'] == 12))]
-            if len(preview_data) > 0:
-                preview_data = preview_data[(preview_data['yr'] >= curryr - 3) | ((preview_data['yr'] == curryr - 4) & (preview_data['currmon'] == 12))]
-            if len(shim_data) > 0:
-                shim_data = shim_data[(shim_data['yr'] >= curryr - 3) | ((shim_data['yr'] == curryr - 4) & (shim_data['currmon'] == 12))]
-   
+
         # Drop flag columns to reduce dimensionality
         data = data.drop(flag_cols, axis=1)
+
+        if currmon == 1:
+            priormon = 12
+        else:
+            priormon = currmon - 1
+
+        # Call the function to set up the sub time series graphs
+        # Do this before truncating the data series, so can display more than 12 months on graph
+        if len(preview_data) > 0:
+            data_vac, data_rent = sub_met_graphs(preview_data[(preview_data['yr'] >= curryr - 1) | ((preview_data['yr'] == curryr - 2) & (preview_data['currmon'] >= priormon))], "sub", curryr, currmon, sector_val)
+        else:
+            data_vac, data_rent = sub_met_graphs(data[(data['identity'] == drop_val) & ((data['yr'] >= curryr - 1) | ((data['yr'] == curryr - 2) & (data['currmon'] >= priormon)))], "sub", curryr, currmon, sector_val)
+        
+        # If the user wants to has not selected to see the full history for the submarket truncate the view to 12 months plus one extra month for calculating change in 12 month
+        if "full" not in expand:
+            data = data[(data['yr'] == curryr) | ((data['yr'] == curryr - 1) & (data['currmon'] >= priormon))]
+            if len(preview_data) > 0:
+                preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & (preview_data['currmon'] >= priormon))]
+            if len(shim_data) > 0:
+                shim_data = shim_data[(shim_data['yr'] == curryr) | ((shim_data['yr'] == curryr - 1) & (shim_data['currmon'] > priormon))]
 
         if sector_val != "ind":
             shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
@@ -2381,10 +2403,10 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
 
         # If the user chooses to expand the history displayed in the datatable, ensure that the new shim periods get added, but do not lose the shims already entered if there are some
-        if "full" in expand and (shim_data.reset_index().loc[0]['yr'] > curryr - 4 or ((shim_data.reset_index().loc[0]['yr'] == curryr - 4) and (shim_data.reset_index().loc[0]['currmon'] == 12))):
+        if "full" in expand and (shim_data.reset_index().loc[0]['yr'] == curryr or ((shim_data.reset_index().loc[0]['yr'] == curryr - 1) and (shim_data.reset_index().loc[0]['currmon'] == currmon))):
             shim_add = data.copy()
             shim_add = shim_add[['identity', 'currmon', 'yr'] + shim_cols]
-            shim_add = shim_add[(shim_add['yr'] < curryr - 4) | ((shim_add['yr'] == curryr - 4) & (shim_add['currmon'] < 12))]
+            shim_add = shim_add[(shim_add['yr'] < curryr - 1) | ((shim_add['yr'] == curryr - 1) & (shim_add['currmon'] <= priormon))]
             shim_add = shim_add[(shim_add['identity'] == drop_val)]
             shim_add = shim_add.drop(['identity'], axis=1)
             shim_add[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
@@ -2397,7 +2419,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
 
             if len(preview_data) > 0:
                 preview_add = data.copy()
-                preview_add = preview_add[(preview_add['yr'] < curryr - 4) | ((preview_add['yr'] == curryr - 4) & (preview_add['currmon'] < 12))]
+                preview_add = preview_add[(preview_add['yr'] < curryr - 1) | ((preview_add['yr'] == curryr - 1) & (preview_add['currmon'] < priormon))]
                 preview_add = preview_add[(preview_add['identity'] == drop_val)]
                 preview_add = preview_add.append(preview_data)
                 preview_data = preview_add.copy()
@@ -2466,12 +2488,6 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             else:
                 style_skipped = {'padding-left': '10px', 'width': width, 'display': 'inline-block', 'font-size': '16px', 'vertical-align': 'top'}
 
-        # Call the function to set up the sub time series graphs
-        if len(preview_data) > 0:
-            data_vac, data_rent = sub_met_graphs(preview_data, "sub", curryr, currmon, sector_val)
-        else:
-            data_vac, data_rent = sub_met_graphs(data[(data['identity'] == drop_val)], "sub", curryr, currmon, sector_val)
-
         # Set the data for the main data display, using the correct data set based on whether the user is previewing a shim or not
         if len(preview_data) > 0:
             display_data = preview_data.copy()
@@ -2479,9 +2495,13 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             display_data = data.copy()
             display_data = display_data[(display_data['identity'] == drop_val)]
 
+        # Drop the first row if only displaying the trunc series, as that was only needed to calculate change variables in the next row
+        if 'full' not in expand:
+            display_data = display_data.iloc[1: , :]
+        
         shim_data_concat = shim_data.copy()
         if 'trunc' in expand and 'full' not in expand:
-            shim_data_concat = shim_data_concat[(shim_data_concat['yr'] >= curryr - 3) | ((shim_data_concat['yr'] == curryr - 4) & (shim_data_concat['currmon'] == 12))]
+            shim_data_concat = shim_data_concat[(shim_data_concat['yr'] == curryr) | ((shim_data_concat['yr'] == curryr - 1) & (shim_data_concat['currmon'] > priormon))]
         shim_data_concat = shim_data_concat.drop(['currmon', 'yr'], axis=1)
         shim_data_concat = shim_data_concat.reset_index(drop=True)
         display_data = display_data.reset_index()
@@ -2791,11 +2811,15 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
         if rolled['merent'].isnull().all(axis=0) == True:
             rolled = rolled.drop(['merent', 'G_merent', 'rol_G_merent', 'gap', 'gap_chg'], axis=1)        
         
+        if currmon == 1:
+            priormon = 12
+        else:
+            priormon = currmon - 1
         if roll_val[:2] == "US":
-            data_vac_roll, data_rent_roll = sub_met_graphs(rolled, "nat", curryr, currmon, sector_val)
+            data_vac_roll, data_rent_roll = sub_met_graphs(rolled[(rolled['yr'] >= curryr - 1) | ((rolled['yr'] == curryr - 2) & (rolled['currmon'] >= priormon))], "nat", curryr, currmon, sector_val)
         else:
             if multi_view == False:
-                data_vac_roll, data_rent_roll = sub_met_graphs(rolled, "met", curryr, currmon, sector_val)
+                data_vac_roll, data_rent_roll = sub_met_graphs(rolled[(rolled['yr'] >= curryr - 1) | ((rolled['yr'] == curryr - 2) & (rolled['currmon'] >= priormon))], "met", curryr, currmon, sector_val)
             elif multi_view == True:
                 sub_rank, met_rank = rank_it(rolled_rank, roll, roll_val, curryr, currmon, sector_val, rank_only)
                 for col in sub_rank:
@@ -2825,7 +2849,7 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
             roll_fixed_rows={}
         else:
             roll_page_action ='none'
-            roll_style_table={'height': '460px', 'overflowY': 'auto'}
+            roll_style_table={'height': '480px', 'overflowY': 'auto'}
             roll_fixed_rows={'headers': True}
         
         rolled = rolled.drop(['cons_oob', 'vac_oob', 'vac_chg_oob',  'mrent_oob', 'G_mrent_oob'], axis=1)
@@ -2890,6 +2914,8 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
             disable_roll_view = True
         else:
             disable_roll_view = False
+
+        rolled = rolled[(rolled['yr'] == curryr) | ((rolled['yr'] == curryr - 1) & (rolled['month'] >= currmon))]
 
         first_load = False
     
