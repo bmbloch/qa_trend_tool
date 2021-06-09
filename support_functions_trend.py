@@ -129,7 +129,6 @@ def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
     for x in ['identity', 'identity_met']:
         if x == "identity":
             rank = data.copy()
-            #rank = rank[rank['identity_met'] == roll_val]
             rank = rank[rank['curr_tag'] == 1]
         elif x == "identity_met":
             rank = rolled.copy()
@@ -139,22 +138,19 @@ def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
                     rank = rank[rank['subsector'] == "DW"]
                 else:
                     rank = rank[rank['subsector'] == "F"]
-            rank = rank.rename(columns={'ask_chg': 'G_mrent'})
             rank['identity_met'] = rank['metcode'] + rank['subsector']
 
         if values == False:
         
             calc_cols = ['cons', 'vac_chg', 'abs', 'G_mrent', 'gap_chg']
-            rank_cols = []
-            for y in calc_cols:
-                col_name = y + "_rank"
-                rank_cols.append(col_name)
-                if "vac" in y or "gap" in y:
+            rank_cols = [x + "_rank" for x in calc_cols]
+
+            for calc_col, rank_col in zip(calc_cols, rank_cols):
+                if "vac" in calc_col or "gap" in calc_col:
                     sort_order = True
                 else:
                     sort_order = False
-                rank[col_name] = rank[y].rank(ascending=sort_order, method='min')
-                rank[col_name] = rank[col_name].astype(int)
+                rank[rank_col] = rank[calc_col].rank(ascending=sort_order, method='min')
         elif values == True:
             rank_cols = ['cons', 'vac_chg', 'abs', 'G_mrent', 'gap_chg']
 
@@ -219,7 +215,7 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     if drop_val[:2] == "US":
         cols_to_roll += ['sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sqaskrev']
 
-    roll[cols_to_roll] = roll.groupby([identity_filt, 'yr', 'currmon'])[cols_to_roll].transform('sum')
+    roll[cols_to_roll] = roll.groupby([identity_filt, 'yr', 'currmon'])[cols_to_roll].transform('sum', min_count=1)
 
     if filt_type == "reg":
         roll = roll.drop_duplicates([identity_filt, 'yr', 'currmon'])
@@ -262,10 +258,10 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll['rol_gap_chg'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), roll['rol_gap'] - roll['rol_gap'].shift(1), np.nan)
 
     roll['cons'] = roll['cons'].astype(int)
-    roll['rol_cons'] = roll['rol_cons'].astype(int)
+    roll['rol_cons'] = roll['rol_cons'].astype(float)
     roll['cons_oob'] = roll['cons_oob'].astype(int)
     roll['abs'] = roll['abs'].astype(int)
-    roll['rol_abs'] = roll['rol_abs'].astype(int)
+    roll['rol_abs'] = roll['rol_abs'].astype(float)
 
     roll['rol_cons'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_cons'])
     roll['rol_abs'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_abs'])
