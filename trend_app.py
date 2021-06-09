@@ -2849,7 +2849,7 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
             roll_fixed_rows={}
         else:
             roll_page_action ='none'
-            roll_style_table={'height': '480px', 'overflowY': 'auto'}
+            roll_style_table={'height': '490px', 'overflowY': 'auto'}
             roll_fixed_rows={'headers': True}
         
         rolled = rolled.drop(['cons_oob', 'vac_oob', 'vac_chg_oob',  'mrent_oob', 'G_mrent_oob'], axis=1)
