@@ -299,7 +299,7 @@ def get_app_layout():
                                     style_header={'fontWeight': 'bold', 'textAlign': 'center','whiteSpace': 'normal', 'height': 'auto'},
                                     merge_duplicate_headers=True,
                                     page_action='none',
-                                    style_table={'height': '490px', 'overflowY': 'auto'},
+                                    style_table={'height': '510px', 'overflowY': 'auto'},
                                     fixed_rows={'headers': True},
                                     style_cell_conditional=[
                                         {'if': {'column_id': 'inv shim'},
