@@ -844,7 +844,8 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
         dataframe.loc[index_row, 'mrent'] = fix
         dataframe['G_mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] == index_row), (dataframe['mrent'] - dataframe['mrent'].shift(1)) / dataframe['mrent'].shift(1), dataframe['G_mrent'])
         if subsequent_chg == "r":
-            dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
+            for index_val in range(index_row + 1, l_index_row + 1):
+                dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
             dataframe['mrent'] = round(dataframe['mrent'], 2)
         elif subsequent_chg == "s":
             for index_val in range(index_row + 1, l_index_row + 1):
@@ -861,7 +862,8 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     elif variable_fix == "e":
         dataframe.loc[index_row, 'merent'] = fix
         dataframe['G_merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] == index_row), (dataframe['merent'] - dataframe['merent'].shift(1)) / dataframe['merent'].shift(1), dataframe['G_merent'])
-        dataframe['merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row), dataframe['merent'].shift(1) * (1 + dataframe['G_merent']), dataframe['merent'])
+        for index_val in range(index_row + 1, l_index_row + 1):
+            dataframe['merent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val), dataframe['merent'].shift(1) * (1 + dataframe['G_merent']), dataframe['merent'])
         dataframe['merent'] = round(dataframe['merent'], 2)
         dataframe['gap'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] >= index_row), ((dataframe['merent'] - dataframe['mrent']) / dataframe['mrent']) * -1, dataframe['gap'])
         dataframe['gap'] = round(dataframe['gap'], 4)
