@@ -2571,7 +2571,9 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                                     'value': ''
                                 }
                                ]
-            
+
+        if "nc surabs" in key_metrics_highlight_list and key_metrics.reset_index().loc[0]['nc surabs'] == 0:
+            key_metrics_highlight_list.remove('nc surabs')    
         highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
         type_dict_metrics, format_dict_metrics = get_types(sector_val)
         
