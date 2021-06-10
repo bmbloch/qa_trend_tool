@@ -257,12 +257,6 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
     roll['gap_chg'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), roll['gap'] - roll['gap'].shift(1), np.nan)
     roll['rol_gap_chg'] = np.where((roll[identity_filt] == roll[identity_filt].shift(1)), roll['rol_gap'] - roll['rol_gap'].shift(1), np.nan)
 
-    roll['cons'] = roll['cons'].astype(int)
-    roll['rol_cons'] = roll['rol_cons'].astype(float)
-    roll['cons_oob'] = roll['cons_oob'].astype(int)
-    roll['abs'] = roll['abs'].astype(int)
-    roll['rol_abs'] = roll['rol_abs'].astype(float)
-
     roll['rol_cons'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_cons'])
     roll['rol_abs'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_abs'])
     roll['rol_vac'] = np.where((roll['curr_tag'] == 1), np.nan, roll['rol_vac'])
@@ -452,7 +446,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         "v_flag_rol": [['vac'], ['vac roldiff']],
         "v_flag_sqlev": [['vac', 'vac chg', 'sq vac', 'sq vac chg'], ['vac chg 12', 'sqvac chg 12']],
         "v_flag_sqabs": [['abs', 'sq abs'], []],
-        "v_flag_surabs": [['abs'], ['sub sur totabs']],
+        "v_flag_surabs": [['abs'], ['sub sur totabs', 'nc surabs']],
         "v_flag_rsent": [['abs'], ['sub sur totabs', 'sub grenx mo wgt']],
         "g_flag_rol": [['Gmrent'], ['gmrent roldiff', 'cons roldiff']],
         "g_flag_sqlev": [['mrent', 'Gmrent', 'sq rent', 'sq Gmrent'], ['G mrent 12', 'sq Gmrent 12']],
