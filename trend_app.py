@@ -1853,7 +1853,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
     if sector_val is None or success_init == False:
         raise PreventUpdate
     # Need this callback to tie to update_data callback so the csv is not set before the data is actually updated, but dont want to call the set csv function each time submit is clicked, so only do that when the input id is for the download button
-    elif input_id == "store_submit_button" or "sector":
+    elif input_id == "store_submit_button" or input_id == "sector":
         raise PreventUpdate
     else:
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
