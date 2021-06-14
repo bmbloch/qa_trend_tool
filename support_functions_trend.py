@@ -286,13 +286,14 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
 
     return roll
 
-def live_flag_count(dataframe, sector_val, flag_cols): 
-
+def live_flag_count(dataframe, sector_val, flag_cols, curryr, currmon): 
+    
     rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
     test_flag_cols = [x + "_test" for x in rol_flag_cols]
     dataframe[test_flag_cols] = dataframe.groupby('identity')[rol_flag_cols].transform('sum')
     for x, y in zip(rol_flag_cols, test_flag_cols):
-        dataframe[x] = np.where(dataframe[x] == 1, dataframe[x] / dataframe[y], dataframe[x])
+        dataframe[x] = np.where((dataframe[y] > 0) & (dataframe['curr_tag'] == 1), 1, 0)
+        dataframe[x] = np.where(dataframe['curr_tag'] == 0, 0, dataframe[x])
     dataframe.drop(test_flag_cols, axis=1, inplace=True)
     
     dataframe['c_flag_tot_sub'] = dataframe.filter(regex="^c_flag*").sum(axis=1)
@@ -302,9 +303,18 @@ def live_flag_count(dataframe, sector_val, flag_cols):
     dataframe['g_flag_tot_sub'] = dataframe['g_flag_tot_temp1'] + dataframe['g_flag_tot_temp2']
     dataframe = dataframe.drop(['g_flag_tot_temp1', 'g_flag_tot_temp2'], axis=1)
 
-    c_left = dataframe['c_flag_tot_sub'].sum() -  dataframe['flag_skip'].str.count('c_flag').sum()
-    v_left = dataframe['v_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('v_flag').sum()
-    g_left = dataframe['g_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('g_flag').sum() - dataframe['flag_skip'].str.count('e_flag').sum()
+    dataframe["c_skip"] = dataframe["flag_skip"].str.count("c_flag")
+    dataframe["v_skip"] = dataframe["flag_skip"].str.count("v_flag")
+    dataframe["g_skip"] = dataframe["flag_skip"].str.count("g_flag") + dataframe["flag_skip"].str.count("e_flag")
+
+    dataframe['extra_c_skip'] = dataframe['c_skip'] - dataframe['c_flag_tot_sub']
+    dataframe['extra_v_skip'] = dataframe['v_skip'] - dataframe['v_flag_tot_sub']
+    dataframe['extra_g_skip'] =  dataframe['g_skip'] - dataframe['g_flag_tot_sub']
+    dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip']] = np.where(dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip']] < 1, 0, dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip']])
+
+    c_left = dataframe['c_flag_tot_sub'].sum() -  dataframe['flag_skip'].str.count('c_flag').sum() + dataframe['extra_c_skip'].sum()
+    v_left = dataframe['v_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('v_flag').sum() + dataframe['extra_v_skip'].sum()
+    g_left = dataframe['g_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('g_flag').sum() - dataframe['flag_skip'].str.count('e_flag').sum() + dataframe['extra_g_skip'].sum()
 
 
     countdown_dict = {'Totals': [c_left, v_left, g_left]}
