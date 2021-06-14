@@ -48,6 +48,7 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     elif variable_fix == "e":
         key_met_cols = ['gmerent_roldiff', 'gap_perc_5', 'gap_perc_95']
 
+    dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']] = np.where(dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']] == 0, np.nan, dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']])
     dataframe['cons_roldiff'] = dataframe['cons_roldiff'].fillna(method='ffill')
     dataframe['vac_roldiff'] = dataframe['vac_roldiff'].fillna(method='ffill')
     dataframe['gmrent_roldiff'] = dataframe['gmrent_roldiff'].fillna(method='ffill')
@@ -106,21 +107,22 @@ def display_frame(dataframe, identity_val, display_cols, curryr, sector_val):
 # Function to determine what key metrics to display to user based on the type of flag                    
 def gen_metrics(dataframe_in, identity_val, variable_fix, key_met_cols, curryr, currmon):
     
-    dataframe_met = dataframe_in.copy()
-    dataframe_met = dataframe_met.reset_index()
-    dataframe_met = dataframe_met[(dataframe_met['identity'] == identity_val)]
-    dataframe_met['cons_roldiff'] = dataframe_met['cons_roldiff'].fillna(method='ffill')
-    dataframe_met['vac_roldiff'] = dataframe_met['vac_roldiff'].fillna(method='ffill')
-    dataframe_met['gmrent_roldiff'] = dataframe_met['gmrent_roldiff'].fillna(method='ffill')
-    dataframe_met = dataframe_met[(dataframe_met['yr'] == curryr) & (dataframe_met['currmon'] == currmon)]
-    dataframe_met = dataframe_met.set_index("identity")
+    dataframe = dataframe_in.copy()
+    dataframe = dataframe.reset_index()
+    dataframe = dataframe[(dataframe['identity'] == identity_val)]
+    dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']] = np.where(dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']] == 0, np.nan, dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']])
+    dataframe['cons_roldiff'] = dataframe['cons_roldiff'].fillna(method='ffill')
+    dataframe['vac_roldiff'] = dataframe['vac_roldiff'].fillna(method='ffill')
+    dataframe['gmrent_roldiff'] = dataframe['gmrent_roldiff'].fillna(method='ffill')
+    dataframe = dataframe[(dataframe['yr'] == curryr) & (dataframe['currmon'] == currmon)]
+    dataframe = dataframe.set_index("identity")
     
-    dataframe_met = dataframe_met[key_met_cols]
-    dataframe_met = pd.DataFrame(dataframe_met.loc[identity_val]).transpose()
+    dataframe = dataframe[key_met_cols]
+    dataframe = pd.DataFrame(dataframe.loc[identity_val]).transpose()
     for z in key_met_cols:
-        dataframe_met[z] = dataframe_met[z].apply(lambda x: '' if pd.isnull(x) else x)
+        dataframe[z] = dataframe[z].apply(lambda x: '' if pd.isnull(x) else x)
     
-    return dataframe_met
+    return dataframe
 
 # This function creates the rank table for key vars for subs within the met
 def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
