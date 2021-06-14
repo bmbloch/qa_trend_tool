@@ -1743,9 +1743,9 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
 
             # Update countdown table
             countdown = data.copy()
-            countdown = countdown[['identity', 'identity_us', 'flag_skip'] + flag_cols]
+            countdown = countdown[['identity', 'identity_us', 'flag_skip', 'yr', 'currmon', 'curr_tag'] + flag_cols]
             countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
-            countdown = live_flag_count(countdown, sector_val, flag_cols)
+            countdown = live_flag_count(countdown, sector_val, flag_cols, curryr, currmon)
             type_dict_countdown, format_dict_countdown = get_types(sector_val)
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
