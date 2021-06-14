@@ -197,15 +197,15 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & ((abs(data['G_mrent'] - data['sub_g_renx_mo_wgt_fill']) > 0.003) | (data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] < 0)) & 
                                     (data['sub_sur_r_cov_perc'] >= r_threshold), 
                                     1, 0)
-    data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & ((abs(data['G_mrent'] - data['met_g_renx_mo_wgt_fill']) > 0.003) | (data['G_mrent'] * data['met_g_renx_mo_wgt_fill'] < 0)) & 
-                                    (data['met_sur_r_cov_perc'] >= r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & ((abs(data['G_mrent']) < data['us_g_renx_mo_wgt']) | (data['G_mrent'] * data['met_g_renx_mo_wgt_fill'] < 0)), 
-                                    2, data['g_flag_surdiff'])
+    # data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & ((abs(data['G_mrent'] - data['met_g_renx_mo_wgt_fill']) > 0.003) | (data['G_mrent'] * data['met_g_renx_mo_wgt_fill'] < 0)) & 
+    #                                 (data['met_sur_r_cov_perc'] >= r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & ((abs(data['G_mrent']) < data['us_g_renx_mo_wgt']) | (data['G_mrent'] * data['met_g_renx_mo_wgt_fill'] < 0)), 
+    #                                 2, data['g_flag_surdiff'])
     
     data['g_flag_surdiff'] = np.where((data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] < 0) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold), 
                                     1, data['g_flag_surdiff'])
 
-    data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] < 0) & (data['G_mrent'] < data['sub_g_renx_mo_wgt_fill'] / 2), 4, data['g_flag_surdiff'])
-    data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] > 0) & (data['G_mrent'] > data['sub_g_renx_mo_wgt_fill'] / 2), 4, data['g_flag_surdiff'])
+    #data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] < 0) & (data['G_mrent'] < data['sub_g_renx_mo_wgt_fill'] / 2), 4, data['g_flag_surdiff'])
+    #data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] > 0) & (data['G_mrent'] > data['sub_g_renx_mo_wgt_fill'] / 2), 4, data['g_flag_surdiff'])
 
     threshold = 0.001
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) > round(data['us_g_renx_mo_wgt'],3) + threshold) & (round(data['us_g_renx_mo_wgt'],3) >= 0), 3, data['g_flag_surdiff'])
