@@ -88,7 +88,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Dont flag if abs is higher than avail10d and totsurabs and moving it closer to total would move the vacancy further away from sqvac
     data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] > data['sqvac']) & (data['abs'] > data['sub_sur_totabs']) & (data['abs'] <= data['avail10d']) & (data['abs'] < 0), 0, data['v_flag_surabs'])
     data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] < data['sqvac']) & (data['abs'] < data['sub_sur_totabs']) & (data['abs'] >= data['avail10d']) & (data['abs'] > 0), 0, data['v_flag_surabs'])
-
+    
     data['calc_vsurabs'] = np.where(data['v_flag_surabs'] > 0, abs(data['abs'] - data['sub_sur_totabs_fill'] - data['nc_surabs']) / data['inv'], np.nan)
     
     # Flag cases where the portion of published absorption not based on surveys is not in line with the published rent growth
@@ -161,8 +161,8 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
 
     # Flag cases where there is a large published rent change and the cause is not cons
     calc_names.append('calc_glarge')
-    data['sub_g_renx_mo_wgt_fill'] = data['sub_g_renx_mo_wgt'].fillna(0)
-    data['met_g_renx_mo_wgt_fill'] = data['met_g_renx_mo_wgt'].fillna(0)
+    data['sub_g_renx_mo_wgt_fill'] = data['sub_g_renx_mo_wgt'].fillna(0).round(3)
+    data['met_g_renx_mo_wgt_fill'] = data['met_g_renx_mo_wgt'].fillna(0).round(3)
     data['g_flag_large'] = np.where(((data['G_mrent'] > 0.015) | (data['G_mrent'] < -0.007)) & (data['g_flag_consp'] == 0) & (data['curr_tag'] == 1), 1, 0)
     
     # Dont flag if there is survey data to back it up with enough coverage
@@ -201,7 +201,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     #                                 (data['met_sur_r_cov_perc'] >= r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & ((abs(data['G_mrent']) < data['us_g_renx_mo_wgt']) | (data['G_mrent'] * data['met_g_renx_mo_wgt_fill'] < 0)), 
     #                                 2, data['g_flag_surdiff'])
     
-    data['g_flag_surdiff'] = np.where((data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] < 0) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold), 
+    data['g_flag_surdiff'] = np.where((data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] < 0) & ((data['G_mrent'] * data['met_g_renx_mo_wgt_fill'] <= 0) | (abs(data['G_mrent']) > 0.003) | (data['sub_sur_r_cov_perc'] >= data['met_sur_r_cov_perc'])) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold), 
                                     1, data['g_flag_surdiff'])
 
     #data['g_flag_surdiff'] = np.where((data['sub_sur_r_cov_perc'] < r_threshold) & (data['met_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent_perc'] > 0.75) & (data['G_mrent'] < 0) & (data['G_mrent'] < data['sub_g_renx_mo_wgt_fill'] / 2), 4, data['g_flag_surdiff'])
@@ -213,7 +213,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) < round(data['us_g_renx_mo_wgt'],3) - threshold) & (round(data['us_g_renx_mo_wgt'],3) < 0), 3, data['g_flag_surdiff'])
     data['g_flag_surdiff'] = np.where((data['curr_tag'] == 1) & (data['met_sur_r_cov_perc'] < r_threshold) & (data['sub_sur_r_cov_perc'] < r_threshold) & (round(data['G_mrent'],3) > 0) & (round(data['us_g_renx_mo_wgt'],3) <= 0) & (abs(data['G_mrent'] - data['us_g_renx_mo_wgt']) > 0.002), 3, data['g_flag_surdiff'])
 
-    # Dont flag if chg direction is small in magnitude and in the direction of the surveys, even if low coverage
+    # Dont flag if chg is small in magnitude and in the direction of the surveys, even if low coverage
     data['g_flag_surdiff'] = np.where((data['g_flag_surdiff'] == 3) & (data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] > 0) & (abs(data['sub_g_renx_mo_wgt_fill']) > abs(data['G_mrent'])) & (abs(data['G_mrent']) <= 0.003), 0, data['g_flag_surdiff'])
 
     # Dont flag if there is very strong survey magnitude and enough is being applied in this month given the coverage
