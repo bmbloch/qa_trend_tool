@@ -1579,8 +1579,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                     finalized_copy.to_csv(file_path, index=False, na_rep='')
             
             elif sector_val == "apt" or sector_val == "off":
-                file_path = "{}central/square/data/{}/production/msq/tcheck/{}subtrnds_QUANtified_{}m{}.csv".format(get_home(), sector_val, sector_val, str(curryr), str(currmon))
-                finalized.to_csv(file_path, index=False, na_rep='')
+                file_path_csv = "{}central/square/data/{}/production/msq/tcheck/{}subtrnds_QUANtified_{}m{}.csv".format(get_home(), sector_val, sector_val, str(curryr), str(currmon))
+                file_path_dta = "{}central/square/data/{}/trends-experimental/{}subtrnds_QUANtified_{}m{}.dta".format(get_home(), sector_val, sector_val, str(curryr), str(currmon))
+                finalized.to_csv(file_path_csv, index=False, na_rep='')
+                finalized.to_stata(file_path_dta, write_index=False)
 
             elif sector_val == "ret":
                 gen_met = pd.read_stata("{}central/master-data/genmet.dta".format(get_home()), columns= ['metcode', 'tier'])
