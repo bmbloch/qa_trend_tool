@@ -89,6 +89,11 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] > data['sqvac']) & (data['abs'] > data['sub_sur_totabs']) & (data['abs'] <= data['avail10d']) & (data['abs'] < 0), 0, data['v_flag_surabs'])
     data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] < data['sqvac']) & (data['abs'] < data['sub_sur_totabs']) & (data['abs'] >= data['avail10d']) & (data['abs'] > 0), 0, data['v_flag_surabs'])
     
+    # Per the other analysts' request, dont flag if between avail10d and total surabs. First clause only for non ind sectors
+    if sector_val != "ind":
+        data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['abs'] >= data['avail10d']) & (data['abs'] <= data['sub_sur_totabs']), 0, data['v_flag_surabs'])
+    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (abs(data['abs'] - data['avail10d']) / data['inv'] < 0.001) & (data['sub_sur_totabs'].isnull() == True), 0, data['v_flag_surabs'])
+
     data['calc_vsurabs'] = np.where(data['v_flag_surabs'] > 0, abs(data['abs'] - data['sub_sur_totabs_fill'] - data['nc_surabs']) / data['inv'], np.nan)
     
     # Flag cases where the portion of published absorption not based on surveys is not in line with the published rent growth
