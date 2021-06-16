@@ -1294,9 +1294,10 @@ def router(pathname):
                     State('sector_input', 'value'),
                     State('login-curryr','value'),
                     State('login-currmon','value'),
-                    State('msq_load','value')])
+                    State('msq_load','value'),
+                    State('flag_flow_input', 'value')])
 #@Timer("Login Auth")
-def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load):
+def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, flag_flow):
 
     if n_clicks is None or n_clicks==0:
         return '/login', no_update, '', 
@@ -1309,7 +1310,7 @@ def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load):
                 msq_load = "N"
             else:
                 msq_load = msq_load[0]
-            return pathname, '', username + "/" + sector_input.title() + "/" + str(curryr) + "m" + str(currmon) + "/" + msq_load
+            return pathname, '', username + "/" + sector_input.title() + "/" + str(curryr) + "m" + str(currmon) + "/" + msq_load + "/" + flag_flow
         else:
             session['authed'] = False
             if sector_input == None:
@@ -1324,18 +1325,19 @@ def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load):
                  Output('sector', 'data'),
                  Output('curryr', 'data'),
                  Output('currmon', 'data'),
-                 Output('store_msq_load', 'data')],
+                 Output('store_msq_load', 'data'),
+                 Output('flag_flow', 'data')],
                  [Input('url', 'search')])
 #@Timer("Store Input Vals")
 def store_input_vals(url_input):
     if url_input is None:
         raise PreventUpdate
     else:
-        user, sector_val, global_vals, msq_load = url_input.split("/")
+        user, sector_val, global_vals, msq_load, flag_flow = url_input.split("/")
         curryr, currmon = global_vals.split("m")
         curryr = int(curryr)
         currmon = int(currmon)
-        return user, sector_val.lower(), curryr, currmon, msq_load
+        return user, sector_val.lower(), curryr, currmon, msq_load, flag_flow
 
 @trend.callback([Output('dropman', 'options'),
                  Output('droproll', 'options'),
@@ -1673,9 +1675,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('v_threshold', 'data'),
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data'),
-                State('first_update', 'data')])
+                State('first_update', 'data'),
+                State('flag_flow', 'data')])
 #@Timer("Update Data")
-def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update, flag_flow):
     
     input_id = get_input_id()
 
@@ -1752,7 +1755,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
             # Get the next sub flagged
-            flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, False, curryr, currmon, flag_cols)
+            flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow)
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
         
         use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
@@ -1819,15 +1822,16 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data'),
                 State('store_flag_unresolve', 'data'),
-                State('store_flag_new', 'data')])
+                State('store_flag_new', 'data'),
+                State('flag_flow', 'data')])
 #@Timer("Process Man Drop")
-def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new):
+def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new, flag_flow):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols)
+        flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow)
 
         # Reset the radio button to the correct variable based on the new flag
         if has_flag == 1:
