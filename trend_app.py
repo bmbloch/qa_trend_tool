@@ -1084,7 +1084,6 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     if file_used == "oob":
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_original_flags.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
         data.to_pickle(file_path)
-        print("Orig Flags Saved")
 
     return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols
 
