@@ -41,14 +41,26 @@ def get_login_layout():
                             dbc.Input(id='login-username',placeholder='User'),
                             dbc.Input(id='login-password',placeholder='Password',type='password'),
                             html.Div([
-                                dcc.Dropdown(id='sector_input', 
-                                        options=[{'value': 'apt', 'label': 'Apartment'}, {'value': 'ind', 'label': 'Industrial'},
-                                                {'value': 'off', 'label': 'Office'}, {'value': 'ret', 'label': 'Retail'}],
-                                        multi=False,
-                                        value=None,
-                                        placeholder="Sector to load:"
-                                        ),
-                                    ], style={'display': 'block', 'padding-top': '15px'}),
+                                html.Div([
+                                    dcc.Dropdown(id='sector_input', 
+                                            options=[{'value': 'apt', 'label': 'Apartment'}, {'value': 'ind', 'label': 'Industrial'},
+                                                    {'value': 'off', 'label': 'Office'}, {'value': 'ret', 'label': 'Retail'}],
+                                            multi=False,
+                                            value=None,
+                                            placeholder="Sector to load:"
+                                            ),
+                                        ], style={'display': 'inline-block', 'width': '50%'}),
+                                html.Div([
+                                    dcc.Dropdown(id='flag_flow_input', 
+                                                options=[{'value': 'sub', 'label': 'Sub By Sub'}, 
+                                                        {'value': 'cat', 'label': 'By Flag Cat'},
+                                                        {'value': 'flag', 'label': 'By Flag'}],
+                                                multi=False,
+                                                value="sub",
+                                                placeholder="Choose flag cycle:"
+                                                ),
+                                            ], style={'display': 'inline-block', 'width': '50%'}),
+                                ], style={'display': 'block', 'padding-top': '15px'}),
                             html.Br(),
                             html.Div([
                                 html.Div([
