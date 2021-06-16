@@ -59,7 +59,7 @@ def get_login_layout():
                                                 value="sub",
                                                 placeholder="Choose flag cycle:"
                                                 ),
-                                            ], style={'display': 'inline-block', 'width': '50%'}),
+                                            ], style={'display': 'inline-block', 'width': '50%', 'padding-left': '10px'}),
                                 ], style={'display': 'block', 'padding-top': '15px'}),
                             html.Br(),
                             html.Div([
