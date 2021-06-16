@@ -811,17 +811,10 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
             dataframe.to_pickle(file_path)
     elif "original_flags" in file_name:
         path_in = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), file_name))
-        path_out = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_all_data.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
         orig_flags = pd.read_pickle(path_in)
-        orig_flags.reset_index().set_index('identity').to_csv(path_out, na_rep='')
-
-        r = re.compile("^._flag*")
-        flag_cols = list(filter(r.match, orig_flags.columns))
-        cols_to_keep = ['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + flag_cols
-        flags_only = orig_flags[cols_to_keep]
         path_out = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_original_flags.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-        flags_only.reset_index().set_index('identity').to_csv(path_out, na_rep='')
-
+        orig_flags.reset_index().set_index('identity').to_csv(path_out, na_rep='')
+        
     else:
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}.pickle".format(get_home(), file_name))
         if direction == "in":
@@ -1083,7 +1076,9 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 
     if file_used == "oob":
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_original_flags.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-        data.to_pickle(file_path)
+        temp = data.copy()
+        temp = temp[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + flag_cols]
+        temp.to_pickle(file_path)
 
     return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols
 
