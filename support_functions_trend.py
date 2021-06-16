@@ -896,7 +896,7 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     return dataframe
 
 # Function to identify if a submarket has a flag for review
-def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
+def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow):
     dataframe = data.copy()
     has_flag = 0
     skip_list = []
@@ -907,6 +907,51 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols):
             skip_list = []
     else:
         first_sub = dataframe.reset_index().loc[0]['identity']
+        if flag_flow == "cat":
+            dataframe_test = dataframe.copy()
+
+            dataframe_test[flag_cols] = np.where((dataframe_test[flag_cols] != 0), 1, dataframe_test[flag_cols])
+
+            rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+            test_flag_cols = [x + "_test" for x in rol_flag_cols]
+            dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
+            for x, y in zip(rol_flag_cols, test_flag_cols):
+                dataframe_test[x] = np.where((dataframe_test[y] > 0) & (dataframe_test['curr_tag'] == 1), 1, 0)
+                dataframe_test[x] = np.where(dataframe_test['curr_tag'] == 0, 0, dataframe_test[x])
+            dataframe_test.drop(test_flag_cols, axis=1, inplace=True)
+            
+            dataframe_test['has_c'] = dataframe_test.filter(regex="^c_flag*").sum(axis=1)
+            dataframe_test['has_v'] = dataframe_test.filter(regex="^v_flag*").sum(axis=1)
+            dataframe_test['has_g'] = dataframe_test.filter(regex="^g_flag*").sum(axis=1)
+            dataframe_test['has_e'] = dataframe_test.filter(regex="^e_flag*").sum(axis=1)
+
+            dataframe_test['has_c'] = dataframe_test['has_c'] -  dataframe_test['flag_skip'].str.count('c_flag')
+            dataframe_test['has_v'] = dataframe_test['has_v'] - dataframe_test['flag_skip'].str.count('v_flag')
+            dataframe_test['has_g'] = dataframe_test['has_g'] - dataframe_test['flag_skip'].str.count('g_flag')
+            dataframe_test['has_e'] = dataframe_test['has_e'] - dataframe_test['flag_skip'].str.count('e_flag')
+
+            for x in ['has_c', 'has_v', 'has_g', 'has_e']:
+                dataframe_test_1 = dataframe_test.copy()
+                dataframe_test_1 = dataframe_test_1[dataframe_test_1[x] > 0]
+                if len(dataframe_test_1) > 0:
+                    dataframe = dataframe_test_1.copy()
+                    break
+        elif flag_flow == "flag":
+            dataframe_test = dataframe.copy()
+            rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+            test_flag_cols = [x + "_test" for x in rol_flag_cols]
+            dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
+            for x, y in zip(rol_flag_cols, test_flag_cols):
+                dataframe_test[x] = np.where((dataframe_test[y] > 0) & (dataframe_test['curr_tag'] == 1), 1, 0)
+                dataframe_test[x] = np.where(dataframe_test['curr_tag'] == 0, 0, dataframe_test[x])
+            dataframe_test.drop(test_flag_cols, axis=1, inplace=True)
+            
+            for x in flag_cols:
+                dataframe_test_1 = dataframe_test.copy()
+                dataframe_test_1 = dataframe_test_1[(dataframe_test_1[x] > 0) & (dataframe_test['flag_skip'].str.contains(x) == False)]
+                if len(dataframe_test_1) > 0:
+                    dataframe = dataframe_test_1.copy()
+                    break
 
     cols_to_keep = flag_cols + ['identity', 'flag_skip']
     dataframe = dataframe[cols_to_keep]
