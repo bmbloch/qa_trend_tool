@@ -1098,8 +1098,16 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
     else:
         no_shim = False
 
+    cons_check = False
+    if len(shim_data[shim_data['cons'].isnull() == False]) > 0:
+        if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data.reset_index().loc[0]['yr'] < curryr - 10:
+            cons_check = True
+
     if no_shim == True and len(skip_list) == 0:
         message = "You did not enter any changes."
+        message_display = True
+    elif cons_check == True:
+        message = "Construction shims can only be entered in the ten most recent historical years."
         message_display = True
     else:
         message = ''
@@ -1154,8 +1162,11 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 
     preview_data = pd.DataFrame()
 
-    shim_data[shim_cols] = np.nan
-
+    if cons_check == True:
+        shim_data['cons'] = np.where(shim_data['yr'] < curryr, np.nan, shim_data['cons'])
+    else:
+        shim_data[shim_cols] = np.nan
+    
     return data, preview_data, shim_data, message, message_display
 
 def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):
@@ -1190,21 +1201,30 @@ def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig
 # # This function produces the outputs needed for the update_data callback if the preview button is clicked
 def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):  
     
+    if sector_val != "ind":
+        shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
+    else:
+        shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
+
+    for col in shim_cols:
+        shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
 
     # At this point, will just always allow the button to be clicked, even if there are no edits entered, as want to allow the user to undo a previewed shim. Can think about a way to test if this is an undo vs a first time entry, but small potatoes as will only marginally increase speed
-    message = ''
-    message_display = False
+    cons_check = False
+    if len(shim_data[shim_data['cons'].isnull() == False]) > 0:
+        if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data.reset_index().loc[0]['yr'] < curryr - 10:
+            cons_check = True
+    if cons_check == True:
+        message = "Construction shims can only be entered in the ten most recent historical years."
+        message_display = True
+        flags_resolved = []
+        flags_unresolved = []
+        new_flags = []
+    else:
+        message = ''
+        message_display = False
 
     if message_display == False:
-
-        if sector_val != "ind":
-            shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
-        else:
-            shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
-
-        for col in shim_cols:
-            shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
-
 
         data_orig = data.copy()
         data_orig = data_orig[(data_orig['identity'] == drop_val)]
@@ -1760,10 +1780,11 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         # But dont update this if the user didnt enter any shims, as we dont want the succeeding callbacks to update
         # We need five - to differentiate if suceeding callbacks should fire regardless of what button was clicked, or if they should only fire only if a particular button was clicked, or if they should only fire if this is initial load
         if message_display == True:
-            all_buttons = no_update
+            all_buttons = 1
             submit_button = no_update
             preview_button = no_update
             init_flags = no_update
+            drop_val = no_update
         else:
             if input_id == "submit-button":
                 all_buttons = 1
@@ -2414,7 +2435,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             shim_data = shim_add.copy()
             for col in shim_cols:
                 shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
-            
+
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
             if len(preview_data) > 0:
