@@ -628,13 +628,18 @@ def get_app_layout():
                                 ],style={'display': 'none'}, id='rent_series_met_container'),
                         ], style={'display': 'block'}),
                     html.Div([
-                        daq.ToggleSwitch(
-                            id='rank_toggle',
-                            label=['Rank', 'Value'],
-                            value=False,
-                            style={'width': '5px', 'margin': 'auto'},
-                                    ),
-                            ], style={'display': 'none'}, id='rank_toggle_container'),
+                        dcc.RadioItems(
+                            id='metro_sorts',
+                            options=[
+                                        {'label': 'Cons', 'value': 'cons'},
+                                        {'label': 'Vac Chg', 'value': 'vac_chg'},
+                                        {'label': 'Abs', 'value': 'abs'},
+                                        {'label': 'Gmrent', 'value': 'G_mrent'},
+                                        {'label': 'Gap Chg', 'value': 'gap_chg'},
+                                    ],
+                            value='vac_chg',
+                            labelStyle={'display': 'inline-block', 'margin': '0 10px 0 10px'}), 
+                        ], style={'display': 'none'}, id='metro_sorts_container'),
                     html.Div([
                         html.Div([
                            dash_table.DataTable(
