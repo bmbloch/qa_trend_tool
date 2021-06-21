@@ -123,63 +123,6 @@ def gen_metrics(dataframe_in, identity_val, variable_fix, key_met_cols, curryr, 
         dataframe[z] = dataframe[z].apply(lambda x: '' if pd.isnull(x) else x)
     
     return dataframe
-
-# This function creates the rank table for key vars for subs within the met
-def rank_it(rolled, data, roll_val, curryr, currmon, sector_val, values):
-    frames = []
-    
-    for x in ['identity', 'identity_met']:
-        if x == "identity":
-            rank = data.copy()
-            rank = rank[rank['curr_tag'] == 1]
-        elif x == "identity_met":
-            rank = rolled.copy()
-            rank = rank[(rank['yr'] == curryr) & (rank['currmon'] == currmon)]
-            if sector_val == "ind":
-                if "DW" in roll_val:
-                    rank = rank[rank['subsector'] == "DW"]
-                else:
-                    rank = rank[rank['subsector'] == "F"]
-            rank['identity_met'] = rank['metcode'] + rank['subsector']
-
-        if values == False:
-        
-            calc_cols = ['cons', 'vac_chg', 'abs', 'G_mrent', 'gap_chg']
-            rank_cols = [x + "_rank" for x in calc_cols]
-
-            for calc_col, rank_col in zip(calc_cols, rank_cols):
-                if "vac" in calc_col or "gap" in calc_col:
-                    sort_order = True
-                else:
-                    sort_order = False
-                rank[rank_col] = rank[calc_col].rank(ascending=sort_order, method='min')
-        elif values == True:
-            rank_cols = ['cons', 'vac_chg', 'abs', 'G_mrent', 'gap_chg']
-
-        if x == "identity_met":
-            rank = rank.drop_duplicates(['metcode'])    
-        
-        rank = rank.set_index(x)
-        if x == "identity_met":
-            rank = rank[['metcode'] + rank_cols]
-        else:
-            rank = rank[['metcode', 'subid'] + rank_cols]
-        
-        for z in list(rank.columns): 
-            if "_rank" in z:
-                rank = rank.rename(columns={z: z[:-5]})
-        
-        if x == "identity_met":
-            rank = rank.reset_index()
-            test = rank.index[rank['identity_met'] == roll_val].tolist()
-            rank = pd.concat([rank.iloc[[test[0]],:], rank.drop(test[0], axis=0)], axis=0)
-            rank = rank.set_index('identity_met')
-       
-        frames.append(rank)
-
-    return frames[0], frames[1]
-
-
     
 # This function will roll up the data on a metro or national level for review based on the selection of metro by the user on the Rollups tab
 def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
@@ -1004,6 +947,167 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                 flag_list = ['v_flag']
 
     return flag_list, skip_list, identity_val, has_flag
+
+# This function creates the tables to be used for metro sorts
+def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
+    frames = []
+    
+    for x in ['identity', 'identity_met']:
+        if x == "identity":
+            rank = data.copy()
+            rank = rank[rank['curr_tag'] == 1]
+        elif x == "identity_met":
+            rank = rolled.copy()
+            if sector_val == "ind":
+                if "DW" in roll_val:
+                    rank = rank[rank['subsector'] == "DW"]
+                else:
+                    rank = rank[rank['subsector'] == "F"]
+            rank['identity_met'] = rank['metcode'] + rank['subsector']
+            rank = calc_3mos(rank, curryr, currmon, "sorts")
+            if currmon != 1:
+                rank = calc_ytd(rank, curryr, currmon, "sorts")
+            else:
+                rank['final_cons_ytd'] = rank['cons']
+                rank['final_vacchg_ytd'] = rank['vac_chg']
+                rank['final_abs_ytd'] = rank['abs']
+                rank['final_Gmrent_ytd'] = rank['G_mrent']
+                rank['final_Gmerent_ytd'] = rank['G_merent']
+            rank = rank[(rank['yr'] == curryr) & (rank['currmon'] == currmon)]
+
+        rank_col_name = sorts_val + "_rank"
+        if "vac" in sorts_val or "gap" in sorts_val:
+            sort_order = True
+        else:
+            sort_order = False
+        rank[rank_col_name] = rank[sorts_val].rank(ascending=sort_order, method='min')
+
+        if x == "identity_met":
+            rank = rank.drop_duplicates(['identity_met'])    
+
+        if x == "identity_met":
+            if sorts_val == "cons":
+                support_cols = ['final_cons_last3mos', 'final_cons_ytd']
+                join_cols = []
+            elif sorts_val == "vac_chg":
+                support_cols = ['met_wtdvacchg', 'met_sur_v_cov_perc', 'final_vacchg_last3mos', 'final_vacchg_ytd']
+                join_cols = ['met_wtdvacchg', 'met_sur_v_cov_perc']
+            elif sorts_val == "abs":
+                support_cols = ['met_sur_totabs', 'met_sur_v_cov_perc', 'final_abs_last3mos', 'final_abs_ytd']
+                join_cols = ['met_sur_v_cov_perc']
+            elif sorts_val == "G_mrent":
+                support_cols = ['metsq_Gmrent', 'met_sur_r_cov_perc', 'met_g_renx_mo_wgt', 'final_Gmrent_last3mos', 'final_Gmrent_ytd']
+                join_cols = ['met_sur_r_cov_perc']
+            elif sorts_val == "gap_chg":
+                support_cols = ['vac_chg', 'final_gapchg_last3mo', 'final_gapchg_ytd']
+                join_cols = []
+
+            support = data.copy()
+            support = support[(data['yr'] == curryr) & (support['currmon'] == currmon)]
+            support = support[join_cols + ['identity_met']]
+            support = support.drop_duplicates('identity_met')
+            rank = rank.join(support.set_index('identity_met'), on='identity_met')
+
+        rank = rank.set_index(x)
+
+        if x == "identity_met":
+            rank = rank[['metcode'] + [rank_col_name] + [sorts_val] + support_cols]
+        else:
+            rank = rank[['metcode', 'subid'] + [rank_col_name, sorts_val]]
+
+        rank.sort_values(by=[rank_col_name], ascending=[True], inplace=True)
+        
+        if x == "identity_met":
+            rank = rank.reset_index()
+            test = rank.index[rank['identity_met'] == roll_val].tolist()
+            rank = pd.concat([rank.iloc[[test[0]],:], rank.drop(test[0], axis=0)], axis=0)
+            rank = rank.set_index('identity_met')
+
+        frames.append(rank)
+
+    return frames[0], frames[1]
+
+def calc_3mos(dataframe_in, curryr, currmon, type_filt):
+    dataframe = dataframe_in.copy()
+
+    if currmon >= 3:
+        dataframe[['final_cons_last3mos', 'final_abs_last3mos']] = dataframe[(dataframe['yr'] == curryr) & (dataframe['currmon'] >= currmon - 2) & (dataframe['currmon'] <= currmon)].groupby('identity_met')[['cons', 'abs']].transform('sum')
+    elif currmon == 2:
+        dataframe[['final_cons_last3mos', 'final_abs_last3mos']] = dataframe[(dataframe['yr'] == curryr) | ((dataframe['yr'] == curryr - 1) & (dataframe['currmon'] == 12))].groupby('identity_met')[['cons', 'abs']].transform('sum')
+    elif currmon == 1:
+        dataframe[['final_cons_last3mos', 'final_abs_last3mos']] = dataframe[(dataframe['yr'] == curryr) | ((dataframe['yr'] == curryr - 1) & (dataframe['currmon'] >= 11))].groupby('identity_met')[['cons', 'abs']].transform('sum')
+
+    if type_filt == "packet":
+        dataframe['mrev'] = dataframe['mrent'] * dataframe['inv']
+        dataframe['erev'] = dataframe['merent'] * dataframe['inv']
+        dataframe[['met_avail', 'met_mrev', 'met_erev', 'met_inv']] = dataframe.groupby(['identity_met', 'yr', 'currmon'])[['avail', 'mrev', 'erev', 'inv']].transform('sum')
+        dataframe['met_vac'] = dataframe['met_avail'] / dataframe['met_inv']
+        dataframe['met_vac'] = round(dataframe['met_vac'], 4)
+        dataframe['final_vacchg_last3mos'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), dataframe['met_vac'] - dataframe['met_vac'].shift(3), np.nan)
+    else:
+        dataframe['final_vacchg_last3mos'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), dataframe['vac'] - dataframe['vac'].shift(3), np.nan)
+
+    if type_filt == "packet":
+        dataframe['met_mrent'] = dataframe['met_mrev'] / dataframe['met_inv']
+        dataframe['met_mrent'] = round(dataframe['met_mrent'], 2)
+        dataframe['final_Gmrent_last3mos'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), (dataframe['met_mrent'] - dataframe['met_mrent'].shift(3)) / dataframe['met_mrent'].shift(3), np.nan)
+    else:
+        dataframe['final_Gmrent_last3mos'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), (dataframe['mrent'] - dataframe['mrent'].shift(3)) / dataframe['mrent'].shift(3), np.nan)
+    
+    if type_filt == "packet":    
+        dataframe['met_erent'] = dataframe['met_erev'] / dataframe['met_inv']
+        dataframe['met_erent'] = round(dataframe['met_erent'], 2)
+        dataframe['final_Gmerent_last3mo'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), (dataframe['met_erent'] - dataframe['met_erent'].shift(3)) / dataframe['met_erent'].shift(3), np.nan)
+    
+    if type_filt == "packet":
+        dataframe['met_gap'] = ((dataframe['met_erent'] - dataframe['met_mrent']) / dataframe['met_mrent']) * -1
+        dataframe['final_gapchg_last3mo'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), dataframe['met_gap'] - dataframe['met_gap'].shift(3), np.nan)
+    else:
+        dataframe['final_gapchg_last3mo'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(3), dataframe['gap'] - dataframe['gap'].shift(3), np.nan)
+    
+    if type_filt == "packet":
+        dataframe = dataframe.drop(['met_avail', 'met_inv', 'met_vac', 'mrev', 'met_mrev', 'met_mrent', 'erev', 'met_erev', 'met_erent', 'met_gap'], axis=1)
+
+    return dataframe
+
+def calc_ytd(dataframe_in, curryr, currmon, type_filt):
+    
+    dataframe = dataframe_in.copy()
+    
+    dataframe[['final_cons_ytd', 'final_abs_ytd']] = dataframe[dataframe['yr'] == curryr].groupby('identity_met')[['cons', 'abs']].transform('sum')
+
+    if type_filt == "packet":
+        dataframe['mrev'] = dataframe['mrent'] * dataframe['inv']
+        dataframe['erev'] = dataframe['merent'] * dataframe['inv']
+
+        dataframe[['met_avail', 'met_inv', 'met_mrev', 'met_erev']] = dataframe.groupby(['identity_met', 'yr', 'currmon'])[['avail', 'inv', 'mrev', 'erev']].transform('sum')
+    
+    if type_filt == "packet":
+        dataframe['met_vac'] = dataframe['met_avail'] / dataframe['met_inv']
+        dataframe['met_vac'] = round(dataframe['met_vac'], 4)
+        dataframe['final_vacchg_ytd'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(currmon), dataframe['met_vac'] - dataframe['met_vac'].shift(currmon), np.nan)
+    else:
+        dataframe['final_vacchg_ytd'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(currmon), dataframe['vac'] - dataframe['vac'].shift(currmon), np.nan)
+
+    if type_filt == "packet":
+        dataframe['met_mrent'] = dataframe['met_mrev'] / dataframe['met_inv']
+        dataframe['met_mrent'] = round(dataframe['met_mrent'], 2)
+        dataframe['final_Gmrent_ytd'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(currmon), (dataframe['met_mrent'] - dataframe['met_mrent'].shift(currmon)) / dataframe['met_mrent'].shift(currmon), np.nan)
+    else:
+        dataframe['final_Gmrent_ytd'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(currmon), (dataframe['mrent'] - dataframe['mrent'].shift(currmon)) / dataframe['mrent'].shift(currmon), np.nan)
+
+    if type_filt == "packet":
+        dataframe['met_erent'] = dataframe['met_erev'] / dataframe['met_inv']
+        dataframe['met_erent'] = round(dataframe['met_erent'], 2)
+        dataframe['final_Gmerent_ytd'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(currmon), (dataframe['met_erent'] - dataframe['met_erent'].shift(currmon)) / dataframe['met_erent'].shift(currmon), np.nan)
+    else:
+        dataframe['final_gapchg_ytd'] = np.where(dataframe['identity_met'] == dataframe['identity_met'].shift(currmon), dataframe['gap'] - dataframe['gap'].shift(currmon), np.nan)
+
+    if type_filt == "packet":
+        dataframe = dataframe.drop(['met_avail', 'met_inv', 'met_vac', 'mrev', 'met_mrev', 'met_mrent', 'erev', 'met_erev', 'met_erent'], axis=1)
+
+    return dataframe
+
 
 # This function rolls up the edited data to the metro and US level for presentation to econ
 def create_review_packet(data_in, curryr, currmon, sector_val):

@@ -32,7 +32,7 @@ from server_trend import trend, server
 from stats_trend import calc_stats
 from flags_trend import calc_flags
 from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue 
-from support_functions_trend import get_diffs, rank_it, flag_examine, create_review_packet, check_skips, get_user_skips, sub_met_graphs, set_bar_scale, set_y2_scale
+from support_functions_trend import get_diffs, metro_sorts, flag_examine, calc_3mos, calc_ytd, create_review_packet, check_skips, get_user_skips, sub_met_graphs, set_bar_scale, set_y2_scale
 from support_functions_trend import ncsur_tooltip, avail10_tooltip, all_avail_tooltip, ren10_tooltip, all_rent_tooltip, ncbackfill_tooltip
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
@@ -159,6 +159,24 @@ def get_types(sector_val):
     type_dict['ncrenlev'] = 'numeric'
     type_dict['nc surabs'] = 'numeric'
     type_dict['30 Perc Cov Pct'] = 'numeric'
+    type_dict['cons rank'] = 'numeric'
+    type_dict['vac chg rank'] = 'numeric'
+    type_dict['abs rank'] = 'numeric'
+    type_dict['Gmrent rank'] = 'numeric'
+    type_dict['gap chg rank'] = 'numeric'
+    type_dict['met wtdvacchg'] = 'numeric'
+    type_dict['final cons last3mos'] = 'numeric'
+    type_dict['final vacchg last3mos'] = 'numeric'
+    type_dict['final abs last3mos'] = 'numeric'
+    type_dict['final Gmrent last3mos'] = 'numeric'
+    type_dict['final gapchg last3mo'] = 'numeric'
+    type_dict['final cons ytd'] = 'numeric'
+    type_dict['final vacchg ytd'] = 'numeric'
+    type_dict['final abs ytd'] = 'numeric'
+    type_dict['final Gmrent ytd'] = 'numeric'
+    type_dict['final gapchg ytd'] = 'numeric'
+    type_dict['metsq Gmrent'] = 'numeric'
+
     
     type_dict['Subsector'] = 'text'
     type_dict['subsector'] = 'text'
@@ -202,6 +220,10 @@ def get_types(sector_val):
     format_dict['newncsf'] = Format(group=",")
     format_dict['Surveyed Abs'] = Format(group=",")
     format_dict['nc surabs'] = Format(group=",")
+    format_dict['final cons last3mos'] = Format(group=",")
+    format_dict['final abs last3mos'] = Format(group=",")
+    format_dict['final cons ytd'] = Format(group=",")
+    format_dict['final abs ytd'] = Format(group=",")
     
     format_dict['vac'] = FormatTemplate.percentage(2)
     format_dict['sq vac'] = FormatTemplate.percentage(2)
@@ -209,6 +231,7 @@ def get_types(sector_val):
     format_dict['sq vac chg'] = FormatTemplate.percentage(2)
     format_dict['rol vac'] = FormatTemplate.percentage(2)
     format_dict['rol vac chg'] = FormatTemplate.percentage(2)
+    format_dict['met wtdvacchg'] = FormatTemplate.percentage(2)
     format_dict['Gmrent'] = FormatTemplate.percentage(2)
     format_dict['sq Gmrent'] = FormatTemplate.percentage(2)
     format_dict['rol Gmrent'] = FormatTemplate.percentage(2)
@@ -238,6 +261,13 @@ def get_types(sector_val):
     format_dict['gap perc 95'] = FormatTemplate.percentage(2)
     format_dict['Gmrent 12'] = FormatTemplate.percentage(2)
     format_dict['sq Gmrent 12'] = FormatTemplate.percentage(2)
+    format_dict['final vacchg last3mos'] = FormatTemplate.percentage(2)
+    format_dict['final Gmrent last3mos'] = FormatTemplate.percentage(2)
+    format_dict['final gapchg last3mo'] = FormatTemplate.percentage(2)
+    format_dict['final vacchg ytd'] = FormatTemplate.percentage(2)
+    format_dict['final Gmrent ytd'] = FormatTemplate.percentage(2)
+    format_dict['final gapchg ytd'] = FormatTemplate.percentage(2)
+    format_dict['metsq Gmrent'] = FormatTemplate.percentage(2)
     
     format_dict['Survey Cover Pct'] = FormatTemplate.percentage(1)
     format_dict['% Currmon Trend Rows W Flag'] = FormatTemplate.percentage(1)
@@ -297,6 +327,11 @@ def get_types(sector_val):
     format_dict['Cons Flags'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['Vac Flags'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['Rent Flags'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['cons rank'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['vac chg rank'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['abs rank'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['Gmrent rank'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['gap chg rank'] = Format(precision=0, scheme=Scheme.fixed)
     
 
     format_dict['Months To Last Surv'] = Format(precision=1, scheme=Scheme.fixed)
@@ -2034,96 +2069,11 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
                 review_packet[x] = np.where((review_packet['yr'] == curryr) & (review_packet['currmon'] == currmon), review_packet[x], np.nan)
 
         # Calculate the last 3 months vars for published data
-        for var, name in zip(['cons', 'abs'], ['final_cons_last3mos', 'final_abs_last3mos']):
-            temp_3 = review_packet.copy()
-            if currmon >= 3:
-                temp_3 = temp_3[(temp_3['yr'] == curryr) & (temp_3['currmon'] >= currmon - 2) & (temp_3['currmon'] <= currmon)]
-            elif currmon == 2:
-                temp_3 = temp_3[(temp_3['yr'] == curryr) | ((temp_3['yr'] == curryr - 1) & (temp_3['currmon'] == 12))]
-            elif currmon == 1:
-                temp_3 = temp_3[(temp_3['yr'] == curryr) | ((temp_3['yr'] == curryr - 1) & (temp_3['currmon'] >= 11))]
-            temp_3[name] = temp_3.groupby('identity_met')[var].transform('sum')
-            temp_3 = temp_3.drop_duplicates('identity_met')
-            temp_3 = temp_3.set_index('identity_met')
-            temp_3 = temp_3[name]
-            review_packet = review_packet.join(temp_3, on='identity_met')
-
-        temp_3 = review_packet.copy()
-        if currmon >= 4:
-            temp_3 = temp_3[(temp_3['yr'] == curryr) & (temp_3['currmon'] == currmon) | ((temp_3['currmon'] == currmon - 3))]
-        elif currmon == 3:
-            temp_3 = temp_3[((temp_3['yr'] == curryr) & (temp_3['currmon'] == 3)) | ((temp_3['yr'] == curryr - 1) & (temp_3['currmon'] == 12))]
-        elif currmon == 2:
-            temp_3 = temp_3[((temp_3['yr'] == curryr) & (temp_3['currmon'] == 2)) | ((temp_3['yr'] == curryr - 1) & (temp_3['currmon'] == 11))]
-        elif currmon == 1:
-            temp_3 = temp_3[((temp_3['yr'] == curryr) & (temp_3['currmon'] == 1)) | ((temp_3['yr'] == curryr - 1) & (temp_3['currmon'] == 10))]
+        review_packet = calc_3mos(review_packet, curryr, currmon, "packet")
         
-        temp = temp_3.copy()
-        temp['met_avail'] = temp.groupby(['identity_met', 'yr', 'currmon'])['avail'].transform('sum')
-        temp['met_inv'] = temp.groupby(['identity_met', 'yr', 'currmon'])['inv'].transform('sum')
-        temp['met_vac'] = temp['met_avail'] / temp['met_inv']
-        temp['met_vac'] = round(temp['met_vac'], 4)
-        temp['final_vacchg_last3mos'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), temp['met_vac'] - temp['met_vac'].shift(1), np.nan)
-        
-        temp['mrev'] = temp['mrent'] * temp['inv']
-        temp['met_mrev'] = temp.groupby(['identity_met', 'yr', 'currmon'])['mrev'].transform('sum')
-        temp['met_mrent'] = temp['met_mrev'] / temp['met_inv']
-        temp['met_mrent'] = round(temp['met_mrent'], 2)
-        temp['final_Gmrent_last3mos'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), (temp['met_mrent'] - temp['met_mrent'].shift(1)) / temp['met_mrent'].shift(1), np.nan)
-        
-        temp['erev'] = temp['merent'] * temp['inv']
-        temp['met_erev'] = temp.groupby(['identity_met', 'yr', 'currmon'])['erev'].transform('sum')
-        temp['met_erent'] = temp['met_erev'] / temp['met_inv']
-        temp['met_erent'] = round(temp['met_erent'], 2)
-        temp['final_Gmerent_last3mo'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), (temp['met_erent'] - temp['met_erent'].shift(1)) / temp['met_erent'].shift(1), np.nan)
-        
-        temp['met_gap'] = ((temp['met_erent'] - temp['met_mrent']) / temp['met_mrent']) * -1
-        temp['final_gapchg_last3mo'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), temp['met_gap'] - temp['met_gap'].shift(1), np.nan)
-        
-        temp = temp[(temp['yr'] == curryr) & (temp['currmon'] == currmon)]
-        temp = temp.drop_duplicates('identity_met')
-        temp = temp[['identity_met', 'final_vacchg_last3mos', 'final_Gmrent_last3mos', 'final_Gmerent_last3mo', 'final_gapchg_last3mo']]
-        temp = temp.set_index('identity_met')
-        review_packet = review_packet.join(temp, on='identity_met')
-
-        # Calcucate the YTD vars for published data. If this is Jan, no need to do this and vars will be set based on rolled vals in the create_packet function
+        # Calculate the YTD vars for published data. If this is Jan, no need to do this and vars will be set based on rolled vals in the create_packet function
         if currmon > 1:
-
-            temp = review_packet.copy()
-            temp = temp[temp['yr'] == curryr]
-            temp['final_cons_ytd'] = temp.groupby('identity_met')['cons'].transform('sum')
-            temp['final_abs_ytd'] = temp.groupby(['identity_met'])['abs'].transform('sum')
-            temp = temp.drop_duplicates('identity_met')
-            temp = temp[['identity_met', 'final_cons_ytd', 'final_abs_ytd']]
-            temp = temp.set_index('identity_met')
-            review_packet = review_packet.join(temp, on='identity_met')
-
-            temp = review_packet.copy()
-            temp = temp[((temp['yr'] == curryr) & (temp['currmon'] == currmon)) | ((temp['currmon'] == 12) & (temp['yr'] == curryr - 1))]
-
-            temp['met_avail'] = temp.groupby(['identity_met', 'yr', 'currmon'])['avail'].transform('sum')
-            temp['met_inv'] = temp.groupby(['identity_met', 'yr', 'currmon'])['inv'].transform('sum')
-            temp['met_vac'] = temp['met_avail'] / temp['met_inv']
-            temp['met_vac'] = round(temp['met_vac'], 4)
-            temp['final_vacchg_ytd'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), temp['met_vac'] - temp['met_vac'].shift(1), np.nan)
-
-            temp['mrev'] = temp['mrent'] * temp['inv']
-            temp['met_mrev'] = temp.groupby(['identity_met', 'yr', 'currmon'])['mrev'].transform('sum')
-            temp['met_mrent'] = temp['met_mrev'] / temp['met_inv']
-            temp['met_mrent'] = round(temp['met_mrent'], 2)
-            temp['final_Gmrent_ytd'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), (temp['met_mrent'] - temp['met_mrent'].shift(1)) / temp['met_mrent'].shift(1), np.nan)
-
-            temp['erev'] = temp['merent'] * temp['inv']
-            temp['met_erev'] = temp.groupby(['identity_met', 'yr', 'currmon'])['erev'].transform('sum')
-            temp['met_erent'] = temp['met_erev'] / temp['met_inv']
-            temp['met_erent'] = round(temp['met_erent'], 2)
-            temp['final_Gmerent_ytd'] = np.where(temp['identity_met'] == temp['identity_met'].shift(1), (temp['met_erent'] - temp['met_erent'].shift(1)) / temp['met_erent'].shift(1), np.nan)
-
-            temp = temp[(temp['yr'] == curryr) & (temp['currmon'] == currmon)]
-            temp = temp.drop_duplicates('identity_met')
-            temp = temp[['identity_met', 'final_vacchg_ytd', 'final_Gmrent_ytd', 'final_Gmerent_ytd']]
-            temp = temp.set_index('identity_met')
-            review_packet = review_packet.join(temp, on='identity_met')
+            review_packet = calc_ytd(review_packet, curryr, currmon, "packet")
 
         gen_met = pd.read_stata("{}central/master-data/genmet.dta".format(get_home()), columns= ['metcode', 'metro', 'state', 'reg_long'])
         gen_met = gen_met.set_index('metcode')
@@ -2759,17 +2709,19 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 Output('metroll', 'fixed_rows'),
                 Output('met_rank', 'data'),
                 Output('met_rank', 'columns'),
+                Output('met_rank', 'style_data_conditional'),
                 Output('sub_rank', 'data'),
                 Output('sub_rank', 'columns'),
+                Output('sub_rank', 'style_data_conditional'),
                 Output('sub_rank_container', 'style'),
                 Output('met_rank_container', 'style'),
-                Output('rank_toggle_container', 'style'),
+                Output('metro_sorts_container', 'style'),
                 Output('roll_view', 'disabled'),
                 Output('first_roll', 'data')],
                 [Input('droproll', 'value'),
                 Input('roll_view', 'value'),
                 Input('currmon_filt', 'value'),
-                Input('rank_toggle', 'value'),
+                Input('metro_sorts', 'value'),
                 Input('display_trigger', 'data'),
                 Input('tab_clicked', 'value'),
                 Input('sector', 'data'),],
@@ -2780,7 +2732,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 State('dropman', 'value'),
                 State('first_roll', 'data')])
 #@Timer("Output Rollup")
-def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger, tab_val, sector_val, orig_cols, curryr, currmon, success_init, drop_val, first_load):
+def output_rollup(roll_val, multi_view, currmon_view, sorts_val, display_trigger, tab_val, sector_val, orig_cols, curryr, currmon, success_init, drop_val, first_load):
 
     if sector_val is None or success_init == False or (tab_val != "rollups" and first_load == False):
         raise PreventUpdate
@@ -2845,24 +2797,20 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
             if multi_view == False:
                 data_vac_roll, data_rent_roll = sub_met_graphs(rolled[(rolled['yr'] >= curryr - 1) | ((rolled['yr'] == curryr - 2) & (rolled['currmon'] >= priormon))], "met", curryr, currmon, sector_val)
             elif multi_view == True:
-                sub_rank, met_rank = rank_it(rolled_rank, roll, roll_val, curryr, currmon, sector_val, rank_only)
+                sub_rank, met_rank = metro_sorts(rolled_rank, roll, roll_val, curryr, currmon, sector_val, sorts_val)
                 for col in sub_rank:
                     if "_" in col:
                         sub_rank.rename(columns={col: col.replace('_', ' ')}, inplace=True)
+                for col in met_rank:
+                    if "_" in col: 
                         met_rank.rename(columns={col: col.replace('_', ' ')}, inplace=True)
-                sub_rank = sub_rank.rename(columns={'G mrent': 'Gmrent'})
-                met_rank = met_rank.rename(columns={'G mrent': 'Gmrent'})
+                sub_rank = sub_rank.rename(columns={'G mrent': 'Gmrent', 'G mrent rank': 'Gmrent rank'})
+                met_rank = met_rank.rename(columns={'G mrent': 'Gmrent', 'G mrent rank': 'Gmrent rank', 'met sur v cov perc': 'met sur v cov', 'met sur r cov perc': 'met sur r cov', 'met g renx mo wgt': 'met grenx mo wgt'})
                 rolled = rolled[(rolled['metcode'] == roll_val[:2]) & (rolled['subsector'] == roll_val[2:])]
 
-
-                if rank_only == False:
-                    type_dict_rank = {}
-                    format_dict_rank = {}
-                    for x in list(sub_rank.columns):
-                        type_dict_rank[x] = 'numeric'
-                        format_dict_rank[x] = Format(precision=0, scheme=Scheme.fixed)
-                elif rank_only == True:
-                    type_dict_rank, format_dict_rank = get_types(sector_val)            
+                type_dict_rank, format_dict_rank = get_types(sector_val)
+                highlighting_sub_rank = get_style("partial", sub_rank, curryr, currmon, [], [])
+                highlighting_met_rank = get_style("partial", met_rank, curryr, currmon, [], [])            
         
         if currmon_view == True:
             rolled = rolled[(rolled['yr'] == curryr) & (rolled['currmon'] == currmon)]
@@ -2888,9 +2836,9 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
 
         vac_series_met_display = {'width': '49%', 'display': 'inline-block'}
         rent_series_met_display = {'width': '49%', 'display': 'inline-block', 'padding-left': '50px'}
-        sub_rank_display = {'display': 'inline-block', 'padding-left': '10px', 'width': '45%', 'padding-top': '10px'}
-        met_rank_display = {'display': 'inline-block', 'padding-left': '150px', 'width': '45%', 'padding-top': '10px'}
-        rank_toggle_display = {'display': 'block', 'padding-right': '35px', 'padding-top': '75px'}
+        sub_rank_display = {'display': 'inline-block', 'padding-left': '10px', 'width': '25%', 'padding-top': '10px'}
+        met_rank_display = {'display': 'inline-block', 'padding-left': '150px', 'width': '65%', 'padding-top': '10px'}
+        metro_sorts_radios_display = {'display': 'block', 'padding-left': '1000px', 'padding-top': '75px'}
 
         roll_display = {'width': '95%', 'padding-left': '10px', 'display': 'block'}
         
@@ -2945,12 +2893,12 @@ def output_rollup(roll_val, multi_view, currmon_view, rank_only, display_trigger
     
         if multi_view == False or roll_val[:2] == "US":
             return go.Figure(data=data_vac_roll), go.Figure(data=data_rent_roll), vac_series_met_display, rent_series_met_display, rolled.to_dict('records'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
-            for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, no_update, no_update, no_update, no_update, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, disable_roll_view, first_load
+            for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, no_update, no_update, no_update, no_update, no_update, no_update, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, disable_roll_view, first_load
         elif multi_view == True:
             return no_update, no_update, {'display': 'none'}, {'display': 'none'}, rolled.to_dict('records'), [{'name': [data_title, rolled.columns[i]], 'id': rolled.columns[i], 'type': type_dict_roll[rolled.columns[i]], 'format': format_dict_roll[rolled.columns[i]]} 
             for i in range(0, len(rolled.columns))], roll_display, highlighting_roll, roll_page_action, roll_style_table, roll_fixed_rows, met_rank.to_dict('records'), [{'name': ['Met Rank', met_rank.columns[i]], 'id': met_rank.columns[i], 'type': type_dict_rank[met_rank.columns[i]], 'format': format_dict_rank[met_rank.columns[i]]} 
-                            for i in range(0, len(met_rank.columns))], sub_rank.to_dict('records'), [{'name': ['Sub Rank', sub_rank.columns[i]], 'id': sub_rank.columns[i], 'type': type_dict_rank[sub_rank.columns[i]], 'format': format_dict_rank[sub_rank.columns[i]]}
-                            for i in range(0, len(sub_rank.columns))], sub_rank_display, met_rank_display, rank_toggle_display, disable_roll_view, first_load
+                            for i in range(0, len(met_rank.columns))], highlighting_met_rank, sub_rank.to_dict('records'), [{'name': ['Sub Rank', sub_rank.columns[i]], 'id': sub_rank.columns[i], 'type': type_dict_rank[sub_rank.columns[i]], 'format': format_dict_rank[sub_rank.columns[i]]}
+                            for i in range(0, len(sub_rank.columns))], highlighting_sub_rank, sub_rank_display, met_rank_display, metro_sorts_radios_display, disable_roll_view, first_load 
 
 @trend.callback(Output('store_shim_finals', 'data'),
                   [Input('man_view', 'data'),
