@@ -548,7 +548,7 @@ def get_app_layout():
                         html.Div([
                             dash_table.DataTable(
                                 id='metroll',
-                                style_header={'fontWeight': 'bold', 'textAlign': 'center','whiteSpace': 'normal', 'height': 'auto'},
+                                style_header={'fontWeight': 'bold', 'textAlign': 'center', 'whiteSpace': 'normal', 'height': 'auto'},
                                 merge_duplicate_headers=True,
                                 style_cell_conditional=[
                                         {'if': {'column_id': 'subsector'},
@@ -645,15 +645,16 @@ def get_app_layout():
                            dash_table.DataTable(
                                 id='sub_rank',
                                 merge_duplicate_headers=True,
-                                style_header={'fontWeight': 'bold', 'textAlign': 'center'},
+                                style_header={'fontWeight': 'bold', 'textAlign': 'center', 'whiteSpace': 'normal',},
                                 sort_action="native",
+                                filter_action="native",
                                 ),
                             ], style={'display': 'none'}, id='sub_rank_container'),
                         html.Div([
                             dash_table.DataTable(
                                 id='met_rank',
                                 merge_duplicate_headers=True,
-                                style_header={'fontWeight': 'bold', 'textAlign': 'center'},
+                                style_header={'fontWeight': 'bold', 'textAlign': 'center', 'whiteSpace': 'normal',},
                                 sort_action="native",
                                 filter_action="native",
                                 ),
