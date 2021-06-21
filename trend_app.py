@@ -59,12 +59,14 @@ def get_types(sector_val):
     type_dict['sq rent'] = 'numeric'
     type_dict['Gmrent'] = 'numeric'
     type_dict['rol Gmrent'] = 'numeric'
+    type_dict['rol Gmrent'] = 'numeric'
     type_dict['sq Gmrent'] = 'numeric'
     type_dict['Gmerent'] = 'numeric'
     type_dict['rol Gmerent'] = 'numeric'
     type_dict['gap chg'] = 'numeric'
     type_dict['rol gap chg'] = 'numeric'
     type_dict['abs'] = 'numeric'
+    type_dict['rol abs'] = 'numeric'
     type_dict['sq avail'] = 'numeric'
     type_dict['rol cons'] = 'numeric'
     type_dict['rol abs'] = 'numeric'
@@ -224,6 +226,7 @@ def get_types(sector_val):
     format_dict['final abs last3mos'] = Format(group=",")
     format_dict['final cons ytd'] = Format(group=",")
     format_dict['final abs ytd'] = Format(group=",")
+    format_dict['rol abs'] = Format(group=",")
     
     format_dict['vac'] = FormatTemplate.percentage(2)
     format_dict['sq vac'] = FormatTemplate.percentage(2)
@@ -268,6 +271,7 @@ def get_types(sector_val):
     format_dict['final Gmrent ytd'] = FormatTemplate.percentage(2)
     format_dict['final gapchg ytd'] = FormatTemplate.percentage(2)
     format_dict['metsq Gmrent'] = FormatTemplate.percentage(2)
+    format_dict['rol Gmrent'] = FormatTemplate.percentage(2)
     
     format_dict['Survey Cover Pct'] = FormatTemplate.percentage(1)
     format_dict['% Currmon Trend Rows W Flag'] = FormatTemplate.percentage(1)
@@ -2484,7 +2488,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         # Use key_met_val to set display cols, and if there is none selected, set the display cols based on the first flag type for the sub
         if key_met_val is None:
             key_met_val = flag_list[0][0]
-        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon)
+        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list)
 
         display_data = display_frame(display_data, drop_val, display_cols, curryr, sector_val)
 
@@ -2602,6 +2606,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         display_data = display_data.rename(columns={"currmon": "month"})
         display_data = display_data.rename(columns={"G mrent": "Gmrent"})
         display_data = display_data.rename(columns={"G merent": "Gmerent"})
+        display_data = display_data.rename(columns={"rol G mrent": "rol Gmrent"})
         display_data = display_data.rename(columns={"sqinv": "sq inv"})
         display_data = display_data.rename(columns={"sqcons": "sq cons"})
         display_data = display_data.rename(columns={"sqavail": "sq avail"})
@@ -2630,7 +2635,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         if check_for_rol_row == True:
             temp = temp[(temp['yr'] != curryr) | ((temp['month'] != currmon) & (temp['yr'] == curryr))]
             if display_highlight_list[0] == "Gmrent":
-                rol_val = "rol G mrent"
+                rol_val = "rol Gmrent"
             else:
                 rol_val = "rol vac"
             temp = temp[(temp[rol_val].isnull() == False) & (temp[display_highlight_list[0]].isnull() == False)]
@@ -2643,7 +2648,9 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             display_highlight_rows = list(temp.tail(1)['id'])
 
         # Drop the rol vars that were only included to help identify the flag row for highlighting purposes
-        display_data = display_data.drop(['rol vac', 'rol G mrent'], axis=1)
+        display_data = display_data.drop(['rol vac'], axis=1)
+        if "c_flag_rolg" not in flag_list:
+            display_data = display_data.drop(['rol Gmrent'], axis=1)
 
         # Do not include conv shim and demo shim columns if the user does not want to see them
         if show_cd[-1] == "N" and sector_val != "ind":

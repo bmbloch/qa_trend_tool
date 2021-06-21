@@ -15,7 +15,7 @@ from init_load_trend import get_home
 from timer_trend import Timer
 
 # Function that filters the dataframe for the columns to display on the data tab to the user, based on what type of flag is currently being analyzed
-def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon):
+def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon, flag_list):
     dataframe = dataframe_in.copy()
 
     dataframe = dataframe[dataframe['identity'] == identity_val]
@@ -24,8 +24,11 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     if sector_val != "ind":
         display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
     else:
-        display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
+        display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac']
     
+    if "c_flag_rolv" in flag_list:
+        display_cols.insert(19, 'rol_abs')
+
     if dataframe['merent'].isnull().all(axis=0) == True:
         display_cols.remove('merent')
         display_cols.remove('G_merent')
@@ -393,8 +396,8 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         del issue_descriptions['g_flag_sqlev']
 
     highlighting = {
-        "c_flag_rolv": [['vac'], ['vac roldiff', 'cons roldiff']], 
-        "c_flag_rolg": [['Gmrent'], ['gmrent roldiff']],
+        "c_flag_rolv": [['vac', 'abs', 'rol abs'], ['vac roldiff', 'cons roldiff']], 
+        "c_flag_rolg": [['Gmrent', 'rol Gmrent'], ['gmrent roldiff']],
         "c_flag_sqdiff": [['cons', 'sq cons'], []],
         "v_flag_low": [['vac', 'sq vac'], []],
         "v_flag_high": [['vac', 'sq vac'], []],
