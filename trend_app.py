@@ -1139,7 +1139,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 
     cons_check = False
     if len(shim_data[shim_data['cons'].isnull() == False]) > 0:
-        if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data.reset_index().loc[0]['yr'] < curryr - 10:
+         if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['yr'] < curryr - 10:
             cons_check = True
 
     if no_shim == True and len(skip_list) == 0:
@@ -1251,7 +1251,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
     # At this point, will just always allow the button to be clicked, even if there are no edits entered, as want to allow the user to undo a previewed shim. Can think about a way to test if this is an undo vs a first time entry, but small potatoes as will only marginally increase speed
     cons_check = False
     if len(shim_data[shim_data['cons'].isnull() == False]) > 0:
-        if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data.reset_index().loc[0]['yr'] < curryr - 10:
+        if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['yr'] < curryr - 10:
             cons_check = True
     if cons_check == True:
         message = "Construction shims can only be entered in the ten most recent historical years."
