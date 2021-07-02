@@ -863,7 +863,7 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
             dataframe.to_pickle(file_path)
 
 # Identify where the trend series has changed for key variables
-def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, action, flag_name, cons_c, avail_c, mrent_c, merent_c):
+def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, action, flag_name, cons_c, avail_c, mrent_c, erent_c):
     if action == "submit":
 
         decision_data_test = decision_data.copy()
@@ -979,8 +979,8 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
             decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
         if mrent_c[-9:] != "Note Here":
             decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
-        if merent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = merent_c
+        if erent_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = erent_c
         
 
     elif action == "skip":
@@ -999,8 +999,8 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
             decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
         if mrent_c[-9:] != "Note Here":
             decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
-        if merent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = merent_c
+        if erent_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = erent_c
     
     return decision_data_update
 
@@ -1143,7 +1143,7 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols
 
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
-def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, merent_c):
+def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c):
 
     rebench_trigger = False
     
@@ -1191,7 +1191,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         if no_shim == False:
-            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, merent_c, 'submit')
+            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c, 'submit')
         else:
             has_diff = 0
 
@@ -1202,7 +1202,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
             decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
         if has_diff == 1:      
-            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False cons_c, avail_c, mrent_c, merent_c)
+            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False cons_c, avail_c, mrent_c, erent_c)
 
         if flag_list[0] != "v_flag" and len(skip_list) > 0:
             test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
@@ -1215,7 +1215,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
                     else:
                         data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] += ", " + flag
                     
-                    decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag, cons_c, avail_c, mrent_c, merent_c)
+                    decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag, cons_c, avail_c, mrent_c, erent_c)
 
         if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
@@ -1716,7 +1716,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
 
             # Also save a csv file with all the historical rebenches that crossed the data governance threshold
             rebench_log = decision_log.copy()
-            rebench_log = rebench_log[['identity_row', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'avail_comment', 'mrent_comment', 'merent_comment']]
+            rebench_log = rebench_log[['identity_row', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'avail_comment', 'mrent_comment', 'merent_comment', 'v_user', 'm_user', 'e_user']]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
@@ -1812,7 +1812,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
    
 
         if input_id == 'submit-button':
-            data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, merent_c)
+            data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c)
 
         elif input_id == 'preview-button':
             data, preview_data, shim_data, message, message_display, flags_resolved, flags_unresolved, flags_new = preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols)
