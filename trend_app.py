@@ -878,9 +878,9 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         update_data = data.copy()
         update_data = update_data[update_data['identity'] == drop_val]
         if sector_val != "ind":
-            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'cons_comment', 'avail_comment', 'mrent_comment', 'merent_comment']]
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']]
         else:
-            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'cons_comment', 'avail_comment', 'mrent_comment', 'merent_comment']]
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], axis=1)
         
         update_data['vac'] = round(update_data['vac'], 3)
@@ -974,13 +974,13 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
 
         # Add comments to all rows
         if cons_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'cons_comment'] = cons_c
+            decision_data.set_index('identity').loc[drop_val, 'inv_cons_comment'] = cons_c
         if avail_c[-9:] != "Note Here":
             decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
         if mrent_c[-9:] != "Note Here":
             decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
         if erent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = erent_c
+            decision_data.set_index('identity').loc[drop_val, 'erent_comment'] = erent_c
         
 
     elif action == "skip":
@@ -994,13 +994,13 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
     
         # Add comments to all rows
         if cons_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'cons_comment'] = cons_c
+            decision_data.set_index('identity').loc[drop_val, 'inv_cons_comment'] = cons_c
         if avail_c[-9:] != "Note Here":
             decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
         if mrent_c[-9:] != "Note Here":
             decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
         if erent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = erent_c
+            decision_data.set_index('identity').loc[drop_val, 'erent_comment'] = erent_c
     
     return decision_data_update
 
@@ -1486,10 +1486,10 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                 decision_data['e_user'] = np.nan
                 decision_data['skipped'] = ''
                 decision_data['skip_user'] = ''
-                decision_data['cons_comment'] = ''
+                decision_data['inv_cons_comment'] = ''
                 decision_data['avail_comment'] = ''
                 decision_data['mrent_comment'] = ''
-                decision_data['merent_comment'] = ''
+                decision_data['erent_comment'] = ''
                 use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
             temp = oob_data.copy()
@@ -1719,7 +1719,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = decision_log.copy()
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
-            comments = comments[['avail_comment', 'mrent_comment', 'merent_comment']]
+            comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
             rebench_log = rebench_log[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'm_user', 'e_user']]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
