@@ -1202,7 +1202,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
             decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
         if has_diff == 1:      
-            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False cons_c, avail_c, mrent_c, erent_c)
+            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False, cons_c, avail_c, mrent_c, erent_c)
 
         if flag_list[0] != "v_flag" and len(skip_list) > 0:
             test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
@@ -1720,7 +1720,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
-            rebench_log = rebench_log[(rebench_log['yr'] != curryr) or ((rebench_log['yr'] == curryr) and (rebench_log['currmon'] !+ currmon))]
+            rebench_log = rebench_log[(rebench_log['yr'] != curryr) or ((rebench_log['yr'] == curryr) and (rebench_log['currmon'] != currmon))]
             rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.05)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.05, np.nan)
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan)

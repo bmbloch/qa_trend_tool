@@ -708,9 +708,9 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
             merent_check = False
             if len(shim_data[shim_data['avail'].isnull() == False]) > 0:
                 avail_check = True
-            if len(shim_data[shim_data['mrent'].isnull() == False) > 0:
+            if len(shim_data[shim_data['mrent'].isnull() == False]) > 0:
                 mrent_check = True
-            if len(shim_data[shim_data]['merent'].isnull() == False) > 0:
+            if len(shim_data[shim_data['merent'].isnull() == False]) > 0:
                 merent_check = True
 
             if avail_check == True:
@@ -721,8 +721,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                     shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
                     shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.05]
                     if len(shim_check) > 0:
-                        avail_c[-9:] != "Note Here" and avail_c != '':
-                        avail_check = False
+                        if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+                            avail_check = False
             if mrent_check == True:
                 if shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         shim_check = data.copy()
@@ -731,8 +731,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                         shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
                         shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
                         if len(shim_check) > 0:
-                            mrent_c[-9:] != "Note Here" and mrent_c != '':
-                            mrent_check = False
+                            if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
+                                mrent_check = False
             if merent_check == True:
                 if shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         shim_check = data.copy()
@@ -741,8 +741,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                         shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
                         shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
                         if len(shim_check) > 0:
-                            erent_c[-9:] != "Note Here" and erent_c != '':
-                            merent_check = False
+                            if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
+                                merent_check = False
 
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
