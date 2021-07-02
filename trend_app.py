@@ -1196,15 +1196,15 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
             has_diff = 0
 
         if has_diff == 2:
-            rebench_trigger == True
+            rebench_trigger = True
 
         # Update decision log with new values entered via shim
-        if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
+        if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False):
             decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
         if has_diff == 1:      
             decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False, cons_c, avail_c, mrent_c, erent_c)
 
-        if flag_list[0] != "v_flag" and len(skip_list) > 0:
+        if flag_list[0] != "v_flag" and (len(skip_list) > 0 and rebench_trigger == False):
             test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
             test = test.split(",")
             test = [x.strip(' ') for x in test]
@@ -1217,7 +1217,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
                     
                     decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag, cons_c, avail_c, mrent_c, erent_c)
 
-        if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
+        if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False):
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
             data_save = data.copy()
