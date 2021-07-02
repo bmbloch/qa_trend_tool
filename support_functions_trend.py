@@ -727,6 +727,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                             avail_check = False
                     else:
                         avail_check = False
+                else:
+                    avail_check = False
             if mrent_check == True:
                 if shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         shim_check = data_temp.copy()
@@ -740,6 +742,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                                 mrent_check = False
                         else:
                             mrent_check = False
+                else:
+                    mrent_check = False
             if merent_check == True:
                 if shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         shim_check = data_temp.copy()
@@ -753,6 +757,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                                 merent_check = False
                         else:
                             merent_check = False
+                else:
+                    merent_check = False
 
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
