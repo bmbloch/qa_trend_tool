@@ -717,7 +717,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 if shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                     shim_check = data.copy()
                     shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
-                    shim_check = shim_check[(shim_check['yr'] != curryr) or ((shim_check['yr'] == curryr) and (shim_check['currmon'] != currmon))]
+                    shim_check = shim_check[(shim_check['yr'] != curryr) | ((shim_check['yr'] == curryr) & (shim_check['currmon'] != currmon))]
                     shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
                     shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.05]
                     if len(shim_check) > 0:
@@ -727,7 +727,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 if shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         shim_check = data.copy()
                         shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
-                        shim_check = shim_check[(shim_check['yr'] != curryr) or ((shim_check['yr'] == curryr) and (shim_check['currmon'] != currmon))]
+                        shim_check = shim_check[(shim_check['yr'] != curryr) | ((shim_check['yr'] == curryr) & (shim_check['currmon'] != currmon))]
                         shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
                         shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
                         if len(shim_check) > 0:
@@ -737,7 +737,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 if shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         shim_check = data.copy()
                         shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
-                        shim_check = shim_check[(shim_check['yr'] != curryr) or ((shim_check['yr'] == curryr) and (shim_check['currmon'] != currmon))]
+                        shim_check = shim_check[(shim_check['yr'] != curryr) | ((shim_check['yr'] == curryr) & (shim_check['currmon'] != currmon))]
                         shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
                         shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
                         if len(shim_check) > 0:

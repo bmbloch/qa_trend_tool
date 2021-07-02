@@ -1720,7 +1720,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
-            rebench_log = rebench_log[(rebench_log['yr'] != curryr) or ((rebench_log['yr'] == curryr) and (rebench_log['currmon'] != currmon))]
+            rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
             rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.05)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.05, np.nan)
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan)
