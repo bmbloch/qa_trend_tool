@@ -715,7 +715,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
 
             if avail_check == True:
                 if shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                    shim_check = data.copy()
+                    shim_check = data_temp.copy()
                     shim_check = shim_check[shim_check['identity'] == drop_val]
                     shim_check = shim_check[shim_check['curr_tag'] != 1]
                     shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
@@ -728,7 +728,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                             avail_check = False
             if mrent_check == True:
                 if shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                        shim_check = data.copy()
+                        shim_check = data_temp.copy()
                         shim_check = shim_check[shim_check['identity'] == drop_val]
                         shim_check = shim_check[shim_check['curr_tag'] != 1]
                         shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
@@ -739,7 +739,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                                 mrent_check = False
             if merent_check == True:
                 if shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                        shim_check = data.copy()
+                        shim_check = data_temp.copy()
                         shim_check = shim_check[shim_check['identity'] == drop_val]
                         shim_check = shim_check[shim_check['curr_tag'] != 1]
                         shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
