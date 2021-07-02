@@ -708,10 +708,18 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
             merent_check = False
             if len(shim_data[shim_data['avail'].isnull() == False]) > 0:
                 avail_check = True
+            else:
+                data = data_temp.copy()
             if len(shim_data[shim_data['mrent'].isnull() == False]) > 0:
                 mrent_check = True
+            else:
+                data = data_temp.copy()
             if len(shim_data[shim_data['merent'].isnull() == False]) > 0:
                 merent_check = True
+            else:
+                data = data_temp.copy()
+        else:
+            data = data_temp.copy()
 
             if avail_check == True:
                 if shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
@@ -720,7 +728,9 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                     shim_check = shim_check[shim_check['curr_tag'] != 1]
                     shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
                     shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
+                    display(shim_check)
                     shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.05]
+                    display(shim_check)
                     if len(shim_check) > 0:
                         print(avail_c.strip())
                         print(len(avail_c.strip()))
