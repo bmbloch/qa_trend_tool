@@ -1716,7 +1716,11 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
 
             # Also save a csv file with all the historical rebenches that crossed the data governance threshold
             rebench_log = decision_log.copy()
-            rebench_log = rebench_log[['identity_row', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'avail_comment', 'mrent_comment', 'merent_comment', 'v_user', 'm_user', 'e_user']]
+            comments = decision_log.copy()
+            comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
+            comments = comments.set_index('identity')
+            comments = comments[['avail_comment', 'mrent_comment', 'merent_comment']]
+            rebench_log = rebench_log[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'm_user', 'e_user']]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
@@ -1725,6 +1729,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.05, np.nan)
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan)
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan)
+            rebench_log = rebench_log.join(comments, on='identity')
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment', 'vac_oob': 'vac_rol', 'mrent_oob': 'mrent_rol', 'merent_oob': 'merent_rol'})
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
             rebench_log.to_csv(file_path, index=False, na_rep='')
