@@ -863,7 +863,7 @@ def use_pickle(direction, file_name, dataframe, curryr, currmon, sector_val):
             dataframe.to_pickle(file_path)
 
 # Identify where the trend series has changed for key variables
-def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, action, flag_name):
+def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, action, flag_name, cons_c, avail_c, mrent_c, merent_c):
     if action == "submit":
 
         decision_data_test = decision_data.copy()
@@ -878,9 +878,9 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         update_data = data.copy()
         update_data = update_data[update_data['identity'] == drop_val]
         if sector_val != "ind":
-            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'cons_comment', 'avail_comment', 'mrent_comment', 'merent_comment']]
         else:
-            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg']]
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'cons_comment', 'avail_comment', 'mrent_comment', 'merent_comment']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], axis=1)
         
         update_data['vac'] = round(update_data['vac'], 3)
@@ -972,6 +972,17 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         decision_data_update = decision_data_update.append(decision_data_replace)
         decision_data_update.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], inplace=True)
 
+        # Add comments to all rows
+        if cons_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'cons_comment'] = cons_c
+        if avail_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
+        if mrent_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
+        if merent_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = merent_c
+        
+
     elif action == "skip":
         decision_data_update = decision_data.copy()
         if decision_data_update['skipped'].loc[drop_val + str(curryr) + str(currmon)] == '':
@@ -980,6 +991,16 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         else:
             decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skipped'] = decision_data_update['skipped'].loc[drop_val + str(curryr) + str(currmon)] + ", " + flag_name
             decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skip_user'] = decision_data_update['skip_user'].loc[drop_val + str(curryr) + str(currmon)] + ", " + user
+    
+        # Add comments to all rows
+        if cons_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'cons_comment'] = cons_c
+        if avail_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
+        if mrent_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
+        if merent_c[-9:] != "Note Here":
+            decision_data.set_index('identity').loc[drop_val, 'merent_comment'] = merent_c
     
     return decision_data_update
 
@@ -1122,8 +1143,10 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     return data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols
 
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
-def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg):
+def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, merent_c):
 
+    rebench_trigger = False
+    
     if sector_val != "ind":
         shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
     else:
@@ -1132,11 +1155,13 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
     for col in shim_cols:
         shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
 
+    # Check to see if there are any shims entered, and if not, alert the user
     if shim_data[shim_cols].isnull().values.all() == True:
         no_shim = True
     else:
         no_shim = False
 
+    # Check to see if a construction shim was entered for a period outside of curryr - 10. If so, do not process the shim and alert the user
     cons_check = False
     if len(shim_data[shim_data['cons'].isnull() == False]) > 0:
          if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['yr'] < curryr - 10:
@@ -1166,15 +1191,18 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         if no_shim == False:
-            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg)
+            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, merent_c, 'submit')
         else:
             has_diff = 0
 
+        if has_diff == 2:
+            rebench_trigger == True
+
         # Update decision log with new values entered via shim
-        if has_diff == 1 or len(skip_list) > 0:
+        if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
             decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
         if has_diff == 1:      
-            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False)
+            decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False cons_c, avail_c, mrent_c, merent_c)
 
         if flag_list[0] != "v_flag" and len(skip_list) > 0:
             test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
@@ -1187,9 +1215,9 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
                     else:
                         data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] += ", " + flag
                     
-                    decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag)
+                    decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag, cons_c, avail_c, mrent_c, merent_c)
 
-        if has_diff == 1 or len(skip_list) > 0:
+        if has_diff == 1 or (len(skip_list) > 0 and has_diff != 2):
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
             data_save = data.copy()
@@ -1203,8 +1231,12 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 
     if cons_check == True:
         shim_data['cons'] = np.where(shim_data['yr'] < curryr, np.nan, shim_data['cons'])
-    else:
+    elif rebench_trigger == False:
         shim_data[shim_cols] = np.nan
+
+    if rebench_trigger == True:
+        message = "You entered a shim that resulted in a historical change above the data governance threshold. To process the shim, enter a supporting comment to document why the rebench was made."
+        message_display = True
     
     return data, preview_data, shim_data, message, message_display
 
@@ -1276,7 +1308,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
-        preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg)
+        preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False, 'preview')
 
         if has_diff == 1:
             
@@ -1454,6 +1486,10 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                 decision_data['e_user'] = np.nan
                 decision_data['skipped'] = ''
                 decision_data['skip_user'] = ''
+                decision_data['cons_comment'] = ''
+                decision_data['avail_comment'] = ''
+                decision_data['mrent_comment'] = ''
+                decision_data['merent_comment'] = ''
                 use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
 
             temp = oob_data.copy()
@@ -1676,7 +1712,22 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             decision_log_in_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.{}".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, 'pickle'))
             decision_log = pd.read_pickle(decision_log_in_path)
             decision_log_out_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.{}".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, 'csv'))
-            decision_log.to_csv(decision_log_out_path)
+            decision_log.to_csv(decision_log_out_path, na_rep='')
+
+            # Also save a csv file with all the historical rebenches that crossed the data governance threshold
+            rebench_log = decision_log.copy()
+            rebench_log = rebench_log[['identity_row', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'avail_comment', 'mrent_comment', 'merent_comment']]
+            rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
+            rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
+            rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
+            rebench_log = rebench_log[(rebench_log['yr'] != curryr) or ((rebench_log['yr'] == curryr) and (rebench_log['currmon'] !+ currmon))]
+            rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.05)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
+            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.05, np.nan)
+            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan)
+            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan)
+            rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment', 'vac_oob': 'vac_rol', 'mrent_oob': 'mrent_rol', 'merent_oob': 'merent_rol'})
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
+            rebench_log.to_csv(file_path, index=False, na_rep='')
 
         return True, alert_display, alert_text
 
@@ -1761,7 +1812,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
    
 
         if input_id == 'submit-button':
-            data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg)
+            data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, merent_c)
 
         elif input_id == 'preview-button':
             data, preview_data, shim_data, message, message_display, flags_resolved, flags_unresolved, flags_new = preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols)
