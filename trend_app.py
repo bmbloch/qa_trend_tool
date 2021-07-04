@@ -1725,18 +1725,20 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
             rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
+            for var in ['vac_diff', 'mrent_diff', 'merent_diff']
+                first_rebench = rebench_log.copy()
+                first_rebench = first_rebench[abs(first_rebench[var]) > 0.001]
+                first_rebench.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
+                first_rebench = first_rebench.drop_duplicates('identity')
+                first_rebench['init_shim_period_' + var.replace("_diff", '')] = first_rebench['yr'].astype(str) + "m" + first_rebench['currmon'].astype(str)
+                first_rebench = first_rebench.set_index('identity')
+                first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", '')]]
+                rebench_log = rebench_log.join(first_rebench)
             rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.03)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan)
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan)
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan)
             rebench_log = rebench_log.join(comments, on='identity')
-            first_rebench = rebench_log.copy()
-            first_rebench.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
-            first_rebench = first_rebench.drop_duplicates('identity')
-            first_rebench['init_shim_period'] = first_rebench['yr'].astype(str) + "m" + first_rebench['currmon'].astype(str)
-            first_rebench = first_rebench.set_index('identity')
-            first_rebench = first_rebench[['init_shim_period']]
-            rebench_log = rebench_log.join(first_rebench)
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment', 'vac_oob': 'vac_rol', 'mrent_oob': 'mrent_rol', 'merent_oob': 'merent_rol'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
             rebench_log = rebench_log.drop_duplicates('identity')
