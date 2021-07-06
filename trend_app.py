@@ -1725,7 +1725,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
             rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
-            for var in ['vac_diff', 'mrent_diff', 'merent_diff']
+            for var in ['vac_diff', 'mrent_diff', 'merent_diff']:
                 first_rebench = rebench_log.copy()
                 first_rebench = first_rebench[abs(first_rebench[var]) > 0.001]
                 first_rebench.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
