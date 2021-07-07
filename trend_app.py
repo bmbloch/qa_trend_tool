@@ -1222,8 +1222,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
 
             data_save = data.copy()
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-            keep_cols = orig_cols
-            data_save = data_save[keep_cols]
+            data_save = data_save[orig_cols]
             data_save.to_pickle(file_path)
         
 
