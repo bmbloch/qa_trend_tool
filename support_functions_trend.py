@@ -640,7 +640,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         return issue_descriptions
 
 # Function that analyzes where edits are made in the display dataframe if manual edit option is selected
-def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, button, subsequent_chg, avail_c, mrent_c, erent_c, type_filt):
+def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, button, subsequent_chg, avail_c, mrent_c, erent_c):
     data_update = shim_data.copy()
     indexes = data_orig.index.values
     data_update['new_index'] = indexes
@@ -702,7 +702,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                     data_temp = insert_fix(data, row_to_fix_diffs, drop_val, fix_val, col_issue_diffs[0], curryr, currmon, sector_val, subsequent_chg)
 
         # Check to see if a vacancy or rent shim created a change in a historical period above the data governance threshold set by key stakeholders. If it did, do not process the shim unless there is an accompanying note explaining why the rebench was made
-        if type_filt == 'submit':
+        if button == 'submit':
             avail_check = False
             mrent_check = False
             merent_check = False

@@ -1191,7 +1191,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         if no_shim == False:
-            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c, 'submit')
+            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c)
         else:
             has_diff = 0
 
@@ -1308,7 +1308,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
-        preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False, 'preview')
+        preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False)
 
         if has_diff == 1:
             
@@ -1720,7 +1720,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
-            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'm_user', 'e_user']]
+            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
@@ -1735,9 +1735,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", '')]]
                 rebench_log = rebench_log.join(first_rebench)
             rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.03)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
-            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan)
-            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan)
-            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan)
+            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['merent_diff'])
             rebench_log = rebench_log.join(comments, on='identity')
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment', 'vac_oob': 'vac_rol', 'mrent_oob': 'mrent_rol', 'merent_oob': 'merent_rol'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
@@ -1801,7 +1801,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
 def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update, flag_flow):
     
     input_id = get_input_id()
-
+    
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:
