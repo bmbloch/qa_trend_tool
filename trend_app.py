@@ -1504,15 +1504,13 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             elif sector_val == "ind":
                 default_drop = "US" + list(oob_data['subsector'].unique())[0] + list(oob_data['expansion'].unique())[0]
 
-            oob_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-            use_pickle("out", "main_data_" + sector_val, oob_data, curryr, currmon, sector_val)
-
             flag_list = get_issue("list", sector_val)
             flag_list_all = list(flag_list.keys())
 
             
             oob_data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols = first_update(oob_data, file_used, sector_val, orig_cols, curryr, currmon)              
             
+            oob_data.replace([np.inf, -np.inf], np.nan, inplace=True)
             use_pickle("out", "main_data_" + sector_val, oob_data, curryr, currmon, sector_val)
             use_pickle("out", "rank_data_met_" + sector_val, rank_data_met, curryr, currmon, sector_val)
             use_pickle("out", "rank_data_sub_" + sector_val, rank_data_sub, curryr, currmon, sector_val)
