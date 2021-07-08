@@ -2794,7 +2794,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 Input('currmon_filt', 'value'),
                 Input('metro_sorts', 'value'),
                 Input('tab_clicked', 'value'),
-                Input('sector', 'data'),],
+                Input('sector', 'data')],
                 [State('store_orig_cols', 'data'),
                 State('curryr', 'data'),
                 State('currmon', 'data'),
