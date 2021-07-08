@@ -2793,7 +2793,6 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 Input('roll_view', 'value'),
                 Input('currmon_filt', 'value'),
                 Input('metro_sorts', 'value'),
-                Input('display_trigger', 'data'),
                 Input('tab_clicked', 'value'),
                 Input('sector', 'data'),],
                 [State('store_orig_cols', 'data'),
@@ -2803,7 +2802,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 State('dropman', 'value'),
                 State('first_roll', 'data')])
 #@Timer("Output Rollup")
-def output_rollup(roll_val, multi_view, currmon_view, sorts_val, display_trigger, tab_val, sector_val, orig_cols, curryr, currmon, success_init, drop_val, first_load):
+def output_rollup(roll_val, multi_view, currmon_view, sorts_val, tab_val, sector_val, orig_cols, curryr, currmon, success_init, drop_val, first_load):
 
     if sector_val is None or success_init == False or (tab_val != "rollups" and first_load == False):
         raise PreventUpdate
