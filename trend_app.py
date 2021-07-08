@@ -1465,10 +1465,9 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             # Export the pickled oob values to begin setting up the decision log if this is the first time the user is running the program
             if file_used == "oob":
                 oob_cols = [x for x in list(oob_data.columns) if "oob" in x]
-                rol_cols = []
                 decision_data = oob_data.copy()
                 decision_data = decision_data.reset_index()
-                decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_vac', 'rol_mrent', 'rol_merent']]
+                decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons']]
                 update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
                 if sector_val != "ind":
                     update_cols += ['conv_new', 'demo_new']
@@ -1486,7 +1485,39 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                 decision_data['avail_comment'] = ''
                 decision_data['mrent_comment'] = ''
                 decision_data['erent_comment'] = ''
+
+                # Due to the need to identify large changes from ROL due to the auto cons rebench, update the new cols where there is a case of cons auto rebench
+                decision_data['cons_diff'] = decision_data['cons_oob'] - decision_data['rol_cons']
+                decision_data['vac_diff'] = decision_data['vac_oob'] - decision_data['rol_vac']
+                decision_data['mrent_diff'] = (decision_data['mrent_oob'] - decision_data['rol_mrent']) / decision_data['rol_mrent']
+                decision_data['merent_diff'] = (decision_data['merent_oob'] - decision_data['rol_merent']) / decision_data['rol_merent']
+                
+                decision_data['inv_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['inv_oob'], decision_data['inv_new'])
+                decision_data['cons_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['cons_oob'], decision_data['cons_new'])
+                
+                decision_data['vac_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_oob'], decision_data['vac_new'])
+                decision_data['vac_chg_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_chg_oob'], decision_data['vac_chg_new'])
+                decision_data['avail_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['avail_oob'], decision_data['avail_new'])
+                decision_data['abs_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['abs_oob'], decision_data['abs_new'])
+                
+                decision_data['mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['mrent_oob'], decision_data['mrent_new'])
+                decision_data['G_mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['G_mrent_oob'], decision_data['G_mrent_new'])
+                
+                decision_data['merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['merent_oob'], decision_data['merent_new'])
+                decision_data['G_merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['G_merent_oob'], decision_data['G_merent_new'])
+
+                decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
+                
+                decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['i_user'])
+                decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['c_user'])
+                decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001), "Cons Auto Rebench", decision_data['v_user'])
+                decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['g_user'])
+                decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['e_user'])
+
+                decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
+            
                 use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
+                
 
             temp = oob_data.copy()
             temp = temp.set_index('identity')
