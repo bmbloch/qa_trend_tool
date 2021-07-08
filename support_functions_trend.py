@@ -639,6 +639,68 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     elif type_return == "list":
         return issue_descriptions
 
+# Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold, thus requiring a support note documenting why the change was made
+def rebench_check(shim_data, data_temp, curryr, currmon):
+    dataframe = shim_data.copy()
+    avail_check = False
+    mrent_check = False
+    merent_check = False
+    if len(dataframe[dataframe['avail'].isnull() == False]) > 0:
+        avail_check = True
+    if len(dataframe[dataframe['mrent'].isnull() == False]) > 0:
+        mrent_check = True
+    if len(dataframe[dataframe['merent'].isnull() == False]) > 0:
+        merent_check = True
+
+    if avail_check == True:
+        if dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+            shim_check = data_temp.copy()
+            shim_check = shim_check[shim_check['identity'] == drop_val]
+            shim_check = shim_check[shim_check['curr_tag'] != 1]
+            shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
+            shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
+            shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
+            if len(shim_check) > 0:
+                if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+                    avail_check = False
+            else:
+                avail_check = False
+        else:
+            avail_check = False
+    if mrent_check == True:
+        if dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+                shim_check = data_temp.copy()
+                shim_check = shim_check[shim_check['identity'] == drop_val]
+                shim_check = shim_check[shim_check['curr_tag'] != 1]
+                shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
+                shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
+                shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
+                if len(shim_check) > 0:
+                    if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
+                        mrent_check = False
+                else:
+                    mrent_check = False
+        else:
+            mrent_check = False
+    if merent_check == True:
+        if dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+                shim_check = data_temp.copy()
+                shim_check = shim_check[shim_check['identity'] == drop_val]
+                shim_check = shim_check[shim_check['curr_tag'] != 1]
+                shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
+                shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
+                shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
+                if len(shim_check) > 0:
+                    if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
+                        merent_check = False
+                else:
+                    merent_check = False
+        else:
+            merent_check = False
+
+    return avail_check, mrent_check, merent_check
+
+
 # Function that analyzes where edits are made in the display dataframe if manual edit option is selected
 def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, button, subsequent_chg, avail_c, mrent_c, erent_c):
     data_update = shim_data.copy()
@@ -703,62 +765,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
 
         # Check to see if a vacancy or rent shim created a change in a historical period above the data governance threshold set by key stakeholders. If it did, do not process the shim unless there is an accompanying note explaining why the rebench was made
         if button == 'submit':
-            avail_check = False
-            mrent_check = False
-            merent_check = False
-            if len(shim_data[shim_data['avail'].isnull() == False]) > 0:
-                avail_check = True
-            if len(shim_data[shim_data['mrent'].isnull() == False]) > 0:
-                mrent_check = True
-            if len(shim_data[shim_data['merent'].isnull() == False]) > 0:
-                merent_check = True
-
-            if avail_check == True:
-                if shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                    shim_check = data_temp.copy()
-                    shim_check = shim_check[shim_check['identity'] == drop_val]
-                    shim_check = shim_check[shim_check['curr_tag'] != 1]
-                    shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
-                    shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
-                    shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
-                    if len(shim_check) > 0:
-                        if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
-                            avail_check = False
-                    else:
-                        avail_check = False
-                else:
-                    avail_check = False
-            if mrent_check == True:
-                if shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                        shim_check = data_temp.copy()
-                        shim_check = shim_check[shim_check['identity'] == drop_val]
-                        shim_check = shim_check[shim_check['curr_tag'] != 1]
-                        shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
-                        shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
-                        shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
-                        if len(shim_check) > 0:
-                            if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
-                                mrent_check = False
-                        else:
-                            mrent_check = False
-                else:
-                    mrent_check = False
-            if merent_check == True:
-                if shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and shim_data[shim_data['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                        shim_check = data_temp.copy()
-                        shim_check = shim_check[shim_check['identity'] == drop_val]
-                        shim_check = shim_check[shim_check['curr_tag'] != 1]
-                        shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
-                        shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
-                        shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
-                        if len(shim_check) > 0:
-                            if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
-                                merent_check = False
-                        else:
-                            merent_check = False
-                else:
-                    merent_check = False
-
+            avail_check, mrent_check, merent_check = rebench_check(shim_data, data_temp, curryr, currmon)
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
                 data = data_temp.copy()
