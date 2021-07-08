@@ -640,7 +640,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         return issue_descriptions
 
 # Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold, thus requiring a support note documenting why the change was made
-def rebench_check(shim_data, data_temp, curryr, currmon):
+def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c):
     dataframe = shim_data.copy()
     avail_check = False
     mrent_check = False
@@ -765,7 +765,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
 
         # Check to see if a vacancy or rent shim created a change in a historical period above the data governance threshold set by key stakeholders. If it did, do not process the shim unless there is an accompanying note explaining why the rebench was made
         if button == 'submit':
-            avail_check, mrent_check, merent_check = rebench_check(shim_data, data_temp, curryr, currmon)
+            avail_check, mrent_check, merent_check = rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c)
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
                 data = data_temp.copy()
