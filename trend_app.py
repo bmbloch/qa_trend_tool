@@ -1464,14 +1464,11 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
         if file_used != "error":
             # Export the pickled oob values to begin setting up the decision log if this is the first time the user is running the program
             if file_used == "oob":
-                test_cols = list(oob_data.columns)
-                oob_cols = []
-                for x in test_cols:
-                    if "oob" in x:
-                        oob_cols.append(x)
+                oob_cols = [x for x in list(oob_data.columns) if "oob" in x]
+                rol_cols = []
                 decision_data = oob_data.copy()
                 decision_data = decision_data.reset_index()
-                decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols]
+                decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_vac', 'rol_mrent', 'rol_merent']]
                 update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
                 if sector_val != "ind":
                     update_cols += ['conv_new', 'demo_new']
@@ -1717,10 +1714,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
-            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'vac_oob', 'mrent_oob', 'merent_oob', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
-            rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['vac_oob']
-            rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']
-            rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']
+            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_vac', 'rol_mrent', 'rol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
+            rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['rol_vac']
+            rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']
+            rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']
             rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
             for var in ['vac_diff', 'mrent_diff', 'merent_diff']:
                 first_rebench = rebench_log.copy()
@@ -1736,7 +1733,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['merent_diff'])
             rebench_log = rebench_log.join(comments, on='identity')
-            rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment', 'vac_oob': 'vac_rol', 'mrent_oob': 'mrent_rol', 'merent_oob': 'merent_rol'})
+            rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
             rebench_log = rebench_log.drop_duplicates('identity')
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))

@@ -718,8 +718,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                     shim_check = data_temp.copy()
                     shim_check = shim_check[shim_check['identity'] == drop_val]
                     shim_check = shim_check[shim_check['curr_tag'] != 1]
-                    shim_check = shim_check[['vac_oob', 'vac', 'yr', 'currmon']]
-                    shim_check['vac_diff'] = shim_check['vac'] - shim_check['vac_oob']
+                    shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
+                    shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
                     shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
                     if len(shim_check) > 0:
                         if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
@@ -733,8 +733,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                         shim_check = data_temp.copy()
                         shim_check = shim_check[shim_check['identity'] == drop_val]
                         shim_check = shim_check[shim_check['curr_tag'] != 1]
-                        shim_check = shim_check[['mrent_oob', 'mrent', 'yr', 'currmon']]
-                        shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['mrent_oob']) / shim_check['mrent_oob']
+                        shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
+                        shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
                         shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
                         if len(shim_check) > 0:
                             if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
@@ -748,8 +748,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                         shim_check = data_temp.copy()
                         shim_check = shim_check[shim_check['identity'] == drop_val]
                         shim_check = shim_check[shim_check['curr_tag'] != 1]
-                        shim_check = shim_check[['merent_oob', 'merent', 'yr', 'currmon']]
-                        shim_check['merent_diff'] = (shim_check['merent'] - shim_check['merent_oob']) / shim_check['merent_oob']
+                        shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
+                        shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
                         shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
                         if len(shim_check) > 0:
                             if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
