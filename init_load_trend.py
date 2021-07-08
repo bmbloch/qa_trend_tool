@@ -331,6 +331,10 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
             if sector_val == "ret":
                 data_in = data_in[(data_in['type1'] == "C") | (data_in['type1'] == "N")]
+
+            data_in['subid'] = data_in['subid'].astype(int)
+            data_in['yr'] = data_in['yr'].astype(int)
+            data_in['qtr'] = data_in['qtr'].astype(int)
             
             if sector_val == "apt" or sector_val == "off":
                 data_in['identity_met'] = data_in['metcode'] + sector_val.title()
@@ -743,7 +747,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         curr = curr[curr['yearx'] >= curryr - 3]
         curr['balance_test'] = curr['submkt'].str.slice(0,2)
         curr = curr[curr['balance_test'] != '99']
-        curr = curr[['id', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
+        curr = curr[['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity', 'existsx']]
         curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
         prior = prior[['id']]
         prior = prior.drop_duplicates('id')
@@ -751,7 +755,9 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         prior = prior.set_index('id')
         curr = curr.join(prior, on='id')
         curr = curr[curr['in_last_month'].isnull() == True]
-        curr = curr[curr['currmon_tag'] == 0]
+        curr = curr[curr['existsx'] == 1]
+        curr.sort_values(by=['id', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True], inplace=True)
+        curr = curr.drop_duplicates('id')
         new_ids = list(curr['id'])
         newnc_dict = {}
         for index, row in curr.iterrows():
