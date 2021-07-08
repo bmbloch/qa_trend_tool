@@ -1727,7 +1727,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 first_rebench['init_shim_period_' + var.replace("_diff", '')] = first_rebench['yr'].astype(str) + "m" + first_rebench['currmon'].astype(str)
                 first_rebench = first_rebench.set_index('identity')
                 first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", '')]]
-                rebench_log = rebench_log.join(first_rebench)
+                rebench_log = rebench_log.join(first_rebench, on='identity')
             rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.03)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['mrent_diff'])
