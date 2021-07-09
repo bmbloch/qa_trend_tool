@@ -348,6 +348,8 @@ def get_app_layout():
                                             'width': '3%'},
                                     {'if': {'column_id': 'rol Gmrent'},
                                             'width': '3%'},
+                                     {'if': {'column_id': 'rol merent'},
+                                            'width': '4%'},
                                             ],
                                             ),
                                 ], style={'display': 'none'}, id='man_view_container'),
