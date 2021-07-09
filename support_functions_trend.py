@@ -633,6 +633,10 @@ def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mren
         dataframe = shim_data.copy()
         identity = False
 
+        init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
+        init_mrent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['mrent_comment']
+        init_erent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['erent_comment']
+
         avail_check = False
         mrent_check = False
         merent_check = False
@@ -652,7 +656,7 @@ def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mren
                 shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
                 shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
                 if len(shim_check) > 0:
-                    if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+                    if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0 and avail_c != init_avail_c:
                         avail_check = False
                 else:
                     avail_check = False
@@ -667,7 +671,7 @@ def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mren
                     shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
                     shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
                     if len(shim_check) > 0:
-                        if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
+                        if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0 and mrent_c != init_mrent_c:
                             mrent_check = False
                     else:
                         mrent_check = False
@@ -682,7 +686,7 @@ def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mren
                     shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
                     shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
                     if len(shim_check) > 0:
-                        if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
+                        if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0 and erent_c != init_erent_c:
                             merent_check = False
                     else:
                         merent_check = False
