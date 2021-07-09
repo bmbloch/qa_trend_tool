@@ -44,7 +44,7 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
                 display_cols.insert(24, 'rol_mrent')
                 display_cols.remove('sqsren')
             elif "effective rent" in message:
-                display_cols.insert(30, 'rol_merent')
+                display_cols.insert(27, 'rol_merent')
         else:
             if "vacancy" in message:
                 display_cols.insert(20, 'rol_vac_chg')
@@ -56,13 +56,15 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
                 display_cols.insert(28, 'rol_mrent')
                 display_cols.remove('sqsren')
             elif "effective rent" in message:
-                display_cols.insert(34, 'rol_merent')
+                display_cols.insert(31, 'rol_merent')
     
     if dataframe['merent'].isnull().all(axis=0) == True:
         display_cols.remove('merent')
         display_cols.remove('G_merent')
         display_cols.remove('gap')
         display_cols.remove('gap_chg')
+        if "rol_merent" in display_cols:
+            display_cols.remove("rol_merent")
 
     if variable_fix == "c":
         key_met_cols = ['newncsf', 'newncava', 'ncrenlev', 'newncrev', 'cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']
@@ -860,10 +862,10 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                                 rebench_to_check['diff_to_orig'] = (rebench_to_check[var] - rebench_to_check[var + "_orig"]) / rebench_to_check[var + "_orig"]
                                 rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
                                 rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
-                                
+                               
                             rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_orig']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['diff_to_orig']))) | 
                                                                 ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
-
+                            
                             if len(rebench_to_check) > 0 and var == "vac":
                                 avail_check = True
                             if len(rebench_to_check) > 0 and var == "mrent":
