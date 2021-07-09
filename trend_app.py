@@ -1256,7 +1256,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data[shim_cols] = np.nan
 
     if rebench_trigger == True:
-        message = "You entered a shim that resulted in a historical change above the data governance threshold. To process the shim, enter a supporting comment to document why the rebench was made."
+        message = "You entered a shim that resulted in a historical change above the data governance threshold. To process the shim, enter a new supporting comment to document why the rebench was made."
         message_display = True
     
     return data, preview_data, shim_data, message, message_display, data_save
@@ -1761,7 +1761,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             decision_log_out_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.{}".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, 'csv'))
             decision_log.to_csv(decision_log_out_path, na_rep='')
 
-            # Also save a csv file with all the historical rebenches that crossed the data governance threshold
+            # Save a csv file with all the historical rebenches that crossed the data governance threshold
             rebench_log = decision_log.copy()
             comments = decision_log.copy()
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
@@ -1785,6 +1785,12 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['merent_diff'])
+            rebench_log['init_shim_period_vac'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['init_shim_period_vac'])
+            rebench_log['init_shim_period_mrent'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['init_shim_period_mrent'])
+            rebench_log['init_shim_period_merent'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['init_shim_period_merent'])
+            rebench_log['v_user'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['v_user'])
+            rebench_log['g_user'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['g_user'])
+            rebench_log['e_user'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['e_user'])
             rebench_log = rebench_log.join(comments, on='identity')
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
