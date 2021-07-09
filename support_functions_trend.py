@@ -628,143 +628,79 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         return issue_descriptions
 
 # Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold, thus requiring a support note documenting why the change was made
-def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c, type_filt, sector_val):
-    if type_filt == "reg":
-        dataframe = shim_data.copy()
-        identity = False
-
-        init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
-        init_mrent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['mrent_comment']
-        init_erent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['erent_comment']
-
-        avail_check = False
-        mrent_check = False
-        merent_check = False
-        if len(dataframe[dataframe['avail'].isnull() == False]) > 0:
-            avail_check = True
-        if len(dataframe[dataframe['mrent'].isnull() == False]) > 0:
-            mrent_check = True
-        if len(dataframe[dataframe['merent'].isnull() == False]) > 0:
-            merent_check = True
-
-        if avail_check == True:
-            if dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                shim_check = data_temp.copy()
-                shim_check = shim_check[shim_check['identity'] == drop_val]
-                shim_check = shim_check[shim_check['curr_tag'] != 1]
-                shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
-                shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
-                shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
-                if len(shim_check) > 0:
-                    if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0 and avail_c != init_avail_c:
-                        avail_check = False
-                else:
-                    avail_check = False
-            else:
-                avail_check = False
-        if mrent_check == True and avail_check == False:
-            if dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                    shim_check = data_temp.copy()
-                    shim_check = shim_check[shim_check['identity'] == drop_val]
-                    shim_check = shim_check[shim_check['curr_tag'] != 1]
-                    shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
-                    shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
-                    shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
-                    if len(shim_check) > 0:
-                        if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0 and mrent_c != init_mrent_c:
-                            mrent_check = False
-                    else:
-                        mrent_check = False
-            else:
-                mrent_check = False
-        if merent_check == True and avail_check == False and mrent_check == False:
-            if dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                    shim_check = data_temp.copy()
-                    shim_check = shim_check[shim_check['identity'] == drop_val]
-                    shim_check = shim_check[shim_check['curr_tag'] != 1]
-                    shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
-                    shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
-                    shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
-                    if len(shim_check) > 0:
-                        if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0 and erent_c != init_erent_c:
-                            merent_check = False
-                    else:
-                        merent_check = False
-            else:
-                merent_check = False
+def rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mrent_check, merent_check):
     
-    elif type_filt == "auto":
-        avail_check = True
-        mrent_check = True
-        merent_check = True
-        identity = False
+    identity = False
 
-        dataframe_in = data_temp.copy()
-        dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'] == '', np.nan, dataframe_in['avail_comment'])
-        dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'] == '', np.nan, dataframe_in['mrent_comment'])
-        dataframe_in['erent_comment'] = np.where(dataframe_in['erent_comment'] == '', np.nan, dataframe_in['erent_comment'])
-        dataframe_in['avail_comment'] = dataframe_in.groupby('identity')['avail_comment'].bfill()
-        dataframe_in['mrent_comment'] = dataframe_in.groupby('identity')['mrent_comment'].bfill()
-        dataframe_in['erent_comment'] = dataframe_in.groupby('identity')['erent_comment'].bfill()
-        dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'].isnull() == True, '', dataframe_in['avail_comment'])
-        dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'].isnull() == True, '', dataframe_in['mrent_comment'])
-        dataframe_in['erent_comment'] = np.where(dataframe_in['erent_comment'].isnull() == True, '', dataframe_in['erent_comment'])
-        dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
-        
+    dataframe_in = data_temp.copy()
+    dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'] == '', np.nan, dataframe_in['avail_comment'])
+    dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'] == '', np.nan, dataframe_in['mrent_comment'])
+    dataframe_in['erent_comment'] = np.where(dataframe_in['erent_comment'] == '', np.nan, dataframe_in['erent_comment'])
+    dataframe_in['avail_comment'] = dataframe_in.groupby('identity')['avail_comment'].bfill()
+    dataframe_in['mrent_comment'] = dataframe_in.groupby('identity')['mrent_comment'].bfill()
+    dataframe_in['erent_comment'] = dataframe_in.groupby('identity')['erent_comment'].bfill()
+    dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'].isnull() == True, '', dataframe_in['avail_comment'])
+    dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'].isnull() == True, '', dataframe_in['mrent_comment'])
+    dataframe_in['erent_comment'] = np.where(dataframe_in['erent_comment'].isnull() == True, '', dataframe_in['erent_comment'])
+    dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
+    
+    dataframe = dataframe_in.copy()
+    dataframe = dataframe[['rol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
+    
+    dataframe['vac_diff'] = dataframe['vac'] - dataframe['rol_vac']
+    dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.03) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
+    if len(dataframe) > 0:
+        dataframe = dataframe.drop_duplicates('identity')
+        for index, row in dataframe.iterrows():
+            avail_c = row['avail_comment']
+            if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+                avail_check = False
+            else:
+                avail_check = True
+                identity = row['identity']
+                break
+    else:
+        avail_check = False
+
+    if avail_check == False:
         dataframe = dataframe_in.copy()
-        dataframe = dataframe[['rol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
-        
-        dataframe['vac_diff'] = dataframe['vac'] - dataframe['rol_vac']
-        dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.03) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
+        dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
+        dataframe = dataframe[['rol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
+
+        dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']
+        dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.05) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
         if len(dataframe) > 0:
+            dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():
-                avail_c = row['avail_comment']
-                if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
-                    avail_check = False
+                mrent_c = row['mrent_comment']
+                if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
+                    mrent_check = False
                 else:
-                    avail_check = True
+                    mrent_check = True
                     identity = row['identity']
                     break
         else:
-            avail_check = False
+            mrent_check = False
 
-        if avail_check == False:
-            dataframe = dataframe_in.copy()
-            dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-            dataframe = dataframe[['rol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
-
-            dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']
-            dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.05) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
-            if len(dataframe) > 0:
-                for index, row in dataframe.iterrows():
-                    mrent_c = row['mrent_comment']
-                    if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
-                        mrent_check = False
-                    else:
-                        mrent_check = True
-                        identity = row['identity']
-                        break
-            else:
-                mrent_check = False
-
-        if avail_check == False and mrent_check == False:
-            dataframe = dataframe_in.copy()
-            dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-            dataframe = dataframe[['rol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
-            
-            dataframe['merent_diff'] = (dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']
-            dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.05) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
-            if len(dataframe) > 0:
-                for index, row in dataframe.iterrows():
-                    erent_c = row['erent_comment']
-                    if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
-                        merent_check = False
-                    else:
-                        merent_check = True
-                        identity = row['identity']
-                        break
-            else:
-                merent_check = False
+    if avail_check == False and mrent_check == False:
+        dataframe = dataframe_in.copy()
+        dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
+        dataframe = dataframe[['rol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
+        
+        dataframe['merent_diff'] = (dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']
+        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.05) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
+        if len(dataframe) > 0:
+            dataframe = dataframe.drop_duplicates('identity')
+            for index, row in dataframe.iterrows():
+                erent_c = row['erent_comment']
+                if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
+                    merent_check = False
+                else:
+                    merent_check = True
+                    identity = row['identity']
+                    break
+        else:
+            merent_check = False
     
     return avail_check, mrent_check, merent_check, identity
 
@@ -830,10 +766,82 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                         col_issue_diffs = "e_flag"
                     
                     data_temp = insert_fix(data, row_to_fix_diffs, drop_val, fix_val, col_issue_diffs[0], curryr, currmon, sector_val, subsequent_chg)
-
+           
         # Check to see if a vacancy or rent shim created a change in a historical period above the data governance threshold set by key stakeholders. If it did, do not process the shim unless there is an accompanying note explaining why the rebench was made
+
+        avail_check = False
+        mrent_check = False
+        merent_check = False
+
+        init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
+        init_mrent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['mrent_comment']
+        init_erent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['erent_comment']
+
+        if avail_check == True:
+            if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0 and avail_c != init_avail_c:
+                avail_check = False
+
+        if mrent_check == True and avail_check == False:
+            if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0 and mrent_c != init_mrent_c:
+                mrent_check = False
+    
+        if merent_check == True and avail_check == False and mrent_check == False:
+            if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0 and erent_c != init_erent_c:
+                merent_check = False
+        
         if button == 'submit':
-            avail_check, mrent_check, merent_check, identity_for_check = rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c, "reg", sector_val)
+            for var in ['avail', 'mrent', 'merent']:
+                rebench_to_check = shim_data.copy()
+                if rebench_to_check[var].isnull().values.all() == False:
+                    if rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] != curryr or (rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] == curryr and rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+                        if var == "avail" and avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0 and avail_c != init_avail_c:
+                            avail_check = False
+                        elif var == "mrent" and mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0 and mrent_c != init_mrent_c:
+                            mrent_check = False
+                        elif var == "merent" and erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0 and erent_c != init_erent_c:
+                            merent_check = False
+                        else:
+                            if var == 'avail':
+                                var = 'vac'
+                                new_vac = data_temp.copy()
+                                new_vac = new_vac[new_vac['identity'] == drop_val]
+                                new_vac = new_vac[[var, 'rol_' + var]]
+                                rebench_to_check = rebench_to_check.join(new_vac)
+                            else:
+                                rol_var = data_temp.copy()
+                                rol_var = rol_var[rol_var['identity'] == drop_val]
+                                rol_var = rol_var[['rol_' + var]]
+                                rebench_to_check = rebench_to_check.join(rol_var)
+                            orig_to_check = data_orig.copy()
+                            orig_to_check['vac_orig'] = orig_to_check['avail'] / orig_to_check['inv']
+                            rebench_to_check = rebench_to_check[[var, 'rol_' + var]]
+                            if var == "vac":
+                                orig_to_check = orig_to_check[[var + "_orig"]]
+                            else:
+                                orig_to_check = orig_to_check[[var]]
+                                orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
+                            rebench_to_check = rebench_to_check.join(orig_to_check)
+                            if var == "vac":
+                                thresh = 0.03
+                                rebench_to_check['diff_to_orig'] = rebench_to_check[var] - rebench_to_check[var + "_orig"]
+                                rebench_to_check['diff_to_rol'] = rebench_to_check[var] - rebench_to_check['rol_' + var]
+                                rebench_to_check['orig_diff_to_rol'] = rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]
+                            else:
+                                thresh = 0.05
+                                rebench_to_check['diff_to_orig'] = (rebench_to_check[var] - rebench_to_check[var + "_orig"]) / rebench_to_check[var + "_orig"]
+                                rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
+                                rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
+                                
+                            rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_orig']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['diff_to_orig']))) | 
+                                                                ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
+
+                            if len(rebench_to_check) > 0 and var == "vac":
+                                avail_check = True
+                            if len(rebench_to_check) > 0 and var == "mrent":
+                                mrent_check = True
+                            elif len(rebench_to_check) > 0 and var == "merent":
+                                merent_check = True
+            
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
                 data = data_temp.copy()
@@ -841,7 +849,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 has_diff = 2
         else:
             has_diff = 1
-            data = data_temp.copy()
+            data = data_temp.copy()           
     else:
         has_diff = 0
 
@@ -985,7 +993,7 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
 def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val):
     
     if test_auto_rebench == True:
-        avail_check, mrent_check, merent_check, identity_for_check = rebench_check([], data, curryr, currmon, False, [], [], [], "auto", sector_val)
+        avail_check, mrent_check, merent_check, identity_for_check = rebench_check(data, curryr, currmon, sector_val, True, True, True)
         if avail_check == False and mrent_check == False and merent_check == False:
             test_auto_rebench = False
         else:
