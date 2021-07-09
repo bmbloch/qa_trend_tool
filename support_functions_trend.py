@@ -34,19 +34,29 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
 
     if test_auto_rebench == True or "governance" in message:
         if sector_val == "ind":
-            display_cols.insert(16, 'rol_vac_chg')
-            display_cols.insert(19, 'rol_avail')
-            display_cols.insert(24, 'rol_mrent')
-            display_cols.insert(30, 'rol_merent')
+            if "vacancy" in message:
+                display_cols.insert(16, 'rol_vac_chg')
+                display_cols.insert(19, 'rol_avail')
+                display_cols.remove('sqvac')
+                display_cols.remove('sqvac_chg')
+                display_cols.remove('sqavail')
+            elif "market rent" in message:
+                display_cols.insert(24, 'rol_mrent')
+                display_cols.remove('sqsren')
+            elif "effective rent" in message:
+                display_cols.insert(30, 'rol_merent')
         else:
-            display_cols.insert(20, 'rol_vac_chg')
-            display_cols.insert(23, 'rol_avail')
-            display_cols.insert(28, 'rol_mrent')
-            display_cols.insert(34, 'rol_merent')
-        display_cols.remove('sqvac')
-        display_cols.remove('sqvac_chg')
-        display_cols.remove('sqavail')
-        display_cols.remove('sqsren')
+            if "vacancy" in message:
+                display_cols.insert(20, 'rol_vac_chg')
+                display_cols.insert(23, 'rol_avail')
+                display_cols.remove('sqvac')
+                display_cols.remove('sqvac_chg')
+                display_cols.remove('sqavail')
+            elif "market rent" in message:
+                display_cols.insert(28, 'rol_mrent')
+                display_cols.remove('sqsren')
+            elif "effective rent" in message:
+                display_cols.insert(34, 'rol_merent')
     
     if dataframe['merent'].isnull().all(axis=0) == True:
         display_cols.remove('merent')
