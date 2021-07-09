@@ -973,15 +973,16 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         decision_data_update.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], inplace=True)
 
         # Add comments to all rows
+        decision_data_update = decision_data_update.reset_index().set_index('identity')
         if cons_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'inv_cons_comment'] = cons_c
+            decision_data_update.loc[drop_val, 'inv_cons_comment'] = cons_c
         if avail_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
+            decision_data_update.loc[drop_val, 'avail_comment'] = avail_c
         if mrent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
+            decision_data_update.loc[drop_val, 'mrent_comment'] = mrent_c
         if erent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'erent_comment'] = erent_c
-        
+            decision_data_update.loc[drop_val, 'erent_comment'] = erent_c
+        decision_data_update = decision_data_update.reset_index().set_index('identity_row')
 
     elif action == "skip":
         decision_data_update = decision_data.copy()
@@ -993,15 +994,31 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
             decision_data_update.loc[drop_val + str(curryr) + str(currmon), 'skip_user'] = decision_data_update['skip_user'].loc[drop_val + str(curryr) + str(currmon)] + ", " + user
     
         # Add comments to all rows
+        decision_data_update = decision_data_update.reset_index().set_index('identity')
         if cons_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'inv_cons_comment'] = cons_c
+            decision_data_update.loc[drop_val, 'inv_cons_comment'] = cons_c
         if avail_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'avail_comment'] = avail_c
+            decision_data_update.loc[drop_val, 'avail_comment'] = avail_c
         if mrent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'mrent_comment'] = mrent_c
+            decision_data_update.loc[drop_val, 'mrent_comment'] = mrent_c
         if erent_c[-9:] != "Note Here":
-            decision_data.set_index('identity').loc[drop_val, 'erent_comment'] = erent_c
+            decision_data_update.loc[drop_val, 'erent_comment'] = erent_c
+        decision_data_update = decision_data_update.reset_index().set_index('identity_row')
     
+    elif action == "comment":
+        # Add comments to all rows
+        decision_data_update = decision_data.copy()
+        decision_data_update = decision_data_update.reset_index().set_index('identity')
+        if cons_c[-9:] != "Note Here":
+            decision_data_update.loc[drop_val, 'inv_cons_comment'] = cons_c
+        if avail_c[-9:] != "Note Here":
+            decision_data_update.loc[drop_val, 'avail_comment'] = avail_c
+        if mrent_c[-9:] != "Note Here":
+            decision_data_update.loc[drop_val, 'mrent_comment'] = mrent_c
+        if erent_c[-9:] != "Note Here":
+            decision_data_update.loc[drop_val, 'erent_comment'] = erent_c
+        decision_data_update = decision_data_update.reset_index().set_index('identity_row')
+
     return decision_data_update
 
 # This function filters out submarkets flagged for a specific flag chosen by the user on the Home tab, and creates the necessary table and styles for display
@@ -1145,6 +1162,7 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
 #This function produces the outputs needed for the update_data callback if the submit button is clicked
 def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c):
 
+    data_save = False
     rebench_trigger = False
     
     if sector_val != "ind":
@@ -1167,7 +1185,12 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
          if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['yr'] < curryr - 10:
             cons_check = True
 
-    if no_shim == True and len(skip_list) == 0:
+    # Check to see if a comment was entered, as we will want to allow that to be processed even if no shim was entered
+    comment_check = False
+    if (cons_c[-9:] != "Note Here" and len(cons_c) > 0) or (avail_c[-9:] != "Note Here" and len(avail_c) > 0) or (mrent_c[-9:] != "Note Here" and len(mrent_c) > 0) or (erent_c[-9:] != "Note Here" and len(erent_c) > 0):
+        comment_check = True
+    
+    if no_shim == True and len(skip_list) == 0 and comment_check == False:
         message = "You did not enter any changes."
         message_display = True
     elif cons_check == True:
@@ -1199,31 +1222,30 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
             rebench_trigger = True
 
         # Update decision log with new values entered via shim
-        if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False):
+        if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False) or comment_check == True:
             decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
         if has_diff == 1:      
             decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "submit", False, cons_c, avail_c, mrent_c, erent_c)
 
-        if flag_list[0] != "v_flag" and len(skip_list) > 0 and rebench_trigger == False:
-            test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
-            test = test.split(",")
-            test = [x.strip(' ') for x in test]
-            for flag in skip_list:
-                if flag not in test:
-                    if data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] == '':
-                        data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] = flag
-                    else:
-                        data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] += ", " + flag
+        if (flag_list[0] != "v_flag" and len(skip_list) > 0 and rebench_trigger == False) or comment_check == True:
+            if flag_list[0] != "v_flag" and len(skip_list) > 0 and rebench_trigger == False:
+                test = data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip']
+                test = test.split(",")
+                test = [x.strip(' ') for x in test]
+                for flag in skip_list:
+                    if flag not in test:
+                        if data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] == '':
+                            data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] = flag
+                        else:
+                            data.loc[drop_val + str(curryr) + str(currmon), 'flag_skip'] += ", " + flag
                     
-                    decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag, cons_c, avail_c, mrent_c, erent_c)
-
-        if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False):
+                        decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "skip", flag, cons_c, avail_c, mrent_c, erent_c)
+            elif comment_check == True:
+                decision_data = update_decision_log(decision_data, data, drop_val, sector_val, curryr, currmon, user, "comment", False, cons_c, avail_c, mrent_c, erent_c)
+        
+        if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False) or comment_check == True:
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
-
-            data_save = data.copy()
-            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-            data_save = data_save[orig_cols]
-            data_save.to_pickle(file_path)
+            data_save = True
         
 
     preview_data = pd.DataFrame()
@@ -1237,7 +1259,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         message = "You entered a shim that resulted in a historical change above the data governance threshold. To process the shim, enter a supporting comment to document why the rebench was made."
         message_display = True
     
-    return data, preview_data, shim_data, message, message_display
+    return data, preview_data, shim_data, message, message_display, data_save
 
 def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):
         
@@ -1791,6 +1813,8 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 Output('countdown', 'data'),
                 Output('countdown', 'columns'),
                 Output('countdown_container', 'style'),
+                Output('test_auto_rebench', 'data'),
+                Output('dropman', 'disabled'),
                 Output('first_update', 'data')],
                 [Input('submit-button', 'n_clicks'),
                 Input('preview-button', 'n_clicks'),
@@ -1821,9 +1845,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('r_threshold', 'data'),
                 State('store_flag_cols', 'data'),
                 State('first_update', 'data'),
-                State('flag_flow', 'data')])
+                State('flag_flow', 'data'),
+                State('test_auto_rebench', 'data')])
 #@Timer("Update Data")
-def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update, flag_flow):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update, flag_flow, test_auto_rebench):
     
     input_id = get_input_id()
     
@@ -1834,7 +1859,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
 
         # If there is a flag description, use this crazy dict/list slicer to get the actual values of the children prop so we can see what flags the user wants to skip
-        if skip_input_noprev == "No flags for this submarket" or skip_input_noprev == "You have cleared all the flags":
+        if skip_input_noprev == "No flags for this submarket" or skip_input_noprev == "You have cleared all the flags" or test_auto_rebench == True:
             skip_list = []
         elif skip_input_noprev != None or skip_input_resolved != None or skip_input_unresolved != None or skip_input_new != None or skip_input_skipped != None:
             skip_list = get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped)
@@ -1851,9 +1876,8 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         if input_id == 'submit-button' or input_id == 'preview-button':
             shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
    
-
         if input_id == 'submit-button':
-            data, preview_data, shim_data, message, message_display = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c)
+            data, preview_data, shim_data, message, message_display, data_save = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c)
 
         elif input_id == 'preview-button':
             data, preview_data, shim_data, message, message_display, flags_resolved, flags_unresolved, flags_new = preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols)
@@ -1880,12 +1904,12 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
 
         if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             # Re-calc stats and flags now that the data has been updated, or if this is the initial load
-            if  message_display == False:
+            if  message_display == False and test_auto_rebench == False:
                 data = calc_stats(data, curryr, currmon, False, sector_val)
                 data = calc_flags(data, curryr, currmon, sector_val, v_threshold, r_threshold)
 
                 # There might be cases where an analyst checked off to skip a flag, but that flag is no longer triggered (example: emdir, where there was a shim to mrent that fixed the flag). We will want to remove that skip from the log
-                if input_id == "submit-button":
+                if input_id == "submit-button" and test_auto_rebench == False:
                     if len(skip_list) > 0:
                         decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
                         data, decision_data = check_skips(data, decision_data, curryr, currmon, sector_val, flag_cols, drop_val)
@@ -1900,11 +1924,18 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
             # Get the next sub flagged
-            flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow)
+            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
-        
+
         use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
         use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
+
+        if input_id == "submit-button":
+            if data_save == True:
+                data_to_save = data.copy()
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
+                data_to_save = data_to_save[orig_cols]
+                data_to_save.to_pickle(file_path)
 
         # Need to set this variable so that the succeeding callbacks will only fire once update is done
         # This works because it makes the callbacks that use elements produced in this callback have an input that is linked to an output of this callback, ensuring that they will only be fired once this one completes
@@ -1942,16 +1973,21 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             flags_resolved = []
             flags_unresolved = []
             flags_new = []
+
+        if test_auto_rebench == True:
+            disable_drop = True
+        elif test_auto_rebench == False:
+            disable_drop = False
         
         if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display, False
+                    for i in range(0, len(countdown.columns))], countdown_display, test_auto_rebench, disable_drop, False 
         elif input_id == "dropflag":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
-                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update, False
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update, test_auto_rebench, disable_drop, False
         else:
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False 
 
 @trend.callback([Output('has_flag', 'data'),
                 Output('flag_list', 'data'),
@@ -1969,15 +2005,16 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 State('store_flag_cols', 'data'),
                 State('store_flag_unresolve', 'data'),
                 State('store_flag_new', 'data'),
-                State('flag_flow', 'data')])
+                State('flag_flow', 'data'),
+                State('test_auto_rebench', 'data')])
 #@Timer("Process Man Drop")
-def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new, flag_flow):
+def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, currmon, success_init, v_threshold, r_threshold, flag_cols, flags_unresolved, flags_new, flag_flow, test_auto_rebench):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        flag_list, p_skip_list, drop_val, has_flag = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow)
+        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
 
         # Reset the radio button to the correct variable based on the new flag
         if has_flag == 1:
@@ -2406,9 +2443,10 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('all_avail_props', 'data'),
                 State('surv_rg_props', 'data'),
                 State('all_rg_props', 'data'),
-                State('newnc_props', 'data')])
+                State('newnc_props', 'data'),
+                State('test_auto_rebench', 'data')])
 #@Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2508,7 +2546,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
         # Get the Divs that will display the current flags at the sub, as well as the metrics to highlight based on the flags
-        if init_skips is not None and init_skips != "No flags for this submarket" and init_skips != "You have cleared all the flags" and sub_change == False:
+        if init_skips is not None and init_skips != "No flags for this submarket" and init_skips != "You have cleared all the flags" and sub_change == False and test_auto_rebench == False:
             init_skips = get_user_skips(init_skips, [], [], [], [])
         else:
             init_skips = []
@@ -2517,11 +2555,11 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         else:
             show_skips = False
             p_skip_list = []
-        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), init_skips)
+        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), init_skips, test_auto_rebench)
         if len(issue_description_noprev) == 0:
             style_noprev = {'display': 'none'}
         else:
-            if (has_flag == 0 or has_flag == 2) and (show_skips == False or len(p_skip_list) == 0):
+            if (has_flag == 0 or has_flag == 2 or test_auto_rebench == True) and (show_skips == False or len(p_skip_list) == 0):
                 style_noprev = {'padding-left': '10px', 'width': '60%', 'display': 'inline-block', 'font-size': '24px', 'vertical-align': 'top', 'text-align': 'center'}
             else:
                 style_noprev = {'padding-left': '10px', 'width': '60%', 'display': 'inline-block', 'font-size': '16px', 'vertical-align': 'top'}
@@ -2580,6 +2618,8 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         # Use key_met_val to set display cols, and if there is none selected, set the display cols based on the first flag type for the sub
         if key_met_val is None:
             key_met_val = flag_list[0][0]
+        if test_auto_rebench == True:
+            key_met_val = "c"
         display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list)
 
         display_data = display_frame(display_data, drop_val, display_cols, curryr, sector_val)

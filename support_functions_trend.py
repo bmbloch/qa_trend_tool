@@ -361,7 +361,7 @@ def summarize_flags(dataframe_in, sum_val, flag_cols):
 
 
 # Return a more verbose description of the flag to the user
-def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_list=False, p_skip_list=False, show_skips=False, flags_resolved=False, flags_unresolved=False, flags_new=False, flags_skipped=False, curryr=False, currmon=False, preview_status=False, init_skips=False):
+def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_list=False, p_skip_list=False, show_skips=False, flags_resolved=False, flags_unresolved=False, flags_new=False, flags_skipped=False, curryr=False, currmon=False, preview_status=False, init_skips=False, test_auto_rebench=False):
 
     # This dict holds a more verbose explanation of the flags, so that it can be printed to the user for clarity
     issue_descriptions = {
@@ -425,31 +425,22 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     else:
         highlighting['v_flag_level'] = ['avail'], ['sub sur totabs', 'avail10d'], ['sq avail']
     
+    display_issue_cols = []
+    key_metric_issue_cols = []
+    issue_description_resolved = []
+    issue_description_unresolved = []
+    issue_description_new = []
+    issue_description_skipped = []
     if type_return == "specific":
-        if has_flag == 0:
+        if test_auto_rebench == True:
+            issue_description_noprev = "There was an auto rebench for construction in curryr - 3 that caused a significant difference to ROL. Enter a supporting comment to document what caused the rebench before moving on to flag review."
+        elif has_flag == 0:
             issue_description_noprev = "You have cleared all the flags"
-            display_issue_cols = []
-            key_metric_issue_cols = []
-            issue_description_resolved = []
-            issue_description_unresolved = []
-            issue_description_new = []
-            issue_description_skipped = []
         elif has_flag == 2 and (show_skips == False or len(p_skip_list) == 0):
             issue_description_noprev = "No flags for this submarket"
-            display_issue_cols = []
-            key_metric_issue_cols = []
-            issue_description_resolved = []
-            issue_description_unresolved = []
-            issue_description_new = []
-            issue_description_skipped = []
         elif has_flag == 2 and show_skips == True and len(p_skip_list) > 0:
             p_skip_list = p_skip_list[0].replace(' ', '').split(",")
-            display_issue_cols = []
-            key_metric_issue_cols = []
-            issue_description_resolved = []
-            issue_description_unresolved = []
-            issue_description_new = []
-            issue_description_skipped = []
+
             issue_description_noprev = html.Div([
                                         html.Div([
                                             dbc.Container(
@@ -481,10 +472,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                 else:
                     flags_use = flag_list
                     disabled_list = [False] * len(flag_list)
-                issue_description_resolved = []
-                issue_description_unresolved = []
-                issue_description_new = []
-                issue_description_skipped = []
+
                 issue_description_noprev = html.Div([
                                         html.Div([
                                             dbc.Container(
@@ -640,65 +628,141 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         return issue_descriptions
 
 # Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold, thus requiring a support note documenting why the change was made
-def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c):
-    dataframe = shim_data.copy()
-    avail_check = False
-    mrent_check = False
-    merent_check = False
-    if len(dataframe[dataframe['avail'].isnull() == False]) > 0:
-        avail_check = True
-    if len(dataframe[dataframe['mrent'].isnull() == False]) > 0:
-        mrent_check = True
-    if len(dataframe[dataframe['merent'].isnull() == False]) > 0:
-        merent_check = True
+def rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c, type_filt, sector_val):
+    if type_filt == "reg":
+        dataframe = shim_data.copy()
+        identity = False
 
-    if avail_check == True:
-        if dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-            shim_check = data_temp.copy()
-            shim_check = shim_check[shim_check['identity'] == drop_val]
-            shim_check = shim_check[shim_check['curr_tag'] != 1]
-            shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
-            shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
-            shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
-            if len(shim_check) > 0:
-                if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+        avail_check = False
+        mrent_check = False
+        merent_check = False
+        if len(dataframe[dataframe['avail'].isnull() == False]) > 0:
+            avail_check = True
+        if len(dataframe[dataframe['mrent'].isnull() == False]) > 0:
+            mrent_check = True
+        if len(dataframe[dataframe['merent'].isnull() == False]) > 0:
+            merent_check = True
+
+        if avail_check == True:
+            if dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['avail'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+                shim_check = data_temp.copy()
+                shim_check = shim_check[shim_check['identity'] == drop_val]
+                shim_check = shim_check[shim_check['curr_tag'] != 1]
+                shim_check = shim_check[['rol_vac', 'vac', 'yr', 'currmon']]
+                shim_check['vac_diff'] = shim_check['vac'] - shim_check['rol_vac']
+                shim_check = shim_check[abs(shim_check['vac_diff']) >= 0.03]
+                if len(shim_check) > 0:
+                    if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+                        avail_check = False
+                else:
                     avail_check = False
             else:
                 avail_check = False
+        if mrent_check == True and avail_check == False:
+            if dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+                    shim_check = data_temp.copy()
+                    shim_check = shim_check[shim_check['identity'] == drop_val]
+                    shim_check = shim_check[shim_check['curr_tag'] != 1]
+                    shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
+                    shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
+                    shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
+                    if len(shim_check) > 0:
+                        if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
+                            mrent_check = False
+                    else:
+                        mrent_check = False
+            else:
+                mrent_check = False
+        if merent_check == True and avail_check == False and mrent_check == False:
+            if dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
+                    shim_check = data_temp.copy()
+                    shim_check = shim_check[shim_check['identity'] == drop_val]
+                    shim_check = shim_check[shim_check['curr_tag'] != 1]
+                    shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
+                    shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
+                    shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
+                    if len(shim_check) > 0:
+                        if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
+                            merent_check = False
+                    else:
+                        merent_check = False
+            else:
+                merent_check = False
+    
+    elif type_filt == "auto":
+        avail_check = True
+        mrent_check = True
+        merent_check = True
+        identity = False
+
+        dataframe_in = data_temp.copy()
+        dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'] == '', np.nan, dataframe_in['avail_comment'])
+        dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'] == '', np.nan, dataframe_in['mrent_comment'])
+        dataframe_in['erent_comment'] = np.where(dataframe_in['erent_comment'] == '', np.nan, dataframe_in['erent_comment'])
+        dataframe_in['avail_comment'] = dataframe_in.groupby('identity')['avail_comment'].bfill()
+        dataframe_in['mrent_comment'] = dataframe_in.groupby('identity')['mrent_comment'].bfill()
+        dataframe_in['erent_comment'] = dataframe_in.groupby('identity')['erent_comment'].bfill()
+        dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'].isnull() == True, '', dataframe_in['avail_comment'])
+        dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'].isnull() == True, '', dataframe_in['mrent_comment'])
+        dataframe_in['erent_comment'] = np.where(dataframe_in['erent_comment'].isnull() == True, '', dataframe_in['erent_comment'])
+        dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
+        
+        dataframe = dataframe_in.copy()
+        dataframe = dataframe[['rol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
+        
+        dataframe['vac_diff'] = dataframe['vac'] - dataframe['rol_vac']
+        dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.03) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
+        if len(dataframe) > 0:
+            for index, row in dataframe.iterrows():
+                avail_c = row['avail_comment']
+                if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0:
+                    avail_check = False
+                else:
+                    avail_check = True
+                    identity = row['identity']
+                    break
         else:
             avail_check = False
-    if mrent_check == True:
-        if dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['mrent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                shim_check = data_temp.copy()
-                shim_check = shim_check[shim_check['identity'] == drop_val]
-                shim_check = shim_check[shim_check['curr_tag'] != 1]
-                shim_check = shim_check[['rol_mrent', 'mrent', 'yr', 'currmon']]
-                shim_check['mrent_diff'] = (shim_check['mrent'] - shim_check['rol_mrent']) / shim_check['rol_mrent']
-                shim_check = shim_check[abs(shim_check['mrent_diff']) >= 0.05]
-                if len(shim_check) > 0:
+
+        if avail_check == False:
+            dataframe = dataframe_in.copy()
+            dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
+            dataframe = dataframe[['rol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
+
+            dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']
+            dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.05) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
+            if len(dataframe) > 0:
+                for index, row in dataframe.iterrows():
+                    mrent_c = row['mrent_comment']
                     if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0:
                         mrent_check = False
-                else:
-                    mrent_check = False
-        else:
-            mrent_check = False
-    if merent_check == True:
-        if dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] != curryr or (dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['yr'] == curryr and dataframe[dataframe['merent'].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                shim_check = data_temp.copy()
-                shim_check = shim_check[shim_check['identity'] == drop_val]
-                shim_check = shim_check[shim_check['curr_tag'] != 1]
-                shim_check = shim_check[['rol_merent', 'merent', 'yr', 'currmon']]
-                shim_check['merent_diff'] = (shim_check['merent'] - shim_check['rol_merent']) / shim_check['rol_merent']
-                shim_check = shim_check[abs(shim_check['merent_diff']) >= 0.05]
-                if len(shim_check) > 0:
+                    else:
+                        mrent_check = True
+                        identity = row['identity']
+                        break
+            else:
+                mrent_check = False
+
+        if avail_check == False and mrent_check == False:
+            dataframe = dataframe_in.copy()
+            dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
+            dataframe = dataframe[['rol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
+            
+            dataframe['merent_diff'] = (dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']
+            dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.05) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
+            if len(dataframe) > 0:
+                for index, row in dataframe.iterrows():
+                    erent_c = row['erent_comment']
                     if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0:
                         merent_check = False
-                else:
-                    merent_check = False
-        else:
-            merent_check = False
-
-    return avail_check, mrent_check, merent_check
+                    else:
+                        merent_check = True
+                        identity = row['identity']
+                        break
+            else:
+                merent_check = False
+    
+    return avail_check, mrent_check, merent_check, identity
 
 
 # Function that analyzes where edits are made in the display dataframe if manual edit option is selected
@@ -765,7 +829,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
 
         # Check to see if a vacancy or rent shim created a change in a historical period above the data governance threshold set by key stakeholders. If it did, do not process the shim unless there is an accompanying note explaining why the rebench was made
         if button == 'submit':
-            avail_check, mrent_check, merent_check = rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c)
+            avail_check, mrent_check, merent_check, identity_for_check = rebench_check(shim_data, data_temp, curryr, currmon, drop_val, avail_c, mrent_c, erent_c, "reg", sector_val)
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
                 data = data_temp.copy()
@@ -914,114 +978,127 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     return dataframe
 
 # Function to identify if a submarket has a flag for review
-def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow):
-    dataframe = data.copy()
-    has_flag = 0
-    skip_list = []
-    if filt == True:
-        dataframe = dataframe[dataframe['identity'] == identity_val]
-        skip_list = list(dataframe.loc[identity_val + str(curryr) + str(currmon)][['flag_skip']])
-        if skip_list[0] == '':
-            skip_list = []
-    else:
-        first_sub = dataframe.reset_index().loc[0]['identity']
-        if flag_flow == "cat":
-            dataframe_test = dataframe.copy()
-
-            dataframe_test[flag_cols] = np.where((dataframe_test[flag_cols] != 0), 1, dataframe_test[flag_cols])
-
-            rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
-            test_flag_cols = [x + "_test" for x in rol_flag_cols]
-            dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
-            for x, y in zip(rol_flag_cols, test_flag_cols):
-                dataframe_test[x] = np.where((dataframe_test[y] > 0) & (dataframe_test['curr_tag'] == 1), 1, 0)
-                dataframe_test[x] = np.where(dataframe_test['curr_tag'] == 0, 0, dataframe_test[x])
-            dataframe_test.drop(test_flag_cols, axis=1, inplace=True)
-            
-            dataframe_test['has_c'] = dataframe_test.filter(regex="^c_flag*").sum(axis=1)
-            dataframe_test['has_v'] = dataframe_test.filter(regex="^v_flag*").sum(axis=1)
-            dataframe_test['has_g'] = dataframe_test.filter(regex="^g_flag*").sum(axis=1)
-            dataframe_test['has_e'] = dataframe_test.filter(regex="^e_flag*").sum(axis=1)
-
-            dataframe_test['has_c'] = dataframe_test['has_c'] -  dataframe_test['flag_skip'].str.count('c_flag')
-            dataframe_test['has_v'] = dataframe_test['has_v'] - dataframe_test['flag_skip'].str.count('v_flag')
-            dataframe_test['has_g'] = dataframe_test['has_g'] - dataframe_test['flag_skip'].str.count('g_flag')
-            dataframe_test['has_e'] = dataframe_test['has_e'] - dataframe_test['flag_skip'].str.count('e_flag')
-
-            for x in ['has_c', 'has_v', 'has_g', 'has_e']:
-                dataframe_test_1 = dataframe_test.copy()
-                dataframe_test_1 = dataframe_test_1[dataframe_test_1[x] > 0]
-                if len(dataframe_test_1) > 0:
-                    dataframe = dataframe_test_1.copy()
-                    break
-        elif flag_flow == "flag":
-            dataframe_test = dataframe.copy()
-            rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
-            test_flag_cols = [x + "_test" for x in rol_flag_cols]
-            dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
-            for x, y in zip(rol_flag_cols, test_flag_cols):
-                dataframe_test[x] = np.where((dataframe_test[y] > 0) & (dataframe_test['curr_tag'] == 1), 1, 0)
-                dataframe_test[x] = np.where(dataframe_test['curr_tag'] == 0, 0, dataframe_test[x])
-            dataframe_test.drop(test_flag_cols, axis=1, inplace=True)
-            
-            for x in flag_cols:
-                dataframe_test_1 = dataframe_test.copy()
-                dataframe_test_1 = dataframe_test_1[(dataframe_test_1[x] > 0) & (dataframe_test['flag_skip'].str.contains(x) == False)]
-                if len(dataframe_test_1) > 0:
-                    dataframe = dataframe_test_1.copy()
-                    break
-
-    cols_to_keep = flag_cols + ['identity', 'flag_skip']
-    dataframe = dataframe[cols_to_keep]
-    dataframe[flag_cols] = np.where((dataframe[flag_cols] > 0), 1, dataframe[flag_cols])
-    rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
-    for x in rol_flag_cols:
-        dataframe[x + "_test"] = dataframe.groupby('identity')[x].transform('sum')
-        dataframe[x] = np.where(dataframe[x] == 1, dataframe[x] / dataframe[x + "_test"], dataframe[x])
-    dataframe['sum_flags'] = dataframe[flag_cols].sum(axis=1)
-    dataframe['sum_commas'] = dataframe['flag_skip'].str.count(',')
-    dataframe['sum_skips'] = np.where((dataframe['flag_skip'] == ''), 0, np.nan)
-    dataframe['sum_skips'] = np.where((dataframe['flag_skip'] != ''), dataframe['sum_commas'] + 1, dataframe['sum_skips'])
-    dataframe['total_flags'] = dataframe.groupby('identity')['sum_flags'].transform('sum')
-    dataframe['total_skips'] = dataframe.groupby('identity')['sum_skips'].transform('sum')
-    dataframe['flags_left'] = round(dataframe['total_flags'] - dataframe['total_skips'],0)
-    dataframe = dataframe[dataframe['flags_left'] > 0]
+def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val):
     
-    if len(dataframe) == 0:
+    if test_auto_rebench == True:
+        avail_check, mrent_check, merent_check, identity_for_check = rebench_check([], data, curryr, currmon, False, [], [], [], "auto", sector_val)
+        if avail_check == False and mrent_check == False and merent_check == False:
+            test_auto_rebench = False
+        else:
+            flag_list = ['v_flag']
+            skip_list = []
+            has_flag = 3
+            identity_val = identity_for_check     
+
+    if test_auto_rebench == False:
+    
+        dataframe = data.copy()
+        has_flag = 0
+        skip_list = []
         if filt == True:
-            has_flag = 2
-            flag_list = ['v_flag']
-        else:
-            if identity_val is None:
-                identity_val = first_sub
-            has_flag = 0
-            flag_list = ['v_flag']
-    else:
-        if filt == False:
-            identity_val = dataframe.reset_index().loc[0]['identity']
             dataframe = dataframe[dataframe['identity'] == identity_val]
-        flags = dataframe.copy()
-        flags = flags[flag_cols + ['flag_skip']]
-        flags = flags[flags.columns[(flags != 0).any()]]
-        flag_list = list(flags.columns)
-        flags = flags.reset_index()
-        skip_list = str.split(flags.loc[flags.index[-1]]['flag_skip'].replace(",", ""))
-        flag_list = [x for x in flag_list if x not in skip_list]
-        flag_list.remove('flag_skip')
-        
-        if len(flag_list) > 0:
-            has_flag = 1
+            skip_list = list(dataframe.loc[identity_val + str(curryr) + str(currmon)][['flag_skip']])
+            if skip_list[0] == '':
+                skip_list = []
         else:
-            has_flag = 0
+            first_sub = dataframe.reset_index().loc[0]['identity']
+            if flag_flow == "cat":
+                dataframe_test = dataframe.copy()
+
+                dataframe_test[flag_cols] = np.where((dataframe_test[flag_cols] != 0), 1, dataframe_test[flag_cols])
+
+                rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+                test_flag_cols = [x + "_test" for x in rol_flag_cols]
+                dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
+                for x, y in zip(rol_flag_cols, test_flag_cols):
+                    dataframe_test[x] = np.where((dataframe_test[y] > 0) & (dataframe_test['curr_tag'] == 1), 1, 0)
+                    dataframe_test[x] = np.where(dataframe_test['curr_tag'] == 0, 0, dataframe_test[x])
+                dataframe_test.drop(test_flag_cols, axis=1, inplace=True)
+                
+                dataframe_test['has_c'] = dataframe_test.filter(regex="^c_flag*").sum(axis=1)
+                dataframe_test['has_v'] = dataframe_test.filter(regex="^v_flag*").sum(axis=1)
+                dataframe_test['has_g'] = dataframe_test.filter(regex="^g_flag*").sum(axis=1)
+                dataframe_test['has_e'] = dataframe_test.filter(regex="^e_flag*").sum(axis=1)
+
+                dataframe_test['has_c'] = dataframe_test['has_c'] -  dataframe_test['flag_skip'].str.count('c_flag')
+                dataframe_test['has_v'] = dataframe_test['has_v'] - dataframe_test['flag_skip'].str.count('v_flag')
+                dataframe_test['has_g'] = dataframe_test['has_g'] - dataframe_test['flag_skip'].str.count('g_flag')
+                dataframe_test['has_e'] = dataframe_test['has_e'] - dataframe_test['flag_skip'].str.count('e_flag')
+
+                for x in ['has_c', 'has_v', 'has_g', 'has_e']:
+                    dataframe_test_1 = dataframe_test.copy()
+                    dataframe_test_1 = dataframe_test_1[dataframe_test_1[x] > 0]
+                    if len(dataframe_test_1) > 0:
+                        dataframe = dataframe_test_1.copy()
+                        break
+            elif flag_flow == "flag":
+                dataframe_test = dataframe.copy()
+                rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+                test_flag_cols = [x + "_test" for x in rol_flag_cols]
+                dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
+                for x, y in zip(rol_flag_cols, test_flag_cols):
+                    dataframe_test[x] = np.where((dataframe_test[y] > 0) & (dataframe_test['curr_tag'] == 1), 1, 0)
+                    dataframe_test[x] = np.where(dataframe_test['curr_tag'] == 0, 0, dataframe_test[x])
+                dataframe_test.drop(test_flag_cols, axis=1, inplace=True)
+                
+                for x in flag_cols:
+                    dataframe_test_1 = dataframe_test.copy()
+                    dataframe_test_1 = dataframe_test_1[(dataframe_test_1[x] > 0) & (dataframe_test['flag_skip'].str.contains(x) == False)]
+                    if len(dataframe_test_1) > 0:
+                        dataframe = dataframe_test_1.copy()
+                        break
+
+        cols_to_keep = flag_cols + ['identity', 'flag_skip']
+        dataframe = dataframe[cols_to_keep]
+        dataframe[flag_cols] = np.where((dataframe[flag_cols] > 0), 1, dataframe[flag_cols])
+        rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
+        for x in rol_flag_cols:
+            dataframe[x + "_test"] = dataframe.groupby('identity')[x].transform('sum')
+            dataframe[x] = np.where(dataframe[x] == 1, dataframe[x] / dataframe[x + "_test"], dataframe[x])
+        dataframe['sum_flags'] = dataframe[flag_cols].sum(axis=1)
+        dataframe['sum_commas'] = dataframe['flag_skip'].str.count(',')
+        dataframe['sum_skips'] = np.where((dataframe['flag_skip'] == ''), 0, np.nan)
+        dataframe['sum_skips'] = np.where((dataframe['flag_skip'] != ''), dataframe['sum_commas'] + 1, dataframe['sum_skips'])
+        dataframe['total_flags'] = dataframe.groupby('identity')['sum_flags'].transform('sum')
+        dataframe['total_skips'] = dataframe.groupby('identity')['sum_skips'].transform('sum')
+        dataframe['flags_left'] = round(dataframe['total_flags'] - dataframe['total_skips'],0)
+        dataframe = dataframe[dataframe['flags_left'] > 0]
+        
+        if len(dataframe) == 0:
             if filt == True:
-                flag_list = ['v_flag']
                 has_flag = 2
+                flag_list = ['v_flag']
             else:
                 if identity_val is None:
-                    identity_val = dataframe.reset_index().loc[0]['identity']  
+                    identity_val = first_sub
+                has_flag = 0
                 flag_list = ['v_flag']
+        else:
+            if filt == False:
+                identity_val = dataframe.reset_index().loc[0]['identity']
+                dataframe = dataframe[dataframe['identity'] == identity_val]
+            flags = dataframe.copy()
+            flags = flags[flag_cols + ['flag_skip']]
+            flags = flags[flags.columns[(flags != 0).any()]]
+            flag_list = list(flags.columns)
+            flags = flags.reset_index()
+            skip_list = str.split(flags.loc[flags.index[-1]]['flag_skip'].replace(",", ""))
+            flag_list = [x for x in flag_list if x not in skip_list]
+            flag_list.remove('flag_skip')
+            
+            if len(flag_list) > 0:
+                has_flag = 1
+            else:
+                has_flag = 0
+                if filt == True:
+                    flag_list = ['v_flag']
+                    has_flag = 2
+                else:
+                    if identity_val is None:
+                        identity_val = dataframe.reset_index().loc[0]['identity']  
+                    flag_list = ['v_flag']
 
-    return flag_list, skip_list, identity_val, has_flag
+    return flag_list, skip_list, identity_val, has_flag, test_auto_rebench
 
 # This function creates the tables to be used for metro sorts
 def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
