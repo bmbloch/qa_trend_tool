@@ -15,20 +15,39 @@ from init_load_trend import get_home
 from timer_trend import Timer
 
 # Function that filters the dataframe for the columns to display on the data tab to the user, based on what type of flag is currently being analyzed
-def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon, flag_list):
+def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon, flag_list, test_auto_rebench, message):
     dataframe = dataframe_in.copy()
 
     dataframe = dataframe[dataframe['identity'] == identity_val]
 
     # Note: leave rol_vac and rol_G_mrent in so that it can be used to identify row where diff to rol is for highlighting purposes, will be dropped before final output of datatable
     if sector_val != "ind":
-        display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac', 'rol_G_mrent']
+        display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac',  'rol_vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_G_mrent']
     else:
-        display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_vac']
+        display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'rol_vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg']
     
     if "c_flag_rolv" in flag_list:
-        display_cols.insert(19, 'rol_abs')
+        if sector_val == "ind":
+            display_cols.insert(20, 'rol_abs')
+        else:
+            display_cols.insert(24, 'rol_abs')
 
+    if test_auto_rebench == True or "governance" in message:
+        if sector_val == "ind":
+            display_cols.insert(16, 'rol_vac_chg')
+            display_cols.insert(19, 'rol_avail')
+            display_cols.insert(24, 'rol_mrent')
+            display_cols.insert(30, 'rol_merent')
+        else:
+            display_cols.insert(20, 'rol_vac_chg')
+            display_cols.insert(23, 'rol_avail')
+            display_cols.insert(28, 'rol_mrent')
+            display_cols.insert(34, 'rol_merent')
+        display_cols.remove('sqvac')
+        display_cols.remove('sqvac_chg')
+        display_cols.remove('sqavail')
+        display_cols.remove('sqsren')
+    
     if dataframe['merent'].isnull().all(axis=0) == True:
         display_cols.remove('merent')
         display_cols.remove('G_merent')
@@ -853,7 +872,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
     else:
         has_diff = 0
 
-    return data, has_diff
+    return data, has_diff, avail_check, mrent_check, merent_check
 
 # Function to insert the suggested or user fix to the fixed dataframe for review by user, as originally formatted by BB before HSY suggestion of using model coefficients directly
 def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, currmon, sector_val, subsequent_chg):
@@ -1000,7 +1019,11 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
             flag_list = ['v_flag']
             skip_list = []
             has_flag = 3
-            identity_val = identity_for_check     
+            identity_val = identity_for_check    
+    else:
+        avail_check = False
+        mrent_check = False
+        merent_check = False 
 
     if test_auto_rebench == False:
     
@@ -1110,7 +1133,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                         identity_val = dataframe.reset_index().loc[0]['identity']  
                     flag_list = ['v_flag']
 
-    return flag_list, skip_list, identity_val, has_flag, test_auto_rebench
+    return flag_list, skip_list, identity_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check
 
 # This function creates the tables to be used for metro sorts
 def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):

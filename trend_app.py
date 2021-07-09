@@ -58,7 +58,8 @@ def get_types(sector_val):
     type_dict['sq abs'] = 'numeric'
     type_dict['sq rent'] = 'numeric'
     type_dict['Gmrent'] = 'numeric'
-    type_dict['rol Gmrent'] = 'numeric'
+    type_dict['rol mrent'] = 'numeric'
+    type_dict['rol merent'] = 'numeric'
     type_dict['rol Gmrent'] = 'numeric'
     type_dict['sq Gmrent'] = 'numeric'
     type_dict['Gmerent'] = 'numeric'
@@ -67,6 +68,7 @@ def get_types(sector_val):
     type_dict['rol gap chg'] = 'numeric'
     type_dict['abs'] = 'numeric'
     type_dict['rol abs'] = 'numeric'
+    type_dict['rol avail'] = 'numeric'
     type_dict['sq avail'] = 'numeric'
     type_dict['rol cons'] = 'numeric'
     type_dict['rol abs'] = 'numeric'
@@ -208,6 +210,7 @@ def get_types(sector_val):
     format_dict['abs'] = Format(group=",")
     format_dict['sq abs'] = Format(group=",")
     format_dict['rol abs'] = Format(group=",")
+    format_dict['rol avail'] = Format(group=",")
     format_dict['newncava'] = Format(group=",")
     format_dict['avail10d'] = Format(group=",")
     format_dict['met sur totabs'] = Format(group=",")
@@ -307,7 +310,7 @@ def get_types(sector_val):
     format_dict['rol mrent'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['merent'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['merent shim'] = Format(precision=2, scheme=Scheme.fixed)
-    format_dict['rol meren'] = Format(precision=2, scheme=Scheme.fixed)
+    format_dict['rol merent'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['ncrenlev'] = Format(precision=2, scheme=Scheme.fixed)
 
 
@@ -1214,7 +1217,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         if no_shim == False:
-            data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c)
+            data, has_diff, avail_check, mrent_check, merent_check = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c)
         else:
             has_diff = 0
 
@@ -1256,7 +1259,13 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data[shim_cols] = np.nan
 
     if rebench_trigger == True:
-        message = "You entered a shim that resulted in a historical change above the data governance threshold. To process the shim, enter a new supporting comment to document why the rebench was made."
+        if avail_check == True:
+            var = "vacancy"
+        elif mrent_check == True:
+            var = "market rent"
+        elif merent_check == True:
+            var = "effective rent"
+        message = "You entered a {} shim that resulted in a historical change above the data governance threshold. To process the shim, enter a new supporting comment to document why the rebench was made.".format(var)
         message_display = True
     
     return data, preview_data, shim_data, message, message_display, data_save
@@ -1329,7 +1338,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
-        preview_data, has_diff = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False)
+        preview_data, has_diff, avail_check, mrent_check, merent_check = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False)
 
         if has_diff == 1:
             
@@ -1930,7 +1939,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
             # Get the next sub flagged
-            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
 
         use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
@@ -2020,7 +2029,7 @@ def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, c
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
 
         # Reset the radio button to the correct variable based on the new flag
         if has_flag == 1:
@@ -2450,9 +2459,10 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('surv_rg_props', 'data'),
                 State('all_rg_props', 'data'),
                 State('newnc_props', 'data'),
-                State('test_auto_rebench', 'data')])
+                State('test_auto_rebench', 'data'),
+                State('manual_message', 'message')])
 #@Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench, message):
     input_id = get_input_id()
     
     if sector_val is None or success_init == False:
@@ -2626,7 +2636,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             key_met_val = flag_list[0][0]
         if test_auto_rebench == True:
             key_met_val = "c"
-        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list)
+        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list, test_auto_rebench, message)
 
         display_data = display_frame(display_data, drop_val, display_cols, curryr, sector_val)
 
@@ -2754,39 +2764,52 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         display_data = display_data.rename(columns={"sqsren": "sq rent"})
 
         # Get the row index of the metric to be highlighted in the display table. If this is not an rol flag, the row will always be currmon row, otherwise, it is any row where there is a diff to ROL
-        temp = display_data.copy()
-        temp['id'] = temp.index
-        check_for_rol_row = False
-        if len(preview_data) == 0:
-            if "rol" in flag_list[0]:
-                check_for_rol_row = True
-        else:
-            if len(flags_new) > 0:
-                if "rol" in flags_new[0]:
-                    check_for_rol_row = True
-            elif len(flags_unresolved) > 0:
-                if "rol" in flags_unresolved[0]:
-                    check_for_rol_row = True
-            else:
+        if test_auto_rebench == False and "governance" not in message:
+            temp = display_data.copy()
+            temp['id'] = temp.index
+            check_for_rol_row = False
+            if len(preview_data) == 0:
                 if "rol" in flag_list[0]:
                     check_for_rol_row = True
-        if check_for_rol_row == True:
-            temp = temp[(temp['yr'] != curryr) | ((temp['month'] != currmon) & (temp['yr'] == curryr))]
-            if display_highlight_list[0] == "Gmrent":
-                rol_val = "rol Gmrent"
             else:
-                rol_val = "rol vac"
-            temp = temp[(temp[rol_val].isnull() == False) & (temp[display_highlight_list[0]].isnull() == False)]
-            if display_highlight_list[0] == "Gmrent":
-                temp = temp[temp['Gmrent'] != '']
-            temp['diff'] = abs(temp[display_highlight_list[0]].astype(float) - temp[rol_val].astype(float))
-            temp = temp[temp['diff'] >= 0.001]
-            display_highlight_rows = list(temp['id'])
+                if len(flags_new) > 0:
+                    if "rol" in flags_new[0]:
+                        check_for_rol_row = True
+                elif len(flags_unresolved) > 0:
+                    if "rol" in flags_unresolved[0]:
+                        check_for_rol_row = True
+                else:
+                    if "rol" in flag_list[0]:
+                        check_for_rol_row = True
+            if check_for_rol_row == True:
+                temp = temp[(temp['yr'] != curryr) | ((temp['month'] != currmon) & (temp['yr'] == curryr))]
+                if display_highlight_list[0] == "Gmrent":
+                    rol_val = "rol Gmrent"
+                else:
+                    rol_val = "rol vac"
+                temp = temp[(temp[rol_val].isnull() == False) & (temp[display_highlight_list[0]].isnull() == False)]
+                if display_highlight_list[0] == "Gmrent":
+                    temp = temp[temp['Gmrent'] != '']
+                temp['diff'] = abs(temp[display_highlight_list[0]].astype(float) - temp[rol_val].astype(float))
+                temp = temp[temp['diff'] >= 0.001]
+                display_highlight_rows = list(temp['id'])
+            else:
+                display_highlight_rows = list(temp.tail(1)['id'])
         else:
+            if "vacancy" in message:
+                display_highlight_list = ['vac', 'rol vac']
+            elif "market rent" in message:
+                display_highlight_list = ['mrent', 'rol mrent']
+            elif "effective rent" in message:
+                display_highlight_list = ['merent', 'rol merent']
+            key_metrics_highlight_list = []
+            temp = display_data.copy()
+            temp['id'] = temp.index
             display_highlight_rows = list(temp.tail(1)['id'])
 
         # Drop the rol vars that were only included to help identify the flag row for highlighting purposes
-        display_data = display_data.drop(['rol vac'], axis=1)
+        if test_auto_rebench == False and "governance" not in message:
+            display_data = display_data.drop(['rol vac'], axis=1)
         if "c_flag_rolg" not in flag_list:
             display_data = display_data.drop(['rol Gmrent'], axis=1)
 
