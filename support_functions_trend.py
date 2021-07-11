@@ -658,8 +658,50 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     elif type_return == "list":
         return issue_descriptions
 
-# Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold, thus requiring a support note documenting why the change was made
-def rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mrent_check, merent_check):
+# Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold by a manual analyst shim, thus requiring a support note documenting why the change was made
+def manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, thresh, var, drop_val):
+    orig_to_check = data_orig.copy()
+    if var == 'vac':
+        new_vac = data_temp.copy()
+        new_vac = new_vac[new_vac['identity'] == drop_val]
+        new_vac = new_vac[[var, 'rol_' + var, var + "_oob"]]
+        rebench_to_check = rebench_to_check.join(new_vac)
+    else:
+        rol_var = data_temp.copy()
+        rol_var = rol_var[rol_var['identity'] == drop_val]
+        rol_var = rol_var[['rol_' + var, var + "_oob"]]
+        rebench_to_check = rebench_to_check.join(rol_var)
+    rebench_to_check = rebench_to_check[[var, 'rol_' + var, var + '_oob']]
+    if var == "vac":
+        orig_to_check['vac_orig'] = orig_to_check['avail'] / orig_to_check['inv']
+        orig_to_check = orig_to_check[[var + "_orig"]]
+    else:
+        orig_to_check = orig_to_check[[var]]
+        orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
+    rebench_to_check = rebench_to_check.join(orig_to_check)
+    if var == "vac":
+        rebench_to_check['diff_to_oob'] = rebench_to_check[var] - rebench_to_check[var + "_oob"]
+        rebench_to_check['diff_to_rol'] = rebench_to_check[var] - rebench_to_check['rol_' + var]
+        rebench_to_check['orig_diff_to_rol'] = rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]
+    else:
+        rebench_to_check['diff_to_oob'] = (rebench_to_check[var] - rebench_to_check[var + "_oob"]) / rebench_to_check[var + "_oob"]
+        rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
+        rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
+        
+    display(rebench_to_check[['diff_to_oob', 'diff_to_rol', 'orig_diff_to_rol']])
+    
+    rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_oob']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['orig_diff_to_rol']))) | 
+                                        ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
+    
+    if len(rebench_to_check) > 0:
+        check = True
+    else:
+        check = False
+
+    return check
+
+# Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold by an auto STATA cons backdating adjustment, thus requiring a support note documenting why the change was made
+def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mrent_check, merent_check):
     
     identity = False
 
@@ -807,71 +849,18 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
         init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
         init_mrent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['mrent_comment']
         init_erent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['erent_comment']
-
-        if avail_check == True:
-            if avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0 and avail_c != init_avail_c:
-                avail_check = False
-
-        if mrent_check == True and avail_check == False:
-            if mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0 and mrent_c != init_mrent_c:
-                mrent_check = False
-    
-        if merent_check == True and avail_check == False and mrent_check == False:
-            if erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0 and erent_c != init_erent_c:
-                merent_check = False
         
         if button == 'submit':
             for var in ['avail', 'mrent', 'merent']:
                 rebench_to_check = shim_data.copy()
                 if rebench_to_check[var].isnull().values.all() == False:
                     if rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] != curryr or (rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] == curryr and rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
-                        if var == "avail" and avail_c[-9:] != "Note Here" and len(avail_c.strip()) > 0 and avail_c != init_avail_c:
-                            avail_check = False
-                        elif var == "mrent" and mrent_c[-9:] != "Note Here" and len(mrent_c.strip()) > 0 and mrent_c != init_mrent_c:
-                            mrent_check = False
-                        elif var == "merent" and erent_c[-9:] != "Note Here" and len(erent_c.strip()) > 0 and erent_c != init_erent_c:
-                            merent_check = False
-                        else:
-                            if var == 'avail':
-                                var = 'vac'
-                                new_vac = data_temp.copy()
-                                new_vac = new_vac[new_vac['identity'] == drop_val]
-                                new_vac = new_vac[[var, 'rol_' + var]]
-                                rebench_to_check = rebench_to_check.join(new_vac)
-                            else:
-                                rol_var = data_temp.copy()
-                                rol_var = rol_var[rol_var['identity'] == drop_val]
-                                rol_var = rol_var[['rol_' + var]]
-                                rebench_to_check = rebench_to_check.join(rol_var)
-                            orig_to_check = data_orig.copy()
-                            orig_to_check['vac_orig'] = orig_to_check['avail'] / orig_to_check['inv']
-                            rebench_to_check = rebench_to_check[[var, 'rol_' + var]]
-                            if var == "vac":
-                                orig_to_check = orig_to_check[[var + "_orig"]]
-                            else:
-                                orig_to_check = orig_to_check[[var]]
-                                orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
-                            rebench_to_check = rebench_to_check.join(orig_to_check)
-                            if var == "vac":
-                                thresh = 0.03
-                                rebench_to_check['diff_to_orig'] = rebench_to_check[var] - rebench_to_check[var + "_orig"]
-                                rebench_to_check['diff_to_rol'] = rebench_to_check[var] - rebench_to_check['rol_' + var]
-                                rebench_to_check['orig_diff_to_rol'] = rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]
-                            else:
-                                thresh = 0.05
-                                rebench_to_check['diff_to_orig'] = (rebench_to_check[var] - rebench_to_check[var + "_orig"]) / rebench_to_check[var + "_orig"]
-                                rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
-                                rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
-                               
-                            rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_orig']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['diff_to_orig']))) | 
-                                                                ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
-                            
-                            if len(rebench_to_check) > 0 and var == "vac":
-                                avail_check = True
-                            if len(rebench_to_check) > 0 and var == "mrent":
-                                mrent_check = True
-                            elif len(rebench_to_check) > 0 and var == "merent":
-                                merent_check = True
+                        if var == "avail" and (avail_c[-9:] == "Note Here" or len(avail_c.strip()) == 0 or avail_c == init_avail_c):
+                            avail_check = manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, 0.03, "vac", drop_val)
+                        elif var == "mrent" and avail_check == False and (mrent_c[-9:] == "Note Here" or len(mrent_c.strip()) == 0 or mrent_c == init_mrent_c):
+                            mrent_check = manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, 0.05, "mrent", drop_val)
+                        elif var == "merent" and mrent_check == False and avail_check == False and (erent_c[-9:] == "Note Here" or len(erent_c.strip()) == 0 or erent_c == init_erent_c):
+                            merent_check = manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, 0.05, "merent", drop_val)
             
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
@@ -1024,7 +1013,7 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
 def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val):
     
     if test_auto_rebench == True:
-        avail_check, mrent_check, merent_check, identity_for_check = rebench_check(data, curryr, currmon, sector_val, True, True, True)
+        avail_check, mrent_check, merent_check, identity_for_check = auto_rebench_check(data, curryr, currmon, sector_val, True, True, True)
         if avail_check == False and mrent_check == False and merent_check == False:
             test_auto_rebench = False
         else:
