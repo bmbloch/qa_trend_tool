@@ -1880,7 +1880,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             skip_list = get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped)
         else:
             skip_list = []
-        
+
         # Load preview data if previewing
         if input_id == 'preview-button':
             preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -1993,7 +1993,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             disable_drop = True
         elif test_auto_rebench == False:
             disable_drop = False
-        
+
         if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
@@ -2571,7 +2571,9 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         else:
             show_skips = False
             p_skip_list = []
+        
         issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), init_skips, test_auto_rebench)
+
         if len(issue_description_noprev) == 0:
             style_noprev = {'display': 'none'}
         else:

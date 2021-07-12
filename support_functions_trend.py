@@ -527,7 +527,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                                 
                                         ]), 
                                     ])
-            else:                
+            else:               
                 issue_description_noprev = []
                 if len(flags_resolved) > 0:
                     issue_description_resolved = html.Div([
@@ -609,7 +609,6 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                         ])
                 else:
                     issue_description_new = []
-
                 if len(flags_skipped) > 0 or len(p_skip_list) > 0:
                     issue_description_skipped = html.Div([
                                             html.Div([
