@@ -659,8 +659,8 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
         return issue_descriptions
 
 # Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold by a manual analyst shim, thus requiring a support note documenting why the change was made
-def manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, thresh, var, drop_val):
-    orig_to_check = data_orig.copy()
+def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, thresh, var, drop_val):
+    orig_to_check = data.copy()
     if var == 'vac':
         new_vac = data_temp.copy()
         new_vac = new_vac[new_vac['identity'] == drop_val]
@@ -672,12 +672,9 @@ def manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon
         rol_var = rol_var[['rol_' + var, var + "_oob"]]
         rebench_to_check = rebench_to_check.join(rol_var)
     rebench_to_check = rebench_to_check[[var, 'rol_' + var, var + '_oob']]
-    if var == "vac":
-        orig_to_check['vac_orig'] = orig_to_check['avail'] / orig_to_check['inv']
-        orig_to_check = orig_to_check[[var + "_orig"]]
-    else:
-        orig_to_check = orig_to_check[[var]]
-        orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
+    orig_to_check = orig_to_check[orig_to_check['identity'] == drop_val]
+    orig_to_check = orig_to_check[[var]]
+    orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
     rebench_to_check = rebench_to_check.join(orig_to_check)
     if var == "vac":
         rebench_to_check['diff_to_oob'] = rebench_to_check[var] - rebench_to_check[var + "_oob"]
@@ -687,8 +684,6 @@ def manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon
         rebench_to_check['diff_to_oob'] = (rebench_to_check[var] - rebench_to_check[var + "_oob"]) / rebench_to_check[var + "_oob"]
         rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
         rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
-        
-    display(rebench_to_check[['diff_to_oob', 'diff_to_rol', 'orig_diff_to_rol']])
     
     rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_oob']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['orig_diff_to_rol']))) | 
                                         ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
@@ -818,6 +813,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
         diffs = diffs.drop(['merent_check'], axis=1)
  
     if len(diffs) > 0:
+        data_temp = data.copy()
         for index, row in diffs.iterrows():
             for col_name in list(diffs.columns):
                 row_to_fix_diffs = index
@@ -838,7 +834,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                     elif col_name == "merent":
                         col_issue_diffs = "e_flag"
                     
-                    data_temp = insert_fix(data, row_to_fix_diffs, drop_val, fix_val, col_issue_diffs[0], curryr, currmon, sector_val, subsequent_chg)
+                    data_temp = insert_fix(data_temp, row_to_fix_diffs, drop_val, fix_val, col_issue_diffs[0], curryr, currmon, sector_val, subsequent_chg)
            
         # Check to see if a vacancy or rent shim created a change in a historical period above the data governance threshold set by key stakeholders. If it did, do not process the shim unless there is an accompanying note explaining why the rebench was made
 
@@ -855,11 +851,11 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 if rebench_to_check[var].isnull().values.all() == False:
                     if rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] != curryr or (rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] == curryr and rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         if var == "avail" and (avail_c[-9:] == "Note Here" or len(avail_c.strip()) == 0 or avail_c == init_avail_c):
-                            avail_check = manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, 0.03, "vac", drop_val)
+                            avail_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "vac", drop_val)
                         elif var == "mrent" and avail_check == False and (mrent_c[-9:] == "Note Here" or len(mrent_c.strip()) == 0 or mrent_c == init_mrent_c):
-                            mrent_check = manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, 0.05, "mrent", drop_val)
+                            mrent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.05, "mrent", drop_val)
                         elif var == "merent" and mrent_check == False and avail_check == False and (erent_c[-9:] == "Note Here" or len(erent_c.strip()) == 0 or erent_c == init_erent_c):
-                            merent_check = manual_rebench_check(data_temp, data_orig, rebench_to_check, curryr, currmon, sector_val, 0.05, "merent", drop_val)
+                            merent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.05, "merent", drop_val)
             
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
