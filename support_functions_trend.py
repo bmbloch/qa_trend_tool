@@ -845,12 +845,11 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
         avail_check = False
         mrent_check = False
         merent_check = False
-
-        init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
-        init_mrent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['mrent_comment']
-        init_erent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['erent_comment']
-        
+ 
         if button == 'submit':
+            init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
+            init_mrent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['mrent_comment']
+            init_erent_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['erent_comment']
             for var in ['avail', 'mrent', 'merent']:
                 rebench_to_check = shim_data.copy()
                 if rebench_to_check[var].isnull().values.all() == False:
