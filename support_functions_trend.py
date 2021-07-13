@@ -715,7 +715,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe = dataframe[['rol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
     
     dataframe['vac_diff'] = dataframe['vac'] - dataframe['rol_vac']
-    dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.03) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
+    dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
     if len(dataframe) > 0:
         dataframe = dataframe.drop_duplicates('identity')
         for index, row in dataframe.iterrows():
@@ -735,7 +735,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
         dataframe = dataframe[['rol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
 
         dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']
-        dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.05) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
+        dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():
@@ -755,7 +755,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
         dataframe = dataframe[['rol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
         
         dataframe['merent_diff'] = (dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']
-        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.05) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
+        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():
@@ -850,11 +850,11 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 if rebench_to_check[var].isnull().values.all() == False:
                     if rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] != curryr or (rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] == curryr and rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         if var == "avail" and (avail_c[-9:] == "Note Here" or len(avail_c.strip()) == 0 or avail_c == init_avail_c):
-                            avail_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "vac", drop_val)
+                            avail_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.01, "vac", drop_val)
                         elif var == "mrent" and avail_check == False and (mrent_c[-9:] == "Note Here" or len(mrent_c.strip()) == 0 or mrent_c == init_mrent_c):
-                            mrent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.05, "mrent", drop_val)
+                            mrent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "mrent", drop_val)
                         elif var == "merent" and mrent_check == False and avail_check == False and (erent_c[-9:] == "Note Here" or len(erent_c.strip()) == 0 or erent_c == init_erent_c):
-                            merent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.05, "merent", drop_val)
+                            merent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "merent", drop_val)
             
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
@@ -1028,6 +1028,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
         if filt == True:
             dataframe = dataframe[dataframe['identity'] == identity_val]
             skip_list = list(dataframe.loc[identity_val + str(curryr) + str(currmon)][['flag_skip']])
+            print(skip_list)
             if skip_list[0] == '':
                 skip_list = []
         else:

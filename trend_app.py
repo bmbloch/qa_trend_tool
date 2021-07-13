@@ -1790,16 +1790,16 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 first_rebench = first_rebench.set_index('identity')
                 first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", '')]]
                 rebench_log = rebench_log.join(first_rebench, on='identity')
-            rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.03)) | (abs(rebench_log['mrent_diff'] >= 0.05)) | (abs(rebench_log['merent_diff'] >= 0.05))]
-            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['vac_diff'])
-            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['mrent_diff'])
-            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['merent_diff'])
-            rebench_log['init_shim_period_vac'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['init_shim_period_vac'])
-            rebench_log['init_shim_period_mrent'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['init_shim_period_mrent'])
-            rebench_log['init_shim_period_merent'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['init_shim_period_merent'])
-            rebench_log['v_user'] = np.where(abs(rebench_log['vac_diff']) < 0.03, np.nan, rebench_log['v_user'])
-            rebench_log['g_user'] = np.where(abs(rebench_log['mrent_diff']) < 0.05, np.nan, rebench_log['g_user'])
-            rebench_log['e_user'] = np.where(abs(rebench_log['merent_diff']) < 0.05, np.nan, rebench_log['e_user'])
+            rebench_log = rebench_log[(abs(rebench_log['vac_diff'] >= 0.01)) | (abs(rebench_log['mrent_diff'] >= 0.03)) | (abs(rebench_log['merent_diff'] >= 0.03))]
+            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['merent_diff'])
+            rebench_log['init_shim_period_vac'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['init_shim_period_vac'])
+            rebench_log['init_shim_period_mrent'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['init_shim_period_mrent'])
+            rebench_log['init_shim_period_merent'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['init_shim_period_merent'])
+            rebench_log['v_user'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['v_user'])
+            rebench_log['g_user'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['g_user'])
+            rebench_log['e_user'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['e_user'])
             rebench_log = rebench_log.join(comments, on='identity')
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
@@ -2464,7 +2464,7 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
 #@Timer("Output Display")
 def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench, message):
     input_id = get_input_id()
-    
+
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:
