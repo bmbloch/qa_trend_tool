@@ -774,6 +774,8 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
 
 # Function that analyzes where edits are made in the display dataframe if manual edit option is selected
 def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, button, subsequent_chg, avail_c, mrent_c, erent_c):
+    # First see if there is a true diff, and that the shims entered do not all match what is already in the published dataset
+    has_true_diff = True
     data_update = shim_data.copy()
     indexes = data_orig.index.values
     data_update['new_index'] = indexes
@@ -785,33 +787,19 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
     diffs = diffs.dropna(axis=0, how='all')
     diffs = diffs.dropna(axis=1, how='all')
 
-    # Because a user might want to retain the current avail in the case of an inv or cons shim ro conversion/demolition shim, or similarly, merent in the case of an mrent shim, we need an additional check to add them back in to the diffs dataframe since they will be nulled out with the boolean indexing method
-    if "avail" not in list(diffs.columns) and ("inv" in list(diffs.columns) or "cons" in list(diffs.columns) or "conv" in list(diffs.columns) or "demo" in list(diffs.columns)):
-        diffs['avail'] = np.nan
-    if "inv" in list(diffs.columns) or "cons" in list(diffs.columns) or "conv" in list(diffs.columns) or "demo" in list(diffs.columns):
-        check_avail = data_update.copy()
-        if sector_val != "ind":
-            check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False) | (check_avail['conv'].isnull() == False) | (check_avail['demo'].isnull() == False))]
-        else:
-            check_avail = check_avail[(check_avail['avail'].isnull() == False) & ((check_avail['inv'].isnull() == False) | (check_avail['cons'].isnull() == False))]
-        check_avail = check_avail[['avail']]
-        check_avail = check_avail.rename(columns={'avail': 'avail_check'})
-        diffs = diffs.join(check_avail)
-        diffs['avail'] = np.where(diffs['avail_check'].isnull() == False, diffs['avail_check'], diffs['avail'])
-        diffs = diffs.drop(['avail_check'], axis=1)
+    if len(diffs) == 0:
+        has_true_diff = False
 
-    if "merent" not in list(diffs.columns) and "mrent" in list(diffs.columns):
-        diffs['merent'] = np.nan
-    if "mrent" in list(diffs.columns):
-        check_merent = data_update.copy()
-        check_merent = check_merent[(check_merent['merent'].isnull() == False) & (check_merent['mrent'].isnull() == False)]
-        check_merent = check_merent[['merent']]
-        check_merent = check_merent.rename(columns={'merent': 'merent_check'})
-        diffs = diffs.join(check_merent)
-        diffs['merent'] = np.where(diffs['merent_check'].isnull() == False, diffs['merent_check'], diffs['merent'])
-        diffs = diffs.drop(['merent_check'], axis=1)
- 
-    if len(diffs) > 0:
+    # If there is at least one shim that is different than current published, process the shims. We will want to process all shims, in case one value matches the level in published but because of a shim in a prior period, it is there to maintain the value and is actually a true shim
+    if has_true_diff == True:
+        
+        diffs = shim_data.copy()
+        diffs[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.where(diffs[['inv', 'cons', 'avail', 'mrent', 'merent']] == "None", np.nan, diffs[['inv', 'cons', 'avail', 'mrent', 'merent']])
+        diffs = diffs[~diffs.isnull().all(axis=1)]
+        diffs = diffs[['inv', 'cons', 'avail', 'mrent', 'merent']]
+        diffs = diffs.dropna(axis='columns', how='all')
+        diffs = diffs.dropna(axis='rows', how='all')
+
         data_temp = data.copy()
         for index, row in diffs.iterrows():
             for col_name in list(diffs.columns):
