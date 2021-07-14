@@ -1062,7 +1062,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                 
                 for x in flag_cols:
                     dataframe_test_1 = dataframe_test.copy()
-                    dataframe_test_1 = dataframe_test_1[(dataframe_test_1[x] > 0) & (dataframe_test['flag_skip'].str.contains(x) == False)]
+                    dataframe_test_1 = dataframe_test_1[(dataframe_test_1[x] > 0) & (dataframe_test_1['flag_skip'].str.contains(x) == False)]
                     if len(dataframe_test_1) > 0:
                         dataframe = dataframe_test_1.copy()
                         break
