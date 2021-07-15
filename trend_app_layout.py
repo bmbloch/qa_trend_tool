@@ -53,6 +53,9 @@ def get_app_layout():
             dcc.Store(id='first_update', data=True),
             dcc.Store(id='flag_flow'),
             dcc.Store(id='test_auto_rebench', data=True),
+            dcc.Store(id='rebench_first_yr'),
+            dcc.Store(id='rebench_first_month'),
+            dcc.Store(id='auto_rebench_var'),
             dcc.Store('sector'),
             dcc.ConfirmDialog(id='manual_message'),
             dcc.Tabs(id ='tab_clicked', value ='home', children=[

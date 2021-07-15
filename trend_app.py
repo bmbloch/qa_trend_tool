@@ -1217,7 +1217,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
         if no_shim == False:
-            data, has_diff, avail_check, mrent_check, merent_check = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c)
+            data, has_diff, avail_check, mrent_check, merent_check, first_yr, first_month = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "submit", subsequent_chg, avail_c, mrent_c, erent_c)
         else:
             has_diff = 0
 
@@ -1249,9 +1249,6 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
         if has_diff == 1 or (len(skip_list) > 0 and rebench_trigger == False) or comment_check == True:
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
             data_save = True
-        
-
-    preview_data = pd.DataFrame()
 
     if cons_check == True:
         shim_data['cons'] = np.where(shim_data['yr'] < curryr, np.nan, shim_data['cons'])
@@ -1265,10 +1262,10 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
             var = "market rent"
         elif merent_check == True:
             var = "effective rent"
-        message = "You entered a {} shim that resulted in a historical change above the data governance threshold. To process the shim, enter a new supporting comment to document why the rebench was made.".format(var)
+        message = "You entered a {} shim in {}m{} that resulted in a historical change above the data governance threshold. To process the shim, enter a new supporting comment to document why the rebench was made.".format(var, first_yr, first_month)
         message_display = True
     
-    return data, preview_data, shim_data, message, message_display, data_save
+    return data, shim_data, message, message_display, data_save, rebench_trigger
 
 def test_resolve_flags(preview_data, drop_val, curryr, currmon, sector_val, orig_flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols):
         
@@ -1338,7 +1335,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
-        preview_data, has_diff, avail_check, mrent_check, merent_check = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False)
+        preview_data, has_diff, avail_check, mrent_check, merent_check, first_yr, first_month = get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val, "preview", subsequent_chg, False, False, False)
 
         if has_diff == 1:
             
@@ -1830,6 +1827,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 Output('countdown_container', 'style'),
                 Output('test_auto_rebench', 'data'),
                 Output('dropman', 'disabled'),
+                Output('rebench_first_yr', 'data'),
+                Output('rebench_first_month', 'data'),
+                Output('auto_rebench_var', 'data'),
                 Output('first_update', 'data')],
                 [Input('submit-button', 'n_clicks'),
                 Input('preview-button', 'n_clicks'),
@@ -1881,6 +1881,9 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         else:
             skip_list = []
 
+        if input_id != 'submit-button':
+            rebench_trigger = False
+
         # Load preview data if previewing
         if input_id == 'preview-button':
             preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
@@ -1892,8 +1895,9 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
    
         if input_id == 'submit-button':
-            data, preview_data, shim_data, message, message_display, data_save = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c)
-
+            data, shim_data, message, message_display, data_save, rebench_trigger = submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand, flag_list, skip_list, curryr, currmon, subsequent_chg, cons_c, avail_c, mrent_c, erent_c)
+            if rebench_trigger == False:
+                preview_data = pd.DataFrame()
         elif input_id == 'preview-button':
             data, preview_data, shim_data, message, message_display, flags_resolved, flags_unresolved, flags_new = preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, curryr, currmon, subsequent_chg, flag_list, skip_list, p_skip_list, v_threshold, r_threshold, flag_cols)
         
@@ -1939,10 +1943,18 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
             # Get the next sub flagged
-            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+            if test_auto_rebench == True:
+                if avail_check == True:
+                    var_for_message = "vacancy"
+                elif mrent_check == True:
+                    var_for_message = "market rent"
+                elif merent_check == True:
+                    var_for_message = "effective rent"
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
 
-        use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
+        if rebench_trigger == False:
+            use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
         use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
         if input_id == "submit-button":
@@ -1997,12 +2009,12 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
                         for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, drop_val, countdown.to_dict('records'), [{'name': ['Flags Remaining', countdown.columns[i]], 'id': countdown.columns[i], 'type': type_dict_countdown[countdown.columns[i]], 'format': format_dict_countdown[countdown.columns[i]]}
-                    for i in range(0, len(countdown.columns))], countdown_display, test_auto_rebench, disable_drop, False 
+                    for i in range(0, len(countdown.columns))], countdown_display, test_auto_rebench, disable_drop, first_yr, first_month, var_for_message, False
         elif input_id == "dropflag":
             return message, message_display, all_buttons, submit_button, preview_button, init_flags, no_update, no_update, no_update, no_update, flag_filt.to_dict('records'), [{'name': [flag_filt_title, flag_filt.columns[i]], 'id': flag_filt.columns[i]} 
-                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update, test_auto_rebench, disable_drop, False
+                        for i in range(0, len(flag_filt.columns))], flag_filt_style_table, flag_filt_display, no_update, no_update, no_update, no_update, test_auto_rebench, disable_drop, no_update, no_update, no_update, False
         else:
-            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False 
+            return message, message_display, all_buttons, submit_button, preview_button, init_flags, flags_resolved, flags_unresolved, flags_new, skip_list, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False 
 
 @trend.callback([Output('has_flag', 'data'),
                 Output('flag_list', 'data'),
@@ -2029,10 +2041,12 @@ def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, c
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
 
         # Reset the radio button to the correct variable based on the new flag
-        if has_flag == 1:
+        if test_auto_rebench == True:
+            key_met_radio_val = 'c'
+        elif has_flag == 1:
             if len(flags_unresolved) > 0:
                 key_met_radio_val = flags_unresolved[0][0]
             elif len(flags_new) > 0:
@@ -2460,9 +2474,12 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 State('all_rg_props', 'data'),
                 State('newnc_props', 'data'),
                 State('test_auto_rebench', 'data'),
-                State('manual_message', 'message')])
+                State('manual_message', 'message'),
+                State('rebench_first_yr', 'data'),
+                State('rebench_first_month', 'data'),
+                State('auto_rebench_var', 'data')])
 #@Timer("Output Display")
-def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench, message):
+def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench, message, first_yr, first_month, auto_rebench_var):
     input_id = get_input_id()
 
     if sector_val is None or success_init == False:
@@ -2571,8 +2588,13 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         else:
             show_skips = False
             p_skip_list = []
+
+        if len(preview_data) > 0 and "governance" not in message:
+            preview_status = True
+        else:
+            preview_status = False
         
-        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, len(preview_data), init_skips, test_auto_rebench)
+        issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, preview_status, init_skips, test_auto_rebench, first_yr, first_month, auto_rebench_var)
 
         if len(issue_description_noprev) == 0:
             style_noprev = {'display': 'none'}
@@ -2636,8 +2658,6 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         # Use key_met_val to set display cols, and if there is none selected, set the display cols based on the first flag type for the sub
         if key_met_val is None:
             key_met_val = flag_list[0][0]
-        if test_auto_rebench == True:
-            key_met_val = "c"
         display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list, test_auto_rebench, message)
 
         display_data = display_frame(display_data, drop_val, display_cols, curryr, sector_val)
@@ -2699,9 +2719,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
 
         if "nc surabs" in key_metrics_highlight_list and key_met_val == "v":
             if key_metrics.reset_index().loc[0]['nc surabs'] == 0:
-                key_metrics_highlight_list.remove('nc surabs')    
-        highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
-        type_dict_metrics, format_dict_metrics = get_types(sector_val)
+                key_metrics_highlight_list.remove('nc surabs')
         
         if sector_val == "ret" and len(key_met_2) > 0:
             key_met_2 = key_met_2.rename(columns={'c_met_sur_r_cov_perc': 'c_met_sur_r_cov', 'c_sub_sur_r_cov_perc': 'c_sub_sur_r_cov', 'n_met_sur_r_cov_perc': 'n_met_sur_r_cov', 'n_sub_sur_r_cov_perc': 'n_sub_sur_r_cov', 'nc_met_sur_r_cov_perc': 'nc_met_sur_r_cov', 'nc_sub_sur_r_cov_perc': 'nc_sub_sur_r_cov',
@@ -2766,7 +2784,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         display_data = display_data.rename(columns={"sqsren": "sq rent"})
 
         # Get the row index of the metric to be highlighted in the display table. If this is not an rol flag, the row will always be currmon row, otherwise, it is any row where there is a diff to ROL
-        if test_auto_rebench == False and "governance" not in message:
+        if test_auto_rebench == False and ("governance" not in message or len(preview_data) == 0):
             temp = display_data.copy()
             temp['id'] = temp.index
             check_for_rol_row = False
@@ -2798,16 +2816,31 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             else:
                 display_highlight_rows = list(temp.tail(1)['id'])
         else:
-            if "vacancy" in message:
-                display_highlight_list = ['vac', 'rol vac']
-            elif "market rent" in message:
-                display_highlight_list = ['mrent', 'rol mrent']
-            elif "effective rent" in message:
-                display_highlight_list = ['merent', 'rol merent']
-            key_metrics_highlight_list = []
+            if test_auto_rebench == False:
+                key_metrics_highlight_list = []
+                if "vacancy" in message:
+                    display_highlight_list = ['vac', 'rol vac']
+                elif "market rent" in message:
+                    display_highlight_list = ['mrent', 'rol mrent']
+                elif "effective rent" in message:
+                    display_highlight_list = ['merent', 'rol merent']
+            elif test_auto_rebench == True:
+                key_metrics_highlight_list = ['cons roldiff']
+                if auto_rebench_var == "vacancy":
+                    display_highlight_list = ['vac', 'rol vac']
+                    key_metrics_highlight_list += ['vac roldiff', 'newncava']
+                elif auto_rebench_var == "market rent":
+                    display_highlight_list = ['mrent', 'rol mrent']
+                    key_metrics_highlight_list += ['gmrent roldiff']
+                elif auto_rebench_var == "effective rent":
+                    display_highlight_list = ['merent', 'rol merent']
             temp = display_data.copy()
             temp['id'] = temp.index
-            display_highlight_rows = list(temp.tail(1)['id'])
+            display_highlight_rows = list(temp[(temp['yr'] == first_yr) & (temp['month'] == first_month)]['id'])
+
+        # Get the highlighting and types for the key metrics table
+        highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
+        type_dict_metrics, format_dict_metrics = get_types(sector_val)
 
         # Drop the rol vars that were only included to help identify the flag row for highlighting purposes
         if test_auto_rebench == False and "governance" not in message:

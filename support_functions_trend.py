@@ -392,7 +392,7 @@ def summarize_flags(dataframe_in, sum_val, flag_cols):
 
 
 # Return a more verbose description of the flag to the user
-def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_list=False, p_skip_list=False, show_skips=False, flags_resolved=False, flags_unresolved=False, flags_new=False, flags_skipped=False, curryr=False, currmon=False, preview_status=False, init_skips=False, test_auto_rebench=False):
+def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_list=False, p_skip_list=False, show_skips=False, flags_resolved=False, flags_unresolved=False, flags_new=False, flags_skipped=False, curryr=False, currmon=False, preview_status=False, init_skips=False, test_auto_rebench=False, first_yr=False, first_month=False, auto_rebench_var=False):
 
     # This dict holds a more verbose explanation of the flags, so that it can be printed to the user for clarity
     issue_descriptions = {
@@ -464,7 +464,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     issue_description_skipped = []
     if type_return == "specific":
         if test_auto_rebench == True:
-            issue_description_noprev = "There was an auto rebench for construction in curryr - 3 that caused a significant difference to ROL. Enter a supporting comment to document what caused the rebench before moving on to flag review."
+            issue_description_noprev = "There was a rebench for construction in the auto rebench window that caused a significant difference to ROL {} in {}m{}. Enter a supporting comment to document what caused the rebench before moving on to flag review.".format(auto_rebench_var, first_yr, first_month)
         elif has_flag == 0:
             issue_description_noprev = "You have cleared all the flags"
         elif has_flag == 2 and (show_skips == False or len(p_skip_list) == 0):
@@ -496,7 +496,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                                         ]), 
                                     ])
         elif has_flag == 1:
-            if preview_status == 0:
+            if preview_status == False:
                 if show_skips == True:
                     flags_use = flag_list + p_skip_list
                     disabled_list = [False] * len(flag_list) + [True] * len(p_skip_list)
@@ -638,7 +638,7 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
                     issue_description_skipped = []
 
 
-            if preview_status == 0:
+            if preview_status == False:
                 display_issue_cols = highlighting[flag_list[0]][0]
                 key_metric_issue_cols = highlighting[flag_list[0]][1]
             else:
@@ -689,10 +689,15 @@ def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sec
     
     if len(rebench_to_check) > 0:
         check = True
+        first_yr = rebench_to_check.reset_index().loc[0]['identity_row']
+        first_yr = first_yr[-5:-1]
+        first_month = first_yr[-1]
     else:
         check = False
+        first_yr = False
+        first_month = False
 
-    return check
+    return check, first_yr, first_month
 
 # Function that checks to see if there was an adjustment made from last published data (ROL) that crosses the data governance threshold by an auto STATA cons backdating adjustment, thus requiring a support note documenting why the change was made
 def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mrent_check, merent_check):
@@ -768,8 +773,16 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
                     break
         else:
             merent_check = False
+
+    if len(dataframe) > 0:
+        dataframe = dataframe[dataframe['identity'] == identity]
+        first_yr = dataframe.reset_index().loc[0]['yr']
+        first_month = dataframe.reset_index().loc[0]['currmon']
+    else:
+        first_yr = False
+        first_month = False
     
-    return avail_check, mrent_check, merent_check, identity
+    return avail_check, mrent_check, merent_check, identity, first_yr, first_month
 
 
 # Function that analyzes where edits are made in the display dataframe if manual edit option is selected
@@ -828,6 +841,8 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
         avail_check = False
         mrent_check = False
         merent_check = False
+        first_yr = False
+        first_month = False
  
         if button == 'submit':
             init_avail_c = data_temp.loc[drop_val + str(curryr) + str(currmon)]['avail_comment']
@@ -838,11 +853,11 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                 if rebench_to_check[var].isnull().values.all() == False:
                     if rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] != curryr or (rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['yr'] == curryr and rebench_to_check[rebench_to_check[var].isnull() == False].reset_index().loc[0]['currmon'] != currmon):
                         if var == "avail" and (avail_c[-9:] == "Note Here" or len(avail_c.strip()) == 0 or avail_c == init_avail_c):
-                            avail_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.01, "vac", drop_val)
+                            avail_check, first_yr, first_month = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.01, "vac", drop_val)
                         elif var == "mrent" and avail_check == False and (mrent_c[-9:] == "Note Here" or len(mrent_c.strip()) == 0 or mrent_c == init_mrent_c):
-                            mrent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "mrent", drop_val)
+                            mrent_check, first_yr, first_month = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "mrent", drop_val)
                         elif var == "merent" and mrent_check == False and avail_check == False and (erent_c[-9:] == "Note Here" or len(erent_c.strip()) == 0 or erent_c == init_erent_c):
-                            merent_check = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "merent", drop_val)
+                            merent_check, first_yr, first_month = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "merent", drop_val)
             
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
@@ -854,8 +869,10 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
             data = data_temp.copy()           
     else:
         has_diff = 0
+        first_yr = False
+        first_month = False
 
-    return data, has_diff, avail_check, mrent_check, merent_check
+    return data, has_diff, avail_check, mrent_check, merent_check, first_yr, first_month
 
 # Function to insert the suggested or user fix to the fixed dataframe for review by user, as originally formatted by BB before HSY suggestion of using model coefficients directly
 def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, currmon, sector_val, subsequent_chg):
@@ -995,18 +1012,22 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
 def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val):
     
     if test_auto_rebench == True:
-        avail_check, mrent_check, merent_check, identity_for_check = auto_rebench_check(data, curryr, currmon, sector_val, True, True, True)
+        avail_check, mrent_check, merent_check, identity_for_check, first_yr, first_month = auto_rebench_check(data, curryr, currmon, sector_val, True, True, True)
         if avail_check == False and mrent_check == False and merent_check == False:
             test_auto_rebench = False
+            first_yr = False
+            first_month = False
         else:
             flag_list = ['v_flag']
             skip_list = []
             has_flag = 3
-            identity_val = identity_for_check    
+            identity_val = identity_for_check   
     else:
         avail_check = False
         mrent_check = False
         merent_check = False 
+        first_yr = False
+        first_month = False
 
     if test_auto_rebench == False:
     
@@ -1016,7 +1037,6 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
         if filt == True:
             dataframe = dataframe[dataframe['identity'] == identity_val]
             skip_list = list(dataframe.loc[identity_val + str(curryr) + str(currmon)][['flag_skip']])
-            print(skip_list)
             if skip_list[0] == '':
                 skip_list = []
         else:
@@ -1117,7 +1137,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                         identity_val = dataframe.reset_index().loc[0]['identity']  
                     flag_list = ['v_flag']
 
-    return flag_list, skip_list, identity_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check
+    return flag_list, skip_list, identity_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month
 
 # This function creates the tables to be used for metro sorts
 def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
