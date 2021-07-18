@@ -690,8 +690,8 @@ def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sec
     if len(rebench_to_check) > 0:
         check = True
         first_yr = rebench_to_check.reset_index().loc[0]['identity_row']
-        first_yr = first_yr[-5:-1]
         first_month = first_yr[-1]
+        first_yr = first_yr[-5:-1]
     else:
         check = False
         first_yr = False
@@ -781,7 +781,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     else:
         first_yr = False
         first_month = False
-    
+
     return avail_check, mrent_check, merent_check, identity, first_yr, first_month
 
 
@@ -858,7 +858,7 @@ def get_diffs(shim_data, data_orig, data, drop_val, curryr, currmon, sector_val,
                             mrent_check, first_yr, first_month = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "mrent", drop_val)
                         elif var == "merent" and mrent_check == False and avail_check == False and (erent_c[-9:] == "Note Here" or len(erent_c.strip()) == 0 or erent_c == init_erent_c):
                             merent_check, first_yr, first_month = manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sector_val, 0.03, "merent", drop_val)
-            
+
             if avail_check == False and mrent_check == False and merent_check == False:
                 has_diff = 1
                 data = data_temp.copy()
