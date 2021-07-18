@@ -920,11 +920,20 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                 if math.isnan(row['demo']) == False:
                     update_data.loc[index, 'i_user'] = user
             if math.isnan(row['vac']) == False or math.isnan(row['vac_chg']) == False or math.isnan(row['avail']) == False or math.isnan(row['abs']) == False:
-                update_data.loc[index, 'v_user'] = user
+                if update_data['v_user'].loc[index] == "Cons Auto Rebench":
+                    update_data.loc[index, 'v_user'] = "Cons Auto Rebench, " + user
+                else:
+                    update_data.loc[index, 'v_user'] = user
             if math.isnan(row['mrent']) == False or math.isnan(row['G_mrent']) == False:
-                update_data.loc[index, 'g_user'] = user
+                if update_data['g_user'].loc[index] == "Cons Auto Rebench":
+                    update_data.loc[index, 'g_user'] = "Cons Auto Rebench,  " + user
+                else:
+                    update_data.loc[index, 'g_user'] = user
             if  math.isnan(row['merent']) == False or math.isnan(row['G_merent']) == False or math.isnan(row['gap']) == False:
-                update_data.loc[index, 'e_user'] = user
+                if update_data['e_user'].loc[index] == "Cons Auto Rebench":
+                    update_data.loc[index, 'e_user'] = "Cons Auto Rebench,  " + user
+                else:
+                    update_data.loc[index, 'e_user'] = user
         
         # Fill in the new values in a trunc dataframe
         decision_data_fill = decision_data.copy()
@@ -1951,6 +1960,8 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                     var_for_message = "market rent"
                 elif merent_check == True:
                     var_for_message = "effective rent"
+            else:
+                var_for_message = False
             use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
 
         if rebench_trigger == False:
