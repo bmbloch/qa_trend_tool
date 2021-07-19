@@ -921,8 +921,10 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                     update_data.loc[index, 'i_user'] = user
             if math.isnan(row['vac']) == False or math.isnan(row['vac_chg']) == False or math.isnan(row['avail']) == False or math.isnan(row['abs']) == False:
                 if update_data['v_user'].loc[index] == "Cons Auto Rebench":
+                    print("YO")
                     update_data.loc[index, 'v_user'] = "Cons Auto Rebench, " + user
                 else:
+                    print("YES")
                     update_data.loc[index, 'v_user'] = user
             if math.isnan(row['mrent']) == False or math.isnan(row['G_mrent']) == False:
                 if update_data['g_user'].loc[index] == "Cons Auto Rebench":
@@ -934,7 +936,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                     update_data.loc[index, 'e_user'] = "Cons Auto Rebench,  " + user
                 else:
                     update_data.loc[index, 'e_user'] = user
-        
+
         # Fill in the new values in a trunc dataframe
         decision_data_fill = decision_data.copy()
         decision_data_fill = decision_data_fill[decision_data_fill['identity'] == drop_val]
@@ -1883,7 +1885,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
 
         # If there is a flag description, use this crazy dict/list slicer to get the actual values of the children prop so we can see what flags the user wants to skip
-        if skip_input_noprev == "No flags for this submarket" or skip_input_noprev == "You have cleared all the flags" or test_auto_rebench == True:
+        if skip_input_noprev == "No flags for this submarket" or skip_input_noprev == "You have cleared all the flags" or test_auto_rebench == True or "auto rebench window" in skip_input_noprev:
             skip_list = []
         elif skip_input_noprev != None or skip_input_resolved != None or skip_input_unresolved != None or skip_input_new != None or skip_input_skipped != None:
             skip_list = get_user_skips(skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped)
@@ -2590,7 +2592,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             use_pickle("out", "shim_data_" + sector_val, shim_data, curryr, currmon, sector_val)
 
         # Get the Divs that will display the current flags at the sub, as well as the metrics to highlight based on the flags
-        if init_skips is not None and init_skips != "No flags for this submarket" and init_skips != "You have cleared all the flags" and sub_change == False and test_auto_rebench == False:
+        if init_skips is not None and init_skips != "No flags for this submarket" and init_skips != "You have cleared all the flags" and sub_change == False and test_auto_rebench == False and "auto rebench window" not in init_skips:
             init_skips = get_user_skips(init_skips, [], [], [], [])
         else:
             init_skips = []
