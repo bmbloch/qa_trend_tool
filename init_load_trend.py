@@ -51,6 +51,42 @@ def initial_load(sector_val, curryr, currmon, msq_load):
     else:
         load_trunc = False
 
+    def load_init_input(sector_val, curryr, currmon):
+        if sector_val == "ind":
+            frames = []
+            for subsector in ["DW", "F"]:
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+                if load_trunc == True:
+                    if subsector == "DW":
+                        nrows = 3393
+                    elif subsector == "F":
+                        nrows = 2584
+                    data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False, nrows=nrows)
+                else:
+                    data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+                frames.append(data_in)
+            data_in = frames[0].append(frames[1], ignore_index=True)
+        elif sector_val == "apt" or sector_val == "off":
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
+            data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+            cols = list(data.columns)
+            data_in['subsector'] = sector_val.title()
+            new_cols = ['subsector'] + cols
+            data_in = data_in[new_cols]
+        elif sector_val == "ret":
+            frames = []
+            for subsector in ['C', 'N', "NC"]:
+                if subsector == "C" or subsector == "N":
+                    file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+                else:
+                    file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-tier3-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+                data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+                frames.append(data_in)
+            data_in = frames[0].append(frames[1], ignore_index=True)
+            data_in = data_in.append(frames[2], ignore_index=True)
+
+        return data_in
+
     # Load the input file - if this is the first time the program is run, the oob data should be loaded in, and if this is not the first time, then the edits data should be loaded in
     try:
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
@@ -62,58 +98,28 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         file_used = "oob"
     if file_used == "oob":
         try:
-            if sector_val == "ind":
-                frames = []
-                for subsector in ["DW", "F"]:
-                    file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
-                    if load_trunc == True:
-                        if subsector == "DW":
-                            nrows = 3393
-                        elif subsector == "F":
-                            nrows = 2584
-                        data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False, nrows=nrows)
-                    else:
-                        data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-                    frames.append(data)
-                data = frames[0].append(frames[1], ignore_index=True)
-            elif sector_val == "apt" or sector_val == "off":
-                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
-                data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-                cols = list(data.columns)
-                data['subsector'] = sector_val.title()
-                new_cols = ['subsector'] + cols
-                data = data[new_cols]
-                # For Apt, load last months ysis input so we can get what the sqcons that was there last time for use in the c_sqdiff flag
-                if sector_val == "apt":
-                    if currmon == 1:
-                        pastmon = 12
-                        pastyr = curryr - 1
-                    else: 
-                        pastmon = currmon - 1
-                        pastyr = curryr
-                    file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(pastyr), str(pastmon), sector_val, str(pastyr), str(pastmon)))
-                    past_data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-                    past_data['currmon'] = np.where((np.isnan(past_data['currmon'])== True), 13, past_data['currmon'])
-                    past_data['subsector'] = "Apt"
-                    past_data['subid'] = past_data['subid'].astype(int)
-                    past_data['yr'] = past_data['yr'].astype(int)
-                    past_data['currmon'] = past_data['currmon'].astype(int)
-                    past_data['identity_row'] = np.where((past_data['currmon'] != 13), past_data['metcode'] + past_data['subid'].astype(str) + past_data['subsector'] + past_data['yr'].astype(str) + past_data['currmon'].astype(str), past_data['metcode'] + past_data['subid'].astype(str) + past_data['subsector'] + past_data['yr'].astype(str) + past_data['qtr'].astype(str))
-                    past_data = past_data.set_index('identity_row')
-                    past_data['p_sqcons'] = past_data['sqcons']
-                    past_data = past_data[['p_sqcons']]
-            elif sector_val == "ret":
-                frames = []
-                for subsector in ['C', 'N', "NC"]:
-                    if subsector == "C" or subsector == "N":
-                        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
-                    else:
-                        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-tier3-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
-                    data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-                    frames.append(data)
-                data = frames[0].append(frames[1], ignore_index=True)
-                data = data.append(frames[2], ignore_index=True)
+            data = load_init_input(sector_val, curryr, currmon)
             file_load_error = False
+            
+            # For Apt, load last months ysis input so we can get what the sqcons that was there last time for use in the c_sqdiff flag
+            if sector_val == "apt":
+                if currmon == 1:
+                    pastmon = 12
+                    pastyr = curryr - 1
+                else: 
+                    pastmon = currmon - 1
+                    pastyr = curryr
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(pastyr), str(pastmon), sector_val, str(pastyr), str(pastmon)))
+                past_data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+                past_data['currmon'] = np.where((np.isnan(past_data['currmon'])== True), 13, past_data['currmon'])
+                past_data['subsector'] = "Apt"
+                past_data['subid'] = past_data['subid'].astype(int)
+                past_data['yr'] = past_data['yr'].astype(int)
+                past_data['currmon'] = past_data['currmon'].astype(int)
+                past_data['identity_row'] = np.where((past_data['currmon'] != 13), past_data['metcode'] + past_data['subid'].astype(str) + past_data['subsector'] + past_data['yr'].astype(str) + past_data['currmon'].astype(str), past_data['metcode'] + past_data['subid'].astype(str) + past_data['subsector'] + past_data['yr'].astype(str) + past_data['qtr'].astype(str))
+                past_data = past_data.set_index('identity_row')
+                past_data['p_sqcons'] = past_data['sqcons']
+                past_data = past_data[['p_sqcons']]
         except:
             file_load_error = True
 
