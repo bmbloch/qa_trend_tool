@@ -880,11 +880,18 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         
         update_data = data.copy()
         update_data = update_data[update_data['identity'] == drop_val]
+        comments = update_data.copy()
+        comments = comments[['inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']]
         if sector_val != "ind":
-            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']]
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'inv', 'cons', 'conv', 'demo', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'avail', 'mrent', 'merent', 'vac_chg']]
         else:
-            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'inv', 'avail', 'mrent', 'merent', 'vac_chg', 'inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']]
-        decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], axis=1)
+            update_data = update_data[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'inv', 'cons', 'vac', 'abs', 'G_mrent', 'G_merent', 'gap', 'avail', 'mrent', 'merent', 'vac_chg']]
+        
+        users = decision_data_test.copy()
+        users = users[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']]
+        decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user', 'inv_cons_comment', 'avail_comment',
+                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_vac', 'rol_mrent', 'rol_merent', 
+                                                      'rol_cons', 'occ'], axis=1)
         
         update_data['vac'] = round(update_data['vac'], 3)
         update_data['vac_chg'] = round(update_data['vac_chg'], 3)
@@ -900,20 +907,39 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         decision_data_test['gap'] = round(decision_data_test['gap'], 3)
         decision_data_test['mrent'] = round(decision_data_test['mrent'], 2)
         decision_data_test['merent'] = round(decision_data_test['merent'], 2)
+        update_data[list(update_data.columns)] = update_data[list(update_data.columns)].fillna(9999999)
+        decision_data_test[list(decision_data_test.columns)] = decision_data_test[list(decision_data_test.columns)].fillna(9999999)
         test = update_data.ne(decision_data_test)
-        update_data = update_data[test]
+        update_data = update_data[test].dropna(how='all')
+        update_data = update_data.join(users)
+        update_data = update_data.join(comments)
+        update_data[list(update_data.columns)] = np.where(update_data[list(update_data.columns)] == 9999999, np.nan, update_data[list(update_data.columns)])
+        
+        # Because there are slight rounding differences, check if there is an actual change to the level var, null out chg vars
+        for index, row in update_data.iterrows():
+            if math.isnan(row['avail']) == True:
+                update_data.loc[index, 'vac'] = np.nan 
+                update_data.loc[index, 'vac_chg'] = np.nan 
+                update_data.loc[index, 'abs'] = np.nan 
+            if math.isnan(row['mrent']) == True:
+                update_data.loc[index, 'G_mrent'] = np.nan 
+            if math.isnan(row['merent']) == True:
+                update_data.loc[index, 'G_merent'] = np.nan
+            if  math.isnan(row['mrent']) == True and math.isnan(row['merent']) == True:
+                update_data.loc[index, 'gap'] = np.nan
 
         # Update user log with username that made the edit
-        update_data['i_user'] = np.nan
-        update_data['c_user'] = np.nan
-        update_data['v_user'] = np.nan
-        update_data['g_user'] = np.nan
-        update_data['e_user'] = np.nan
         for index, row in update_data.iterrows():
             if math.isnan(row['inv']) == False:
-                update_data.loc[index, 'i_user'] = user
+                if update_data['i_user'].loc[index] == "Cons Auto Rebench":
+                    update_data.loc[index, 'i_user'] = "Cons Auto Rebench, " + user
+                else:
+                    update_data.loc[index, 'i_user'] = user
             if math.isnan(row['cons']) == False:
-                update_data.loc[index, 'c_user'] = user
+                if update_data['c_user'].loc[index] == "Cons Auto Rebench":
+                    update_data.loc[index, 'c_user'] = "Cons Auto Rebench, " + user
+                else:
+                    update_data.loc[index, 'c_user'] = user
             if sector_val != "ind":
                 if math.isnan(row['conv']) == False:
                     update_data.loc[index, 'i_user'] = user
@@ -921,10 +947,8 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                     update_data.loc[index, 'i_user'] = user
             if math.isnan(row['vac']) == False or math.isnan(row['vac_chg']) == False or math.isnan(row['avail']) == False or math.isnan(row['abs']) == False:
                 if update_data['v_user'].loc[index] == "Cons Auto Rebench":
-                    print("YO")
                     update_data.loc[index, 'v_user'] = "Cons Auto Rebench, " + user
                 else:
-                    print("YES")
                     update_data.loc[index, 'v_user'] = user
             if math.isnan(row['mrent']) == False or math.isnan(row['G_mrent']) == False:
                 if update_data['g_user'].loc[index] == "Cons Auto Rebench":
@@ -936,49 +960,21 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
                     update_data.loc[index, 'e_user'] = "Cons Auto Rebench,  " + user
                 else:
                     update_data.loc[index, 'e_user'] = user
-
-        # Fill in the new values in a trunc dataframe
-        decision_data_fill = decision_data.copy()
-        decision_data_fill = decision_data_fill[decision_data_fill['identity'] == drop_val]
-        no_change_list = ['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'i_user', 'c_user', 'v_user', 'g_user', 'e_user']
-        drop_list_1 = [x for x in list(decision_data_fill.columns) if "new" not in x and x not in no_change_list]
-        decision_data_fill = decision_data_fill.drop(drop_list_1, axis=1)
-        rename_dict = {x : x[:-4] for x in list(decision_data_fill.columns) if "new" in x}
-        decision_data_fill = decision_data_fill.rename(columns=rename_dict)
-    
-        # Since nan values wont replace non nan values when using combine first, replace them all with a crazy number that wont match a real value, and then replace back to nan after combined
-        fill_list = [x for x in list(update_data.columns) if x not in no_change_list]
-        update_data[fill_list] = update_data[fill_list].fillna(9999999999999999)
-        update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] = update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']].fillna("temp")
-        update_data = update_data.combine_first(decision_data_fill)
-        update_data[fill_list] = np.where(update_data[fill_list] == 9999999999999999, np.nan, update_data[fill_list])
-        update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] = np.where(update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] == "temp", np.nan, update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']])
-        rename_dict = {x : x + "_new" for x in list(update_data.columns) if "oob" not in x and x not in no_change_list}
-        update_data = update_data.rename(columns=rename_dict)
-
-        # Because there are slight rounding differences, check if there is an actual change to the level var, and null out diff if no change
-        for index, row in update_data.iterrows():
-            if math.isnan(row['avail_new']) == True:
-                update_data.loc[index, 'vac_new'] = np.nan 
-                update_data.loc[index, 'vac_chg_new'] = np.nan 
-                update_data.loc[index, 'abs'] = np.nan 
-                update_data.loc[index, 'v_user'] = np.nan 
-            if math.isnan(row['mrent_new']) == True:
-                update_data.loc[index, 'G_mrent_new'] = np.nan 
-                update_data.loc[index, 'g_user'] = np.nan 
-            if math.isnan(row['merent_new']) == True:
-                update_data.loc[index, 'G_merent_new'] = np.nan 
-                update_data.loc[index, 'gap_new'] = np.nan 
-                update_data.loc[index, 'e_user'] = np.nan 
-
+        
         # Replace the new values in the "new" columns in a trunc dataframe that also has the oob values
         decision_data_replace = decision_data.copy()
         decision_data_replace = decision_data_replace[decision_data_replace['identity'] == drop_val]
-        decision_data_replace = decision_data_replace.reset_index()
-        update_data = update_data.reset_index()
-        for x in drop_list + ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
-            decision_data_replace[x] = update_data.loc[update_data['identity_row'] == decision_data_replace['identity_row'], x]
-        decision_data_replace = decision_data_replace.set_index('identity_row')
+        replace_list = [x[:-4] for x in drop_list]
+        update_data[replace_list] = update_data[replace_list].fillna(9999999)
+        update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']] = update_data[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']].fillna("temp")
+        for x, y in zip(replace_list + ['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], drop_list + ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']):
+            for index, row in update_data.iterrows():
+                if x in ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
+                    if row[x] != "temp":
+                        decision_data_replace.loc[index, y] = row[x]
+                else:
+                    if row[x] != 9999999:
+                        decision_data_replace.loc[index, y] = row[x]
 
         # Append the updated decision for the "new" columns from the trunc dataframe we just created to the rest of the identities in the log, and output the updated log
         decision_data_update = decision_data.copy()
@@ -1771,6 +1767,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                         finalized_copy.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], ascending = [True, True, True, True, True], inplace = True)
                     file_path = "{}central/square/data/{}/production/msq/tcheck/{}subtrnds_{}_QUANtified_{}m{}.csv".format(get_home(), sector_val, sector_val, subsector, str(curryr), str(currmon))
                     finalized_copy.to_csv(file_path, index=False, na_rep='')
+                    if subsector == "C":
+                        file_path_dta = "{}/central/square/data/ret/trends-experimental/retsubtrnds_C_QUANtified_{}m{}.dta".format(get_home(), str(curryr), str(currmon))
+                        finalized_copy.to_stata(file_path_dta, write_index=False)
 
             # Convert decision log to csv file and save in OutputFiles folder
             decision_log_in_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.{}".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, 'pickle'))
