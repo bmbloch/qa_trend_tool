@@ -88,12 +88,62 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         return data_in
 
     # Load the input file - if this is the first time the program is run, the oob data should be loaded in, and if this is not the first time, then the edits data should be loaded in
+    # If the msqs have been refreshed, we will also load the oob file, as there may be new prelim values that should be used and patched in 
     try:
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
         data = pd.read_pickle(file_path)
         file_used = "edits"
         file_load_error = False
         print("Using Saved File")
+
+        # if msq_load == "Y":
+        #     data_refresh = load_init_input(sector_val, curryr, currmon)
+        #     prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap']
+        #     if sector_val == "ind" or sector_val == "ret":
+        #         data_refresh = data_refresh[['subsector', 'metcode', 'subid', 'yr', 'currmon'] + prelim_cols]
+        #     else:
+        #         data_refresh = data_refresh[['metcode', 'subid', 'yr', 'currmon'] + prelim_cols]
+        
+        # data_refresh['subid'] = data_refresh['subid'].astype(int)
+        # data_refresh['yr'] = data_refresh['yr'].astype(int)
+        # data_refresh['currmon'] = data_refresh['currmon'].astype(int)
+        # data['subid'] = data['subid'].astype(int)
+        # data['yr'] = data['yr'].astype(int)
+        # data['currmon'] = data['currmon'].astype(int)
+
+        # if sector_val == "ind" or sector_val == "ret":
+        #     data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['subsector'] + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
+        #     data_refresh = data_refresh.drop(['subsector', 'metcode', 'subid', 'yr', 'currmon'], axis=1)
+        #     data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
+        # else:
+        #     data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
+        #     data_refresh = data_refresh.drop(['metcode', 'subid', 'yr', 'currmon'], axis=1)
+        #     data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
+
+        # data = data.join(data_refresh.set_index('join_ident'), on='join_ident')
+
+        # diff_cols = []
+        # for col in prelim_cols:
+        #     diff_cols.append(col + "_diff")
+        #     diff_cols.append(col + "_has_diff")
+        #     data[col + "_diff"] = data[col] - data[col[2:]]
+        #     data[col + "_has_diff"] = np.where(data[col + "_diff"] != 0, 1, 0)
+        #     data[col[2:]] = np.where(data[col + "_diff"] != 0, data[col], data[col[2:]])
+        
+        # data['vac'] = data['avail'] / data['inv']
+        # data['vac'] = round(data['vac'], 4)
+        # data['vac_chg'] = np.where((data['metcode'] == data['metcode'].shift(1)) & (data['subid'] == data['subid'].shift(1)) & (data['subsector'] == data['subsector'].shift(1)), data['vac'] - data['vac'].shift(1), np.nan)
+
+        # data = data.drop(['join_ident'], axis=1)
+        
+        # for x in prelim_cols:
+        #     data[x[2:] + "_oob"] = np.where(data[x + "_has_diff"] == 1, data[x], data[x[2:] + "_oob"])
+        # data['vac_oob'] = np.where(data["p_avail_has_diff"] == 1, data['vac'], data['vac_oob'])
+        # data['vac_chg_oob'] = np.where(data["p_avail_has_diff"] == 1, data['vac_chg'], data['vac_chg_oob'])
+
+        # data = data.drop(diff_cols, axis=1)
+        data.to_csv('/home/central/square/data/zzz-bb-test2/python/trend/testing_orig.csv')
+
     except:
         file_used = "oob"
     if file_used == "oob":
@@ -717,18 +767,20 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data = data.drop(['join_ident'], axis=1)
         
         # Join in the most up to date sq sub rollups
-        if sector_val == "ind":
-            data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
-        else:
-            data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
-        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_substats.pickle".format(get_home(), sector_val))
-        msq_data_sub = pd.read_pickle(file_path)
-        msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
-        if sector_val == "ind":
-            msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
+        if (file_used == "edits" and msq_load == True) or file_used == "oob":
+            if sector_val == "ind":
+                data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
+            else:
+                data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_substats.pickle".format(get_home(), sector_val))
+            msq_data_sub = pd.read_pickle(file_path)
+            msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
+            if sector_val == "ind":
+                msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
         
-        data = data.join(msq_data_sub, on='join_ident')
-        data = data.drop(['join_ident'], axis=1)
+            data = data.drop(['sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
+            data = data.join(msq_data_sub, on='join_ident')
+            data = data.drop(['join_ident'], axis=1)
         
         # Join in the most up to date sq insight stats (although this will only be refreshed if the actual sqinsight.do file is run after making edits to the msqs)
         cols_before_join = list(data.columns)
