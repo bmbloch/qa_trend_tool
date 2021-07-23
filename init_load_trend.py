@@ -113,6 +113,11 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data = data.drop(survey_cols, axis=1)
         data = data.join(data_refresh.set_index('join_ident')[survey_cols], on='join_ident')
 
+        if sector_val != "apt":
+            data[['avail10d', 'avail00d']] = round((data[['avail10d', 'avail00d']] * -1), -3)
+        else:
+            data[['avail10d', 'avail00d']] = round((data[['avail10d', 'avail00d']] * -1), 0)
+
         prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap'] 
         data = data.join(data_refresh.set_index('join_ident')[prelim_cols], on='join_ident')
 
