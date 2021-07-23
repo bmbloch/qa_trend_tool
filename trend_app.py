@@ -2874,9 +2874,9 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             low_gap = key_metrics.reset_index().loc[0]['gap perc 95']
             high_gap = key_metrics.reset_index().loc[0]['gap perc 5']
             if gap_val <= low_gap:
-                key_metrics_highlight_list.remove('gap perc 95')
-            else:
                 key_metrics_highlight_list.remove('gap perc 5')
+            else:
+                key_metrics_highlight_list.remove('gap perc 95')
 
         # Get the highlighting and types for the key metrics table
         highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
