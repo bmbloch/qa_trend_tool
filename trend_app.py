@@ -1594,7 +1594,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                 refresh_alert = True
                 alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". At these subs, all prior shims in places with updated values were replaced."
                 file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-                data_save = oob_data.copy()
+                data_to_save = oob_data.copy()
                 data_to_save = data_to_save[orig_cols]
                 data_to_save.to_pickle(file_path)
             else:
