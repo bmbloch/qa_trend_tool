@@ -55,7 +55,8 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         if sector_val == "ind":
             frames = []
             for subsector in ["DW", "F"]:
-                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+                print("Remove test from file name!!")
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis_test.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
                 if load_trunc == True:
                     if subsector == "DW":
                         nrows = 3393
@@ -153,6 +154,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
         data = data.drop(['join_ident'], axis=1)
         data = data.drop(diff_cols, axis=1)
+        data = data.drop(prelim_cols)
 
         if has_diff == True:
             decision_data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
