@@ -161,12 +161,12 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
             diff_cols = []
             for col in prelim_cols:
+                diff_cols.append(col + "_diff")
+                diff_cols.append(col + "_has_diff")
+                decision_data[col + "_diff"] = decision_data[col] - decision_data[col[2:] + "_oob"]
+                decision_data[col + "_has_diff"] = np.where((abs(decision_data[col + "_diff"]) > 0.001) & (decision_data[col].isnull() == False), 1, 0)
+                decision_data[col[2:] + "_oob"] = np.where(decision_data[col + "_has_diff"] == 1, decision_data[col], decision_data[col[2:] + "_oob"])
                 if col != "p_occ":
-                    diff_cols.append(col + "_diff")
-                    diff_cols.append(col + "_has_diff")
-                    decision_data[col + "_diff"] = decision_data[col] - decision_data[col[2:] + "_oob"]
-                    decision_data[col + "_has_diff"] = np.where((abs(decision_data[col + "_diff"]) > 0.001) & (decision_data[col].isnull() == False), 1, 0)
-                    decision_data[col[2:] + "_oob"] = np.where(decision_data[col + "_has_diff"] == 1, decision_data[col], decision_data[col[2:] + "_oob"])
                     decision_data[col[2:] + "_new"] = np.where(decision_data[col + "_has_diff"] == 1, np.nan, decision_data[col[2:] + "_new"])
             
             for x, y in zip(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], ['inv_new', 'cons_new', 'avail_new', 'mrent_new', 'merent_new']):
@@ -206,6 +206,8 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
 
             decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
+            decision_data = decision_data.drop(diff_cols, axis=1)
+            decision_data = decision_data.drop(prelim_cols, axis=1)
 
             decision_data.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
 
