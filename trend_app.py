@@ -1481,7 +1481,9 @@ def store_input_vals(url_input):
                  Output('all_avail_props', 'data'),
                  Output('surv_rg_props', 'data'),
                  Output('all_rg_props', 'data'),
-                 Output('newnc_props', 'data')],
+                 Output('newnc_props', 'data'),
+                 Output('refresh_alert', 'is_open'),
+                 Output('refresh_alert_text', 'children')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
@@ -1493,7 +1495,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
     if sector_val is None:
         raise PreventUpdate
     else:
-        oob_data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict = initial_load(sector_val, curryr, currmon, msq_load)
+        oob_data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict, refresh_list = initial_load(sector_val, curryr, currmon, msq_load)
         
         # Contniue with the callback if the input file loaded successfully
         if file_used != "error":
@@ -1587,13 +1589,20 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
                 show_cd_display = {'padding-left': '5px', 'width': '7%', 'display': 'inline-block', 'vertical-align': 'top'}
             else:
                  show_cd_display = {'display': 'none'}
+            
+            if len(refresh_list) > 0:
+                refresh_alert = True
+                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". All prior shims in places with updated values were replaced."
+            else:
+                refresh_alert = False
+                alert_text = ""
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict
+            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict, refresh_alert, alert_text
 
         # If the input file did not load successfully, alert the user
         elif file_used == "error":
             init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False, no_update
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),

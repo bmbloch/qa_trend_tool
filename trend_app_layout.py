@@ -88,6 +88,16 @@ def get_app_layout():
                         )
                     ], style={'text-align': 'center', 'vertical-align': 'middle'}),
                     html.Div([
+                        dbc.Alert(
+                            html.P(id='refresh_alert_text'),
+                            id = "refresh_alert",
+                            dismissable=True,
+                            is_open=False,
+                            fade=False,
+                            color='danger',
+                        )
+                    ], style={'text-align': 'center', 'vertical-align': 'middle'}),
+                    html.Div([
                         html.Div([
                             dcc.Dropdown(
                                 id='dropsum',
