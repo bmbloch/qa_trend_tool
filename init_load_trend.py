@@ -861,21 +861,19 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         data = data.drop(['join_ident'], axis=1)
         
         # Join in the most up to date sq sub rollups
-        if (file_used == "edits" and msq_load == True) or file_used == "oob":
-            if sector_val == "ind":
-                data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
-            else:
-                data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
-            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_substats.pickle".format(get_home(), sector_val))
-            msq_data_sub = pd.read_pickle(file_path)
-            msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
-            if sector_val == "ind":
-                msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
-        
-            if file_used == "edits":
-                data = data.drop(['sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
-            data = data.join(msq_data_sub, on='join_ident')
-            data = data.drop(['join_ident'], axis=1)
+        if sector_val == "ind":
+            data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
+        else:
+            data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_substats.pickle".format(get_home(), sector_val))
+        msq_data_sub = pd.read_pickle(file_path)
+        msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
+        if sector_val == "ind":
+            msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
+    
+
+        data = data.join(msq_data_sub, on='join_ident')
+        data = data.drop(['join_ident'], axis=1)
         
         # Join in the most up to date sq insight stats (although this will only be refreshed if the actual sqinsight.do file is run after making edits to the msqs)
         cols_before_join = list(data.columns)
