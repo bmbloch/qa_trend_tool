@@ -2866,7 +2866,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             display_highlight_rows = list(temp[(temp['yr'] == first_yr) & (temp['month'] == first_month)]['id'])
 
         # If e_flag_perc is the flag getting the highlighting, remove the perc that is not relevant from the list
-        if "gap perc 5" in key_metrics_highlight_list:
+        if "gap perc 5" in key_metrics_highlight_list and key_met_val == "e":
             temp = display_data.copy()
             temp = temp.tail(1)
             temp = temp.reset_index()
