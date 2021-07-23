@@ -55,8 +55,7 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         if sector_val == "ind":
             frames = []
             for subsector in ["DW", "F"]:
-                print("Remove test from file name!!")
-                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis_test.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
                 if load_trunc == True:
                     if subsector == "DW":
                         nrows = 3393
@@ -200,11 +199,11 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
             decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
             
-            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == True) & (decision_data['i_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['i_user'])
-            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == True) & (decision_data['c_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['c_user'])
-            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == True) & (decision_data['v_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['v_user'])
-            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['g_user'].isnull() == True) & (decision_data['g_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['g_user'])
-            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['e_user'].isnull() == True) & (decision_data['e_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['e_user'])
+            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == True), "Cons Auto Rebench", decision_data['i_user'])
+            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == True), "Cons Auto Rebench", decision_data['c_user'])
+            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == True), "Cons Auto Rebench", decision_data['v_user'])
+            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['g_user'].isnull() == True), "Cons Auto Rebench", decision_data['g_user'])
+            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['e_user'].isnull() == True), "Cons Auto Rebench", decision_data['e_user'])
             decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == False) & (decision_data['i_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['i_user'], decision_data['i_user'])
             decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == False) & (decision_data['c_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['c_user'], decision_data['c_user'])
             decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == False) & (decision_data['v_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['v_user'], decision_data['v_user'])
