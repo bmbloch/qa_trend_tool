@@ -131,9 +131,9 @@ def initial_load(sector_val, curryr, currmon, msq_load):
                     testing['identity'] = testing['metcode'] + testing['subid'].astype(str) + testing['subsector']
                 else:
                     testing['identity'] = testng['metcode'] + testing['subid'].astype(str)
-                met_list = testing['identity'].unique()
-                met_add = [x for x in met_list if x not in refresh_list]
-                refresh_list += met_add
+                sub_list = testing['identity'].unique()
+                sub_add = [x for x in sub_list if x not in refresh_list]
+                refresh_list += sub_add
             data[col[2:]] = np.where(data[col + "_has_diff"] == 1, data[col], data[col[2:]])
         if len(refresh_list) > 0: 
             refresh_list.sort()
