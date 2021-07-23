@@ -87,6 +87,121 @@ def initial_load(sector_val, curryr, currmon, msq_load):
 
         return data_in
 
+    def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
+
+        data = data_in.copy()
+        data_refresh = data_refresh_in.copy()
+
+        data_refresh['subid'] = data_refresh['subid'].astype(int)
+        data_refresh['yr'] = data_refresh['yr'].astype(int)
+        data_refresh['currmon'] = data_refresh['currmon'].astype(int)
+        data['subid'] = data['subid'].astype(int)
+        data['yr'] = data['yr'].astype(int)
+        data['currmon'] = data['currmon'].astype(int)
+
+        if sector_val == "ind" or sector_val == "ret":
+            data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['subsector'] + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
+            data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
+        else:
+            data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
+            data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
+
+        survey_cols = ['avail10d', 'avail00d', 'dqinvren10', 'dqren10d', 'dqren00d', 'ncrenlev', 'covvac', 'covren', 'ss_vac_chg', 'ss_rent_chg', 'pastsubsqvac',
+                        'pastsubsqrent', 'sub1to99_Grenx', 'newnc_thismo', 'newncsf', 'newncava', 'newncrev', 'subsq_props', 'rentchgs', 
+                        'cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']
+        data = data.drop(survey_cols, axis=1)
+        data = data.join(data_refresh.set_index('join_ident')[survey_cols], on='join_ident')
+
+        prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap'] 
+        data = data.join(data_refresh.set_index('join_ident')[prelim_cols], on='join_ident')
+
+        has_diff = False
+        diff_cols = []
+        for col in prelim_cols:
+            diff_cols.append(col + "_diff")
+            diff_cols.append(col + "_has_diff")
+            data[col + "_diff"] = data[col] - data[col[2:] + "_oob"]
+            data[col + "_has_diff"] = np.where((abs(data[col + "_diff"]) > 0.001) & (data[col].isnull() == False), 1, 0)
+            testing = data.copy()
+            testing = testing[testing[col + "_has_diff"] == 1]
+            if len(testing) > 0:
+                has_diff = True
+            data[col[2:]] = np.where(data[col + "_has_diff"] == 1, data[col], data[col[2:]])
+        
+        if has_diff == True:
+            print("There are differences in the prelim cols, splicing in now.")
+            data['vac'] = data['avail'] / data['inv']
+            data['vac'] = round(data['vac'], 4)
+            data['vac_chg'] = np.where((data['metcode'] == data['metcode'].shift(1)) & (data['subid'] == data['subid'].shift(1)) & (data['subsector'] == data['subsector'].shift(1)), data['vac'] - data['vac'].shift(1), np.nan)
+        
+            for x in prelim_cols:
+                data[x[2:] + "_oob"] = np.where(data[x + "_has_diff"] == 1, data[x], data[x[2:] + "_oob"])
+            data['vac_oob'] = np.where(data["p_avail_has_diff"] == 1, data['vac'], data['vac_oob'])
+            data['vac_chg_oob'] = np.where(data["p_avail_has_diff"] == 1, data['vac_chg'], data['vac_chg_oob'])
+            
+            data[['inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']] = data[['inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']].fillna("")
+
+
+        data = data.drop(['join_ident'], axis=1)
+        data = data.drop(diff_cols, axis=1)
+
+        if has_diff == True:
+            decision_data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
+
+            decision_data = decision_data.join(data_refresh.set_index('join_ident')[prelim_cols])
+
+            diff_cols = []
+            for col in prelim_cols:
+                if col != "p_occ":
+                    diff_cols.append(col + "_diff")
+                    diff_cols.append(col + "_has_diff")
+                    decision_data[col + "_diff"] = decision_data[col] - decision_data[col[2:] + "_oob"]
+                    decision_data[col + "_has_diff"] = np.where((abs(decision_data[col + "_diff"]) > 0.001) & (decision_data[col].isnull() == False), 1, 0)
+                    decision_data[col[2:] + "_oob"] = np.where(decision_data[col + "_has_diff"] == 1, decision_data[col], decision_data[col[2:] + "_oob"])
+                    decision_data[col[2:] + "_new"] = np.where(decision_data[col + "_has_diff"] == 1, np.nan, decision_data[col[2:] + "_new"])
+            
+            for x, y in zip(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], ['inv_new', 'cons_new', 'avail_new', 'mrent_new', 'merent_new']):
+                decision_data[x] = np.where((decision_data[x].isnull() == False) & (decision_data[y].isnull() == True), np.nan, decision_data[x])
+
+            decision_data['cons_diff'] = decision_data['cons_oob'] - decision_data['rol_cons']
+            decision_data['vac_diff'] = decision_data['vac_oob'] - decision_data['rol_vac']
+            decision_data['mrent_diff'] = (decision_data['mrent_oob'] - decision_data['rol_mrent']) / decision_data['rol_mrent']
+            decision_data['merent_diff'] = (decision_data['merent_oob'] - decision_data['rol_merent']) / decision_data['rol_merent']
+            
+            decision_data['inv_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['inv_oob'], decision_data['inv_new'])
+            decision_data['cons_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['cons_oob'], decision_data['cons_new'])
+            
+            decision_data['vac_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_oob'], decision_data['vac_new'])
+            decision_data['vac_chg_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_chg_oob'], decision_data['vac_chg_new'])
+            decision_data['avail_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['avail_oob'], decision_data['avail_new'])
+            decision_data['abs_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['abs_oob'], decision_data['abs_new'])
+            
+            decision_data['mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['mrent_oob'], decision_data['mrent_new'])
+            decision_data['G_mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['G_mrent_oob'], decision_data['G_mrent_new'])
+            
+            decision_data['merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['merent_oob'], decision_data['merent_new'])
+            decision_data['G_merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['G_merent_oob'], decision_data['G_merent_new'])
+
+            decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
+            
+            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == True) & (decision_data['i_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['i_user'])
+            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == True) & (decision_data['c_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['c_user'])
+            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == True) & (decision_data['v_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['v_user'])
+            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['g_user'].isnull() == True) & (decision_data['g_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['g_user'])
+            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['e_user'].isnull() == True) & (decision_data['e_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['e_user'])
+            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == False) & (decision_data['i_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['i_user'], decision_data['i_user'])
+            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == False) & (decision_data['c_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['c_user'], decision_data['c_user'])
+            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == False) & (decision_data['v_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['v_user'], decision_data['v_user'])
+            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['g_user'].isnull() == False) & (decision_data['g_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['g_user'], decision_data['g_user'])
+            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['e_user'].isnull() == False) & (decision_data['e_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['e_user'], decision_data['e_user'])
+
+
+            decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
+
+            decision_data.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
+
+        return data
+
     # Load the input file - if this is the first time the program is run, the oob data should be loaded in, and if this is not the first time, then the edits data should be loaded in
     # If the msqs have been refreshed, we will also load the oob file, as there may be new prelim values that should be used and patched in 
     try:
@@ -95,122 +210,15 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         file_used = "edits"
         file_load_error = False
         print("Using Saved File")
-
-        # If the MSQs were refreshed, replace the original oob figures for the key vars where there is a diff now due to the msq changes
-        # Also replace the survey data that is generated by sqinsight and the two trend STATA programs, as those values may also now be different due to changes at the MSQs
-        if msq_load == "Y":
-            data_refresh = load_init_input(sector_val, curryr, currmon)
-        
-            data_refresh['subid'] = data_refresh['subid'].astype(int)
-            data_refresh['yr'] = data_refresh['yr'].astype(int)
-            data_refresh['currmon'] = data_refresh['currmon'].astype(int)
-            data['subid'] = data['subid'].astype(int)
-            data['yr'] = data['yr'].astype(int)
-            data['currmon'] = data['currmon'].astype(int)
-
-            if sector_val == "ind" or sector_val == "ret":
-                data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['subsector'] + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
-                data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
-            else:
-                data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
-                data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
-
-            survey_cols = ['avail10d', 'avail00d', 'dqinvren10', 'dqren10d', 'dqren00d', 'ncrenlev', 'covvac', 'covren', 'ss_vac_chg', 'ss_rent_chg', 'pastsubsqvac',
-                            'pastsubsqrent', 'sub1to99_Grenx', 'newnc_thismo', 'newncsf', 'newncava', 'newncrev', 'subsq_props', 'rentchgs', 
-                            'cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']
-            data = data.drop(survey_cols, axis=1)
-            data = data.join(data_refresh.set_index('join_ident')[survey_cols], on='join_ident')
-
-            prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap'] 
-            data = data.join(data_refresh.set_index('join_ident')[prelim_cols], on='join_ident')
-
-            has_diff = False
-            diff_cols = []
-            for col in prelim_cols:
-                diff_cols.append(col + "_diff")
-                diff_cols.append(col + "_has_diff")
-                data[col + "_diff"] = data[col] - data[col[2:] + "_oob"]
-                data[col + "_has_diff"] = np.where((abs(data[col + "_diff"]) > 0.001) & (data[col].isnull() == False), 1, 0)
-                testing = data.copy()
-                testing = testing[testing[col + "_has_diff"] == 1]
-                if len(testing) > 0:
-                    has_diff = True
-                data[col[2:]] = np.where(data[col + "_has_diff"] == 1, data[col], data[col[2:]])
             
-            if has_diff == True:
-                print("There are differences in the prelim cols, splicing in now.")
-                data['vac'] = data['avail'] / data['inv']
-                data['vac'] = round(data['vac'], 4)
-                data['vac_chg'] = np.where((data['metcode'] == data['metcode'].shift(1)) & (data['subid'] == data['subid'].shift(1)) & (data['subsector'] == data['subsector'].shift(1)), data['vac'] - data['vac'].shift(1), np.nan)
-            
-                for x in prelim_cols:
-                    data[x[2:] + "_oob"] = np.where(data[x + "_has_diff"] == 1, data[x], data[x[2:] + "_oob"])
-                data['vac_oob'] = np.where(data["p_avail_has_diff"] == 1, data['vac'], data['vac_oob'])
-                data['vac_chg_oob'] = np.where(data["p_avail_has_diff"] == 1, data['vac_chg'], data['vac_chg_oob'])
-                
-                data[['inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']] = data[['inv_cons_comment', 'avail_comment', 'mrent_comment', 'erent_comment']].fillna("")
-
-
-            data = data.drop(['join_ident'], axis=1)
-            data = data.drop(diff_cols, axis=1)
-
-            if has_diff == True:
-                decision_data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
-
-                decision_data = decision_data.join(data_refresh.set_index('join_ident')[prelim_cols])
-
-                diff_cols = []
-                for col in prelim_cols:
-                    if col != "p_occ":
-                        diff_cols.append(col + "_diff")
-                        diff_cols.append(col + "_has_diff")
-                        decision_data[col + "_diff"] = decision_data[col] - decision_data[col[2:] + "_oob"]
-                        decision_data[col + "_has_diff"] = np.where((abs(decision_data[col + "_diff"]) > 0.001) & (decision_data[col].isnull() == False), 1, 0)
-                        decision_data[col[2:] + "_oob"] = np.where(decision_data[col + "_has_diff"] == 1, decision_data[col], decision_data[col[2:] + "_oob"])
-                        decision_data[col[2:] + "_new"] = np.where(decision_data[col + "_has_diff"] == 1, np.nan, decision_data[col[2:] + "_new"])
-                
-                for x, y in zip(['i_user', 'c_user', 'v_user', 'g_user', 'e_user'], ['inv_new', 'cons_new', 'avail_new', 'mrent_new', 'merent_new']):
-                    decision_data[x] = np.where((decision_data[x].isnull() == False) & (decision_data[y].isnull() == True), np.nan, decision_data[x])
-
-                decision_data['cons_diff'] = decision_data['cons_oob'] - decision_data['rol_cons']
-                decision_data['vac_diff'] = decision_data['vac_oob'] - decision_data['rol_vac']
-                decision_data['mrent_diff'] = (decision_data['mrent_oob'] - decision_data['rol_mrent']) / decision_data['rol_mrent']
-                decision_data['merent_diff'] = (decision_data['merent_oob'] - decision_data['rol_merent']) / decision_data['rol_merent']
-                
-                decision_data['inv_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['inv_oob'], decision_data['inv_new'])
-                decision_data['cons_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['cons_oob'], decision_data['cons_new'])
-                
-                decision_data['vac_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_oob'], decision_data['vac_new'])
-                decision_data['vac_chg_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_chg_oob'], decision_data['vac_chg_new'])
-                decision_data['avail_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['avail_oob'], decision_data['avail_new'])
-                decision_data['abs_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['abs_oob'], decision_data['abs_new'])
-                
-                decision_data['mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['mrent_oob'], decision_data['mrent_new'])
-                decision_data['G_mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['G_mrent_oob'], decision_data['G_mrent_new'])
-                
-                decision_data['merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['merent_oob'], decision_data['merent_new'])
-                decision_data['G_merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['G_merent_oob'], decision_data['G_merent_new'])
-
-                decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
-                
-                decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == True) & (decision_data['i_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['i_user'])
-                decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == True) & (decision_data['c_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['c_user'])
-                decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == True) & (decision_data['v_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['v_user'])
-                decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['g_user'].isnull() == True) & (decision_data['g_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['g_user'])
-                decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['e_user'].isnull() == True) & (decision_data['e_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench", decision_data['e_user'])
-                decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['i_user'].isnull() == False) & (decision_data['i_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['i_user'], decision_data['i_user'])
-                decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0) & (decision_data['c_user'].isnull() == False) & (decision_data['c_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['c_user'], decision_data['c_user'])
-                decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001) & (decision_data['v_user'].isnull() == False) & (decision_data['v_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['v_user'], decision_data['v_user'])
-                decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['g_user'].isnull() == False) & (decision_data['g_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['g_user'], decision_data['g_user'])
-                decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001) & (decision_data['e_user'].isnull() == False) & (decision_data['e_user'].str.contains('Cons Auto Rebench') == False), "Cons Auto Rebench, " + decision_data['e_user'], decision_data['e_user'])
-
-
-                decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
-
-                decision_data.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
-
     except:
         file_used = "oob"
+    
+    # If the MSQs were refreshed, replace the original oob figures for the key vars where there is a diff now due to the msq changes
+    # Also replace the survey data that is generated by sqinsight and the two trend STATA programs, as those values may also now be different due to changes at the MSQs
+    if file_used == "edits" and msq_load == "Y" and file_load_error == False:
+        data_refresh = load_init_input(sector_val, curryr, currmon)
+        data = refresh_data(sector_val, curryr, currmon, data, data_refresh)
     
     if file_used == "oob":
         try:
