@@ -1592,7 +1592,7 @@ def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
             
             if len(refresh_list) > 0:
                 refresh_alert = True
-                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". All prior shims in places with updated values were replaced."
+                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". At these subs, all prior shims in places with updated values were replaced."
             else:
                 refresh_alert = False
                 alert_text = ""
