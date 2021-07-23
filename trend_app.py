@@ -1180,6 +1180,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
     else:
         shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
     
+
     for col in shim_cols:
         shim_data[col] = np.where(shim_data[col] == '', np.nan, shim_data[col])
 
@@ -1192,7 +1193,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
     # Check to see if a construction shim was entered for a period outside of curryr - 10. If so, do not process the shim and alert the user
     cons_check = False
     if len(shim_data[shim_data['cons'].isnull() == False]) > 0:
-         if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['yr'] < curryr - 10:
+        if pd.isna(shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['cons']) == False and shim_data[shim_data['cons'].isnull() == False].reset_index().loc[0]['yr'] < curryr - 10:
             cons_check = True
 
     # Check to see if a comment was entered, as we will want to allow that to be processed even if no shim was entered
@@ -2808,6 +2809,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         display_data = display_data.rename(columns={"sqvac chg": "sq vac chg"})
         display_data = display_data.rename(columns={"sqsren": "sq rent"})
 
+
         # Get the row index of the metric to be highlighted in the display table. If this is not an rol flag, the row will always be currmon row, otherwise, it is any row where there is a diff to ROL
         if test_auto_rebench == False and ("governance" not in message or len(preview_data) == 0):
             temp = display_data.copy()
@@ -2862,6 +2864,19 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             temp = display_data.copy()
             temp['id'] = temp.index
             display_highlight_rows = list(temp[(temp['yr'] == first_yr) & (temp['month'] == first_month)]['id'])
+
+        # If e_flag_perc is the flag getting the highlighting, remove the perc that is not relevant from the list
+        if "gap perc 5" in key_metrics_highlight_list:
+            temp = display_data.copy()
+            temp = temp.tail(1)
+            temp = temp.reset_index()
+            gap_val = temp.loc[0]['gap']
+            low_gap = key_metrics.reset_index().loc[0]['gap perc 95']
+            high_gap = key_metrics.reset_index().loc[0]['gap perc 5']
+            if gap_val <= low_gap:
+                key_metrics_highlight_list.remove('gap perc 95')
+            else:
+                key_metrics_highlight_list.remove('gap perc 5')
 
         # Get the highlighting and types for the key metrics table
         highlighting_metrics = get_style("metrics", key_metrics, curryr, currmon, key_metrics_highlight_list, [], underline_cols)
@@ -2918,9 +2933,18 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 col_header.append("Shims")
             else:
                 col_header.append(data_title)
+
+        if key_met_val == "c":
+            key_met_title = "Construction Key Metrics"
+        elif key_met_val == "v":
+            key_met_title = "Vacancy Key Metrics"
+        elif key_met_val == "g":
+            key_met_title = "Market Rent Key Metrics"
+        elif key_met_val == "e":
+            key_met_title = "Effective Rent Key Metrics"
     
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
-                            for i in range(0, len(display_cols))], highlighting_display, man_view_display, key_metrics.to_dict('records'), [{'name': ['Key Metrics', key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
+                            for i in range(0, len(display_cols))], highlighting_display, man_view_display, key_metrics.to_dict('records'), [{'name': [key_met_title, key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
                             for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_key_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
 
