@@ -872,7 +872,8 @@ def initial_load(sector_val, curryr, currmon, msq_load):
             if sector_val == "ind":
                 msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
         
-            data = data.drop(['sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
+            if file_used == "edits":
+                data = data.drop(['sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
             data = data.join(msq_data_sub, on='join_ident')
             data = data.drop(['join_ident'], axis=1)
         
