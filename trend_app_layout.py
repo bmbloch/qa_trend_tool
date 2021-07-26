@@ -47,7 +47,7 @@ def get_app_layout():
                 ], style={'display': 'inline-block', 'padding-left': '50px'}),
     ],
     fixed='top'
-)
+    )
 
     return \
         html.Div([
