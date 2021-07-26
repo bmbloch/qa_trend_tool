@@ -26,7 +26,7 @@ from IPython.core.display import display, HTML
 import timeit
 
 # local imports
-from init_load_trend import get_home, initial_load
+from init_load_trend import get_home, initial_load, process_initial_load
 from authenticate_trend import authenticate_user, validate_login_session
 from server_trend import trend, server
 from stats_trend import calc_stats
@@ -1459,16 +1459,46 @@ def store_input_vals(url_input):
         currmon = int(currmon)
         return user, sector_val.lower(), curryr, currmon, msq_load, flag_flow
 
+@trend.callback([Output('input_file', 'data'),
+                Output('file_load_alert', 'is_open'),
+                Output('confirm_msq_refresh', 'displayed'),
+                Output('confirm_msq_refresh', 'message')],
+                [Input('sector', 'data'),
+                Input('curryr', 'data'),
+                Input('currmon', 'data'),
+                Input('store_msq_load', 'data')])
+
+def intial_load(sector_val, curryr, currmon, msq_load):
+
+    if sector_val is None:
+        raise PreventUpdate
+    else:
+        data, data_temp, decision_data_temp, refresh_list, file_load_error, file_used = initial_load(sector_val, curryr, currmon, msq_load)
+        use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
+
+        if file_load_error == False:
+            if len(refresh_list) > 0:
+                refresh_alert = True
+                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". Click OK to replace all prior shims at these subs with the new oob figures. Click Cancel if you do not want to insert the new prelims, and restore the original oob file to the InputFiles folder."
+                data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
+                decision_data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
+            else:
+                refresh_alert = False
+                alert_text = ""
+        else:
+            refresh_alert = no_update
+            alert_text = no_update
+
+        return file_used, file_load_error, refresh_alert, alert_text
+
 @trend.callback([Output('dropman', 'options'),
                  Output('droproll', 'options'),
                  Output('dropsum', 'options'),
                  Output('dropsum', 'value'),
-                 Output('input_file', 'data'),
                  Output('store_orig_cols', 'data'),
                  Output('dropflag', 'options'),
                  Output('dropflag', 'value'),
                  Output('init_trigger', 'data'),
-                 Output('file_load_alert', 'is_open'),
                  Output('scatter-type-radios', 'value'),
                  Output('v_threshold', 'data'),
                  Output('r_threshold', 'data'),
@@ -1482,132 +1512,130 @@ def store_input_vals(url_input):
                  Output('all_avail_props', 'data'),
                  Output('surv_rg_props', 'data'),
                  Output('all_rg_props', 'data'),
-                 Output('newnc_props', 'data'),
-                 Output('refresh_alert', 'is_open'),
-                 Output('refresh_alert_text', 'children')],
+                 Output('newnc_props', 'data')],
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
-                 Input('store_msq_load', 'data')],
-                 [State('store_flag_cols', 'data')])
-#@Timer("Initial Data Load")
-def initial_data_load(sector_val, curryr, currmon, msq_load, flag_cols):
+                 Input('file_load_alert', 'is_open'),
+                 Input('confirm_msq_refresh', 'submit_n_clicks')],
+                 [State('store_flag_cols', 'data'),
+                 State('store_msq_load', 'data'),
+                 State('input_file', 'data')])
 
-    if sector_val is None:
+def process_init_file(sector_val, curryr, currmon, load_error, confirm_msq_refresh, flag_cols, msq_load, file_used):
+
+    if sector_val is None or load_error == True or (confirm_msq_refresh == None and file_used == "edits"):
         raise PreventUpdate
     else:
-        oob_data, orig_cols, file_used, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict, refresh_list = initial_load(sector_val, curryr, currmon, msq_load)
+        if confirm_msq_refresh == 1:
+
+            data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
+            decision_data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
+            decision_data.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
+        else:
+            data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
         
-        # Contniue with the callback if the input file loaded successfully
-        if file_used != "error":
-            # Export the pickled oob values to begin setting up the decision log if this is the first time the user is running the program
-            if file_used == "oob":
-                oob_cols = [x for x in list(oob_data.columns) if "oob" in x]
-                decision_data = oob_data.copy()
-                decision_data = decision_data.reset_index()
-                decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons']]
-                update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
-                if sector_val != "ind":
-                    update_cols += ['conv_new', 'demo_new']
-                for x in update_cols:
-                    decision_data[x] = np.nan
-                decision_data = decision_data.set_index('identity_row')
-                decision_data['i_user'] = np.nan
-                decision_data['c_user'] = np.nan
-                decision_data['v_user'] = np.nan
-                decision_data['g_user'] = np.nan
-                decision_data['e_user'] = np.nan
-                decision_data['skipped'] = ''
-                decision_data['skip_user'] = ''
-                decision_data['inv_cons_comment'] = ''
-                decision_data['avail_comment'] = ''
-                decision_data['mrent_comment'] = ''
-                decision_data['erent_comment'] = ''
+        data, orig_cols, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict = process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
+        
+        if confirm_msq_refresh == 1:
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
+            data_to_save = data.copy()
+            data_to_save = data_to_save[orig_cols]
+            data_to_save.to_pickle(file_path)
 
-                # Due to the need to identify large changes from ROL due to the auto cons rebench, update the new cols where there is a case of cons auto rebench
-                decision_data['cons_diff'] = decision_data['cons_oob'] - decision_data['rol_cons']
-                decision_data['vac_diff'] = decision_data['vac_oob'] - decision_data['rol_vac']
-                decision_data['mrent_diff'] = (decision_data['mrent_oob'] - decision_data['rol_mrent']) / decision_data['rol_mrent']
-                decision_data['merent_diff'] = (decision_data['merent_oob'] - decision_data['rol_merent']) / decision_data['rol_merent']
-                
-                decision_data['inv_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['inv_oob'], decision_data['inv_new'])
-                decision_data['cons_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['cons_oob'], decision_data['cons_new'])
-                
-                decision_data['vac_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_oob'], decision_data['vac_new'])
-                decision_data['vac_chg_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_chg_oob'], decision_data['vac_chg_new'])
-                decision_data['avail_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['avail_oob'], decision_data['avail_new'])
-                decision_data['abs_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['abs_oob'], decision_data['abs_new'])
-                
-                decision_data['mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['mrent_oob'], decision_data['mrent_new'])
-                decision_data['G_mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['G_mrent_oob'], decision_data['G_mrent_new'])
-                
-                decision_data['merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['merent_oob'], decision_data['merent_new'])
-                decision_data['G_merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['G_merent_oob'], decision_data['G_merent_new'])
-
-                decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
-                
-                decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['i_user'])
-                decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['c_user'])
-                decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001), "Cons Auto Rebench", decision_data['v_user'])
-                decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['g_user'])
-                decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['e_user'])
-
-                decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
-            
-                use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
-                
-
-            temp = oob_data.copy()
-            temp = temp.set_index('identity')
-            sub_combos = list(temp.index.unique())
-
-            met_combos_temp = list(oob_data['identity_met'].unique())
-            met_combos_temp.sort()
-            met_combos = sorted(list(oob_data['identity_us'].unique())) + met_combos_temp
-
-            if sector_val == "apt" or sector_val == "off" or sector_val == "ret":
-                default_drop = met_combos[0]
-            elif sector_val == "ind":
-                default_drop = "US" + list(oob_data['subsector'].unique())[0] + list(oob_data['expansion'].unique())[0]
-
-            flag_list = get_issue("list", sector_val)
-            flag_list_all = list(flag_list.keys())
-
-            
-            oob_data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols = first_update(oob_data, file_used, sector_val, orig_cols, curryr, currmon)              
-            
-            oob_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-            use_pickle("out", "main_data_" + sector_val, oob_data, curryr, currmon, sector_val)
-            use_pickle("out", "rank_data_met_" + sector_val, rank_data_met, curryr, currmon, sector_val)
-            use_pickle("out", "rank_data_sub_" + sector_val, rank_data_sub, curryr, currmon, sector_val)
-            use_pickle("out", "sum_data_" + sector_val, sum_data, curryr, currmon, sector_val)
-            use_pickle("out", "nat_data_vac_" + sector_val, nat_data_vac, curryr, currmon, sector_val)
-            use_pickle("out", "nat_data_rent_" + sector_val, nat_data_rent, curryr, currmon, sector_val)
-
-            init_trigger = True
-
+        # Export the pickled oob values to begin setting up the decision log if this is the first time the user is running the program
+        if file_used == "oob":
+            oob_cols = [x for x in list(data.columns) if "oob" in x]
+            decision_data = data.copy()
+            decision_data = decision_data.reset_index()
+            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons']]
+            update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
             if sector_val != "ind":
-                show_cd_display = {'padding-left': '5px', 'width': '7%', 'display': 'inline-block', 'vertical-align': 'top'}
-            else:
-                 show_cd_display = {'display': 'none'}
+                update_cols += ['conv_new', 'demo_new']
+            for x in update_cols:
+                decision_data[x] = np.nan
+            decision_data = decision_data.set_index('identity_row')
+            decision_data['i_user'] = np.nan
+            decision_data['c_user'] = np.nan
+            decision_data['v_user'] = np.nan
+            decision_data['g_user'] = np.nan
+            decision_data['e_user'] = np.nan
+            decision_data['skipped'] = ''
+            decision_data['skip_user'] = ''
+            decision_data['inv_cons_comment'] = ''
+            decision_data['avail_comment'] = ''
+            decision_data['mrent_comment'] = ''
+            decision_data['erent_comment'] = ''
+
+            # Due to the need to identify large changes from ROL due to the auto cons rebench, update the new cols where there is a case of cons auto rebench
+            decision_data['cons_diff'] = decision_data['cons_oob'] - decision_data['rol_cons']
+            decision_data['vac_diff'] = decision_data['vac_oob'] - decision_data['rol_vac']
+            decision_data['mrent_diff'] = (decision_data['mrent_oob'] - decision_data['rol_mrent']) / decision_data['rol_mrent']
+            decision_data['merent_diff'] = (decision_data['merent_oob'] - decision_data['rol_merent']) / decision_data['rol_merent']
             
-            if len(refresh_list) > 0:
-                refresh_alert = True
-                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". At these subs, all prior shims in places with updated values were replaced."
-                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
-                data_to_save = oob_data.copy()
-                data_to_save = data_to_save[orig_cols]
-                data_to_save.to_pickle(file_path)
-            else:
-                refresh_alert = False
-                alert_text = ""
+            decision_data['inv_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['inv_oob'], decision_data['inv_new'])
+            decision_data['cons_new'] = np.where((abs(decision_data['cons_diff']) > 0), decision_data['cons_oob'], decision_data['cons_new'])
+            
+            decision_data['vac_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_oob'], decision_data['vac_new'])
+            decision_data['vac_chg_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['vac_chg_oob'], decision_data['vac_chg_new'])
+            decision_data['avail_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['avail_oob'], decision_data['avail_new'])
+            decision_data['abs_new'] = np.where((abs(decision_data['vac_diff']) >= 0.001), decision_data['abs_oob'], decision_data['abs_new'])
+            
+            decision_data['mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['mrent_oob'], decision_data['mrent_new'])
+            decision_data['G_mrent_new'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), decision_data['G_mrent_oob'], decision_data['G_mrent_new'])
+            
+            decision_data['merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['merent_oob'], decision_data['merent_new'])
+            decision_data['G_merent_new'] = np.where((abs(decision_data['merent_diff']) >= 0.001), decision_data['G_merent_oob'], decision_data['G_merent_new'])
 
-            return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, file_used, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, no_update, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict, refresh_alert, alert_text
+            decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
+            
+            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['i_user'])
+            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['c_user'])
+            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001), "Cons Auto Rebench", decision_data['v_user'])
+            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['g_user'])
+            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['e_user'])
 
-        # If the input file did not load successfully, alert the user
-        elif file_used == "error":
-            init_trigger = False
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, init_trigger, True, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, False, no_update
+            decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
+        
+            use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
+            
+
+        temp = data.copy()
+        temp = temp.set_index('identity')
+        sub_combos = list(temp.index.unique())
+
+        met_combos_temp = list(data['identity_met'].unique())
+        met_combos_temp.sort()
+        met_combos = sorted(list(data['identity_us'].unique())) + met_combos_temp
+
+        if sector_val == "apt" or sector_val == "off" or sector_val == "ret":
+            default_drop = met_combos[0]
+        elif sector_val == "ind":
+            default_drop = "US" + list(data['subsector'].unique())[0] + list(data['expansion'].unique())[0]
+
+        flag_list = get_issue("list", sector_val)
+        flag_list_all = list(flag_list.keys())
+
+        
+        data, rank_data_met, rank_data_sub, sum_data, nat_data_rent, nat_data_vac, v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols = first_update(data, file_used, sector_val, orig_cols, curryr, currmon)              
+        
+        data.replace([np.inf, -np.inf], np.nan, inplace=True)
+        use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
+        use_pickle("out", "rank_data_met_" + sector_val, rank_data_met, curryr, currmon, sector_val)
+        use_pickle("out", "rank_data_sub_" + sector_val, rank_data_sub, curryr, currmon, sector_val)
+        use_pickle("out", "sum_data_" + sector_val, sum_data, curryr, currmon, sector_val)
+        use_pickle("out", "nat_data_vac_" + sector_val, nat_data_vac, curryr, currmon, sector_val)
+        use_pickle("out", "nat_data_rent_" + sector_val, nat_data_rent, curryr, currmon, sector_val)
+
+        init_trigger = True
+
+        if sector_val != "ind":
+            show_cd_display = {'padding-left': '5px', 'width': '7%', 'display': 'inline-block', 'vertical-align': 'top'}
+        else:
+            show_cd_display = {'display': 'none'}
+
+
+        return [{'label': i, 'value': i} for i in sub_combos], [{'label': i, 'value': i} for i in met_combos], [{'label': i, 'value': i} for i in met_combos], default_drop, orig_cols, [{'label': i, 'value': i} for i in flag_list_all], flag_list_all[0], init_trigger, "c", v_threshold, r_threshold, v_threshold_true, r_threshold_true, flag_cols, show_cd_display, default_drop, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict
 
 @trend.callback(Output('out_flag_trigger', 'data'),
                   [Input('sector', 'data'),
@@ -2359,7 +2387,7 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
                 State('store_flag_cols', 'data'),
                 State('v_threshold_true', 'data'),
                 State('r_threshold_true', 'data')])
-#@Timer("Display Summary")
+
 def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_init, flag_cols, v_threshold_true, r_threshold_true):
     if sector_val is None or success_init == False:
         raise PreventUpdate
@@ -3754,11 +3782,12 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
     return fig_x, x_ts_display, fig_y, y_ts_display, False
 
 @trend.callback(Output('home-url','pathname'),
-                  [Input('logout-button','n_clicks')])
+                  [Input('logout-button','n_clicks'),
+                  Input('confirm_msq_refresh', 'cancel_n_clicks')])
 #@Timer("Logout")
-def logout(n_clicks):
+def logout(n_clicks_logout, n_clicks_refresh):
     '''clear the session and send user to login'''
-    if n_clicks is None or n_clicks==0:
+    if (n_clicks_logout is None or n_clicks_logout==0) and (n_clicks_refresh is None or n_clicks_refresh==0):
         return no_update
     session['authed'] = False
     return '/login'

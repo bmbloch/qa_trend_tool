@@ -72,6 +72,12 @@ def get_app_layout():
                     ], style={'text-align': 'center', 'vertical-align': 'middle'}),
                     html.Div([
                         dcc.ConfirmDialog(
+                        id='confirm_msq_refresh',
+                        displayed=False,
+                        ),
+                    ]),
+                    html.Div([
+                        dcc.ConfirmDialog(
                         id='confirm_finalizer',
                         displayed=False,
                         message="Clicking OK will finalize the trend and overwrite any existing finalized files previously created for this month"
@@ -81,16 +87,6 @@ def get_app_layout():
                         dbc.Alert(
                             html.P(id='logic_alert_text'),
                             id = "finalizer_logic_alert",
-                            dismissable=True,
-                            is_open=False,
-                            fade=False,
-                            color='danger',
-                        )
-                    ], style={'text-align': 'center', 'vertical-align': 'middle'}),
-                    html.Div([
-                        dbc.Alert(
-                            html.P(id='refresh_alert_text'),
-                            id = "refresh_alert",
                             dismissable=True,
                             is_open=False,
                             fade=False,
