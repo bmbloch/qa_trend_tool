@@ -69,18 +69,18 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     if variable_fix == "c":
         key_met_cols = ['newncsf', 'newncava', 'ncrenlev', 'newncrev', 'cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']
     elif variable_fix == "v":
-        key_met_cols = ['vac_chg_12', 'sqvac_chg_12', 'ss_vac_chg', 'vac_roldiff', 'newncava', 'nc_surabs', 'vacdrops', 'vacflats', 'vacincrs', 'met_sur_totabs', 'met_sur_v_cov_perc', 'met_avg_mos_to_last_vacsur', 'avail10d', 'sub_sur_totabs', 'sub_sur_v_cov_perc', 'sub_avg_mos_to_last_vacsur']
+        key_met_cols = ['vac_chg_ytd', 'vac_chg_12', 'sqvac_chg_12', 'ss_vac_chg', 'vac_roldiff', 'newncava', 'nc_surabs', 'vacdrops', 'vacflats', 'vacincrs', 'met_sur_totabs', 'met_sur_v_cov_perc', 'met_avg_mos_to_last_vacsur', 'avail10d', 'sub_sur_totabs', 'sub_sur_v_cov_perc', 'sub_avg_mos_to_last_vacsur']
 
         if sector_val != "apt":
             key_met_cols.remove('vac_chg_12')
             key_met_cols.remove('sqvac_chg_12')
     elif variable_fix == "g":
-        key_met_cols = ['ncrenlev', 'newncrev', 'dqren10d', 'ss_rent_chg', 'sub1to99_Grenx', 'G_mrent_12', 'sq_Gmrent_12', 'rentdrops', 'rentflats', 'rentincrs', 'gmrent_roldiff', 'met_g_renx_mo_wgt', 'met_sur_r_cov_perc', 'met_avg_mos_to_last_rensur', 'sub_g_renx_mo_wgt', 'sub_sur_r_cov_perc', 'sub_avg_mos_to_last_rensur']
+        key_met_cols = ['G_mrent_ytd', 'ncrenlev', 'newncrev', 'dqren10d', 'ss_rent_chg', 'sub1to99_Grenx', 'G_mrent_12', 'sq_Gmrent_12', 'rentdrops', 'rentflats', 'rentincrs', 'gmrent_roldiff', 'met_g_renx_mo_wgt', 'met_sur_r_cov_perc', 'met_avg_mos_to_last_rensur', 'sub_g_renx_mo_wgt', 'sub_sur_r_cov_perc', 'sub_avg_mos_to_last_rensur']
         if sector_val != "apt":
             key_met_cols.remove('G_mrent_12')
             key_met_cols.remove('sq_Gmrent_12')
     elif variable_fix == "e":
-        key_met_cols = ['gmerent_roldiff', 'gap_perc_5', 'gap_perc_95']
+        key_met_cols = ['gap_chg_ytd', 'gmerent_roldiff', 'gap_perc_5', 'gap_perc_95']
 
     dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']] = np.where(dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']] == 0, np.nan, dataframe[['cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']])
     dataframe['cons_roldiff'] = dataframe['cons_roldiff'].fillna(method='ffill')

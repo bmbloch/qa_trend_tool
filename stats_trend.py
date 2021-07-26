@@ -59,6 +59,11 @@ def calc_stats(data, curryr, currmon, first, sector_val):
     data['G_mrent_12'] = np.where((data['identity'] == data['identity'].shift(11)) & (data['curr_tag'] == 1), (data['mrent'] - data['mrent'].shift(11)) / data['mrent'].shift(11), np.nan)
     data['sq_Gmrent_12'] = np.where((data['identity'] == data['identity'].shift(11)) & (data['curr_tag'] == 1), (data['sqsren'] - data['sqsren'].shift(11)) / data['sqsren'].shift(11), np.nan)
 
+    # Calculate the published YTD vac chg, market rent chg, and gap chg
+    
+    data['vac_chg_ytd'] = np.where(data['curr_tag'] == 1, data['vac'] - data['vac'].shift(periods=currmon), np.nan)
+    data['G_mrent_ytd'] = np.where(data['curr_tag'] == 1, (data['mrent'] - data['mrent'].shift(periods=currmon)) / data['mrent'].shift(periods=currmon), np.nan)
+    data['gap_chg_ytd'] = np.where(data['curr_tag'] == 1, data['gap'] - data['gap'].shift(periods=currmon), np.nan)
 
     return data
 

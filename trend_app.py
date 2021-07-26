@@ -180,6 +180,9 @@ def get_types(sector_val):
     type_dict['final Gmrent ytd'] = 'numeric'
     type_dict['final gapchg ytd'] = 'numeric'
     type_dict['metsq Gmrent'] = 'numeric'
+    type_dict['vac chg ytd'] = 'numeric'
+    type_dict['Gmrent ytd'] = 'numeric'
+    type_dict['gap chg ytd'] = 'numeric'
 
     
     type_dict['Subsector'] = 'text'
@@ -275,6 +278,9 @@ def get_types(sector_val):
     format_dict['final gapchg ytd'] = FormatTemplate.percentage(2)
     format_dict['metsq Gmrent'] = FormatTemplate.percentage(2)
     format_dict['rol Gmrent'] = FormatTemplate.percentage(2)
+    format_dict['vac chg ytd'] = FormatTemplate.percentage(2)
+    format_dict['Gmrent ytd'] = FormatTemplate.percentage(2)
+    format_dict['gap chg ytd'] = FormatTemplate.percentage(2)
     
     format_dict['Survey Cover Pct'] = FormatTemplate.percentage(1)
     format_dict['% Currmon Trend Rows W Flag'] = FormatTemplate.percentage(1)
@@ -1475,11 +1481,11 @@ def intial_load(sector_val, curryr, currmon, msq_load):
     else:
         data, data_temp, decision_data_temp, refresh_list, file_load_error, file_used = initial_load(sector_val, curryr, currmon, msq_load)
         use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
-
+        
         if file_load_error == False:
             if len(refresh_list) > 0:
                 refresh_alert = True
-                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". Click OK to replace all prior shims at these subs with the new oob figures. Click Cancel if you do not want to insert the new prelims, and restore the original oob file to the InputFiles folder."
+                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". \n\n Click OK to replace all prior shims at these subs with the new oob figures. \n\n Click Cancel if you do not want to insert the new prelims, and restore the original oob file to the InputFiles folder."
                 data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
                 decision_data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
             else:
@@ -1517,17 +1523,18 @@ def intial_load(sector_val, curryr, currmon, msq_load):
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
                  Input('file_load_alert', 'is_open'),
-                 Input('confirm_msq_refresh', 'submit_n_clicks')],
+                 Input('confirm_msq_refresh', 'submit_n_clicks'),
+                 Input('confirm_msq_refresh', 'cancel_n_clicks')],
                  [State('store_flag_cols', 'data'),
                  State('store_msq_load', 'data'),
                  State('input_file', 'data')])
 
-def process_init_file(sector_val, curryr, currmon, load_error, confirm_msq_refresh, flag_cols, msq_load, file_used):
-
-    if sector_val is None or load_error == True or (confirm_msq_refresh == None and file_used == "edits"):
+def process_init_file(sector_val, curryr, currmon, load_error, yes_refresh, no_refresh, flag_cols, msq_load, file_used):
+    
+    if sector_val is None or load_error == True or no_refresh == 1:
         raise PreventUpdate
     else:
-        if confirm_msq_refresh == 1:
+        if yes_refresh == 1:
 
             data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
             decision_data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
@@ -1537,7 +1544,7 @@ def process_init_file(sector_val, curryr, currmon, load_error, confirm_msq_refre
         
         data, orig_cols, ncsur_prop_dict, avail_10_dict, all_avail_dict, rg_10_dict, all_rg_dict, newnc_dict = process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         
-        if confirm_msq_refresh == 1:
+        if yes_refresh == 1:
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
             data_to_save = data.copy()
             data_to_save = data_to_save[orig_cols]
@@ -2728,6 +2735,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         key_metrics = key_metrics.rename(columns={'met g renx mo wgt': 'met grenx mo wgt', 'sub g renx mo wgt': 'sub grenx mo wgt', 'c met g renx mo wgt': 'c met grenx mo wgt',
                                             'c sub g renx mo wgt': 'c sub grenx mo wgt','n met g renx mo wgt': 'n met grenx mo wgt','n sub g renx mo wgt': 'n sub grenx mo wgt',
                                             'nc met g renx mo wgt': 'nc met grenx mo wgt','nc sub g renx mo wgt': 'nc sub grenx mo wgt', 'G mrent 12': 'Gmrent 12'})
+        key_metrics = key_metrics.rename(columns={'G mrent ytd': 'Gmrent ytd'})
         
         # Set up tooltips for key metrics table that will display key id level information
         underline_cols = []
