@@ -5,46 +5,54 @@ import dash_core_components as dcc
 import dash_table
 import dash_daq as daq
 
-def get_app_layout():
+def get_app_layout(curryr, currmon, sector_val):
+
+    sector_long = {'apt': 'Apartment', 'ind': 'Industrial', 'off': 'Office', 'ret': 'Retail'}
+    navbar_title = sector_long[sector_val] + " " + "Trend Review " + str(curryr) + "m" + str(currmon)
 
     navbar = dbc.Navbar(
     [
-        html.Div([  
-            dbc.Row(
-            dbc.Col(
-                dbc.Button('Export Data',id='download-button',color='primary',block=True, size='sm'),
-                width=20
-                    ),
-                justify='center'
-                    ),
-                ], style={'display': 'inline-block', 'padding-left': '1450px'}),  
         html.Div([
-            dbc.Row(
-            dbc.Col(
-                dbc.Button('Export Flags',id='flag-button',color='warning',block=True, size='sm'),
-                width=20
-                    ),
-                justify='center'
-                    ),
-                ], style={'display': 'inline-block', 'padding-left': '50px'}),
-        html.Div([
-            dbc.Row(
-            dbc.Col(
-                dbc.Button('Finalize Trend',id='finalize-button',color='success',block=True, size='sm'),
-                width=20
-                    ),
-                justify='center'
-                    ),
-                ], style={'display': 'inline-block', 'padding-left': '50px'}),
-        html.Div([
-            dbc.Row(
-            dbc.Col(
-                dbc.Button('Logout',id='logout-button',color='danger',block=True, size='sm'),
-                width=20
-                    ),
-                justify='center'
-                    ),
-                ], style={'display': 'inline-block', 'padding-left': '50px'}),
+            html.Div([
+                html.P(navbar_title)
+                ], style={'font-size': '24px', 'width': '400px', 'display': 'inline-block'}),
+            html.Div([  
+                dbc.Row(
+                dbc.Col(
+                    dbc.Button('Export Data',id='download-button',color='primary',block=True, size='sm'),
+                    width=20
+                        ),
+                    justify='center'
+                        ),
+                    ], style={'display': 'inline-block', 'padding-left': '260px'}),  
+            html.Div([
+                dbc.Row(
+                dbc.Col(
+                    dbc.Button('Export Flags',id='flag-button',color='warning',block=True, size='sm'),
+                    width=20
+                        ),
+                    justify='center'
+                        ),
+                    ], style={'display': 'inline-block', 'padding-left': '50px'}),
+            html.Div([
+                dbc.Row(
+                dbc.Col(
+                    dbc.Button('Finalize Trend',id='finalize-button',color='success',block=True, size='sm'),
+                    width=20
+                        ),
+                    justify='center'
+                        ),
+                    ], style={'display': 'inline-block', 'padding-left': '50px'}),
+            html.Div([
+                dbc.Row(
+                dbc.Col(
+                    dbc.Button('Logout',id='logout-button',color='danger',block=True, size='sm'),
+                    width=20
+                        ),
+                    justify='center'
+                        ),
+                    ], style={'display': 'inline-block', 'padding-left': '50px'}),
+        ], style={'padding-left': '750px'}),
     ],
     fixed='top'
     )
