@@ -196,6 +196,9 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Dont flag if there is very strong survey magnitude that therefore might be getting applied from the lagged 3 periods of the trend rent recommendation formula
     data['g_flag_sqdiff'] = np.where((data['g_flag_sqdiff'] == 1) & (data['sq_Gmrent'] * data['G_mrent'] > 0) & (data['sub_g_renx_mo_wgt_fill'] * data['G_mrent'] > 0) & (abs(data['G_mrent']) <= abs(data['sub_g_renx_mo_wgt_fill'] / 3)) & (data['sub_sur_r_cov_perc'] > 0.02), 0, data['g_flag_sqdiff'])
 
+    # Dont flag if there is a shim and the new value is supported by survey data
+    data['g_flag_sqdiff'] = np.where((data['g_flag_sqdiff'] == 1) & (data['G_mrent'] != data['G_mrent_oob']) & (abs(data['G_mrent']) <= abs(data['sub_g_renx_mo_wgt_fill']) + 0.001) & (data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] >= 0), 0, data['g_flag_sqdiff'])
+
     data['calc_gsqdiff'] = np.where(data['g_flag_sqdiff'] > 0, abs(data['G_mrent'] - data['sq_Gmrent']), np.nan)
 
     # Flag cases where the published rent change is significantly different than the surveyed rent change, with coverage thresholds set
