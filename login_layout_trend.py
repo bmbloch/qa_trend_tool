@@ -29,7 +29,10 @@ def get_login_layout():
     for folder in dirlist:
         if (int(folder[0:4]) == latest_year and int(folder[-1:]) >= latest_month) or int(folder[0:4]) > latest_year:
             latest_year = int(folder[0:4])
-            latest_month = int(folder[-1:])
+            if len(folder) == 7:
+                latest_month = int(folder[-2:])
+            else:
+                latest_month = int(folder[-1:])
 
     return html.Div([
             dcc.Location(id='login-url',pathname='/login',refresh=False),
@@ -79,9 +82,9 @@ def get_login_layout():
                             html.Div([
                                 html.Div([
                                     dcc.Dropdown(id='login-curryr', 
-                                                options=[{'value': latest_year - 1, 'label': datetime.now().year - 1}, 
-                                                            {'value': latest_year, 'label': datetime.now().year},
-                                                            {'value': latest_year + 1, 'label': datetime.now().year + 1}],
+                                                options=[{'value': latest_year - 1, 'label': latest_year - 1}, 
+                                                            {'value': latest_year, 'label': latest_year},
+                                                            {'value': latest_year + 1, 'label': latest_year + 1}],
                                                 multi=False,
                                                 value=latest_year,
                                                 ),
