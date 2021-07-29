@@ -392,7 +392,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         paths = []
         for path in pathlist:
             paths.append(str(path))
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(np.ceil(mp.cpu_count()/2))
         result_async = [pool.apply_async(load_msqs, args = (sector_val, path, )) for path in
                         paths]
         results = [r.get() for r in result_async]
@@ -445,7 +445,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             if r.match(testing) != None and testing_folder == "output" and (m_year > curryr or (m_month >= currmon and m_year == curryr)):
                 paths.append(path_in_str)
 
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(np.ceil(mp.cpu_count()/2))
         result_async = [pool.apply_async(load_msqs, args = (sector_val, path, )) for path in
                         paths]
         results = [r.get() for r in result_async]
