@@ -392,7 +392,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         paths = []
         for path in pathlist:
             paths.append(str(path))
-        pool = mp.Pool(np.ceil(mp.cpu_count()/2))
+        pool = mp.Pool(np.ceil(mp.cpu_count()*0.7))
         result_async = [pool.apply_async(load_msqs, args = (sector_val, path, )) for path in
                         paths]
         results = [r.get() for r in result_async]
