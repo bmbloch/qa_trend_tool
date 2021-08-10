@@ -38,16 +38,34 @@ def load_init_input(sector_val, curryr, currmon):
         frames = []
         for subsector in ["DW", "F"]:
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
-            data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-            frames.append(data_in)
-        data_in = frames[0].append(frames[1], ignore_index=True)
+            isFile = os.path.isfile(file_path)
+            if isFile == True:
+                file_path = Path(file_path)
+                data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+                frames.append(data_in)
+            else:
+                break
+        if isFile == True:
+            data_in = frames[0].append(frames[1], ignore_index=True)
+            file_load_error = False
+        else:
+            file_load_error = True
+            data_in = pd.DataFrame()
+    
     elif sector_val == "apt" or sector_val == "off":
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
-        data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-        cols = list(data.columns)
-        data_in['subsector'] = sector_val.title()
-        new_cols = ['subsector'] + cols
-        data_in = data_in[new_cols]
+        isFile = os.path.isfile(file_path)
+        if isFile == True:
+            data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+            cols = list(data.columns)
+            data_in['subsector'] = sector_val.title()
+            new_cols = ['subsector'] + cols
+            data_in = data_in[new_cols]
+            file_load_error = False
+        else:
+            file_load_error = True
+            data_in = pd.DataFrame()
+    
     elif sector_val == "ret":
         frames = []
         for subsector in ['C', 'N', "NC"]:
@@ -55,12 +73,21 @@ def load_init_input(sector_val, curryr, currmon):
                 file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
             else:
                 file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-tier3-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
-            data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-            frames.append(data_in)
-        data_in = frames[0].append(frames[1], ignore_index=True)
-        data_in = data_in.append(frames[2], ignore_index=True)
+            isFile = os.path.isfile(file_path)
+            if isFile == True:
+                data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
+                frames.append(data_in)
+            else:
+                break
+        if isFile == True:
+            data_in = frames[0].append(frames[1], ignore_index=True)
+            data_in = data_in.append(frames[2], ignore_index=True)
+            file_load_error = False
+        else:
+            file_load_error = True
+            data_in = pd.DataFrame()
 
-    return data_in
+    return data_in, file_load_error
 
 def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
 
@@ -197,25 +224,29 @@ def initial_load(sector_val, curryr, currmon, msq_load):
     
     # Load the input file - if this is the first time the program is run, the oob data should be loaded in, and if this is not the first time, then the edits data should be loaded in
     # If the msqs have been refreshed, we will also load the oob file, as there may be new prelim values that should be used and patched in 
-    try:
-        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
+    
+    file_path = "{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_mostrecentsave.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)
+    isFile = os.path.isfile(file_path)
+    if isFile == True: 
         data = pd.read_pickle(file_path)
         file_used = "edits"
         file_load_error = False
         print("Using Saved File")
-            
-    except:
-        file_used = "oob"
+    else:
+        data, file_load_error = load_init_input(sector_val, curryr, currmon)
+        if file_load_error == True:
+            file_used = 'error'
+        else:
+            file_used = "oob"
         print("Initial Load")
     
     # If the MSQs were refreshed, replace the original oob figures for the key vars where there is a diff now due to the msq changes
     # Also replace the survey data that is generated by sqinsight and the two trend STATA programs, as those values may also now be different due to changes at the MSQs
     if file_used == "edits" and msq_load == "Y" and file_load_error == False:
-        try:
-            data_refresh = load_init_input(sector_val, curryr, currmon)
-            data_temp, refresh_list, decision_data_temp = refresh_data(sector_val, curryr, currmon, data, data_refresh)
-        except:
-            file_load_error = True
+        data_refresh, file_load_error = load_init_input(sector_val, curryr, currmon)
+        if file_load_error == False:
+                data_temp, refresh_list, decision_data_temp = refresh_data(sector_val, curryr, currmon, data, data_refresh)
+        else:
             file_used = "error"
             refresh_list = []
             data_refresh = pd.DataFrame()
@@ -225,14 +256,6 @@ def initial_load(sector_val, curryr, currmon, msq_load):
         refresh_list = []
         data_temp = pd.DataFrame()
         decision_data_temp = pd.DataFrame()
-    
-    if file_used == "oob":
-        try:
-            data = load_init_input(sector_val, curryr, currmon)
-            file_load_error = False
-        except:
-            file_load_error = True
-            file_used = "error"
 
     return data, data_temp, decision_data_temp, refresh_list, file_load_error, file_used
     
