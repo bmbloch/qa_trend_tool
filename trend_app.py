@@ -1035,6 +1035,9 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
             decision_data_update.loc[drop_val, 'erent_comment'] = erent_c
         decision_data_update = decision_data_update.reset_index().set_index('identity_row')
 
+    for col in ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
+        decision_data_update[col] = np.where(decision_data_update[col] == 'nan', np.nan, decision_data_update[col]) 
+
     return decision_data_update
 
 # This function filters out submarkets flagged for a specific flag chosen by the user on the Home tab, and creates the necessary table and styles for display
@@ -1632,11 +1635,14 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
 
             decision_data['gap_new'] = np.where((abs(decision_data['mrent_diff']) > 0.001) | (abs(decision_data['merent_diff'] > 0.001)), decision_data['gap_oob'], decision_data['gap_new'])
             
-            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['i_user'])
-            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", decision_data['c_user'])
-            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001), "Cons Auto Rebench", decision_data['v_user'])
-            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['g_user'])
-            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", decision_data['e_user'])
+            decision_data['i_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", np.nan)
+            decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", np.nan)
+            decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
+            decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
+            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
+
+            for col in ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
+                decision_data[col] = np.where(decision_data[col] == 'nan', np.nan, decision_data[col]) 
 
             decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
         
