@@ -112,16 +112,6 @@ def get_app_layout(curryr, currmon, sector_val):
             dcc.Tabs(id ='tab_clicked', value ='home', children=[
                 dcc.Tab(label='Home', value='home', children=[
                     html.Div([
-                        dbc.Alert(
-                            "Something is wrong with the input file. Double check and re-start the program",
-                            id = "file_load_alert",
-                            dismissable=True,
-                            is_open=False,
-                            fade=False,
-                            color='danger',
-                        )
-                    ], style={'text-align': 'center', 'vertical-align': 'middle'}),
-                    html.Div([
                         dcc.ConfirmDialog(
                         id='confirm_msq_refresh',
                         displayed=False,

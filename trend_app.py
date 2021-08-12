@@ -1400,14 +1400,16 @@ trend.layout = html.Div([
 
 # Check to see what url the user entered into the web browser, and return the relevant page based on their choice
 @trend.callback(Output('page-content','children'),
-                  [Input('url','pathname')],
-                  [State('login-curryr', 'value'),
-                  State('login-currmon', 'value'),
-                  State('sector_input', 'value')])
+                 [Input('url','pathname')],
+                 [State('login-curryr', 'value'),
+                 State('login-currmon', 'value'),
+                 State('sector_input', 'value')])
 #@Timer("URL Check")
 def router(pathname, curryr, currmon, sector_val):
+
     if pathname[0:5] == '/home':
         return app_layout(curryr, currmon, sector_val)
+    
     elif pathname == '/login':
         return login_layout()
     else:
@@ -1427,12 +1429,44 @@ def router(pathname, curryr, currmon, sector_val):
                     State('flag_flow_input', 'value')])
 #@Timer("Login Auth")
 def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, flag_flow):
+    input_file_alert = False
 
+    if sector_input == "ind":
+        for subsector in ['DW', 'F']:
+            file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/indsub_{}_{}m{}-ysis.csv".format(get_home(), sector_input, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+            isFile = os.path.isfile(file_path)
+            if isFile == True:
+                input_file_alert = False
+            else:
+                input_file_alert = True
+                break
+    elif sector_input == "apt" or sector_input == "off":
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_input, str(curryr), str(currmon), sector_input, str(curryr), str(currmon)))
+        isFile = os.path.isfile(file_path)
+        if isFile == True:
+            input_file_alert = False
+        else:
+            input_file_alert = True
+
+    elif sector_input == "ret":
+        for subsector in ['C', 'N', 'NC']:
+            if subsector == "C" or subsector == "N":
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-ysis.csv".format(get_home(), sector_input, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+            else:
+                file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/retsub_{}_{}m{}-tier3-ysis.csv".format(get_home(), sector_input, str(curryr), str(currmon), subsector, str(curryr), str(currmon)))
+            
+            isFile = os.path.isfile(file_path)
+            if isFile == True:
+                input_file_alert = False
+            else:
+                input_file_alert = True
+                break
+    
     if n_clicks is None or n_clicks==0:
         return '/login', no_update, '', 
     else:
         credentials = {'user': username, "password": pw, "sector": sector_input}
-        if authenticate_user(credentials) == True:
+        if authenticate_user(credentials) == True and input_file_alert == False:
             session['authed'] = True
             pathname = '/home' + "?"
             if len(msq_load) == 0:
@@ -1442,10 +1476,14 @@ def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, 
             return pathname, '', username + "/" + sector_input.title() + "/" + str(curryr) + "m" + str(currmon) + "/" + msq_load + "/" + flag_flow
         else:
             session['authed'] = False
+
             if sector_input == None:
                 message = 'Select a Sector.'
-            else:
+            elif authenticate_user(credentials) == False:
                 message = 'Incorrect credentials.'
+            elif input_file_alert == True:
+                message = 'Input files not set up correctly.'
+                
             return no_update, dbc.Alert(message, color='danger', dismissable=True), no_update
 
 
@@ -1469,7 +1507,6 @@ def store_input_vals(url_input):
         return user, sector_val.lower(), curryr, currmon, msq_load, flag_flow
 
 @trend.callback([Output('input_file', 'data'),
-                Output('file_load_alert', 'is_open'),
                 Output('confirm_msq_refresh', 'displayed'),
                 Output('confirm_msq_refresh', 'message')],
                 [Input('sector', 'data'),
@@ -1477,28 +1514,24 @@ def store_input_vals(url_input):
                 Input('currmon', 'data'),
                 Input('store_msq_load', 'data')])
 
-def intial_load(sector_val, curryr, currmon, msq_load):
+def check_refresh(sector_val, curryr, currmon, msq_load):
 
     if sector_val is None:
         raise PreventUpdate
     else:
-        data, data_temp, decision_data_temp, refresh_list, file_load_error, file_used = initial_load(sector_val, curryr, currmon, msq_load)
+        data, data_temp, decision_data_temp, refresh_list, file_used = initial_load(sector_val, curryr, currmon, msq_load)
         use_pickle("out", "main_data_" + sector_val, data, curryr, currmon, sector_val)
         
-        if file_load_error == False:
-            if len(refresh_list) > 0:
-                refresh_alert = True
-                alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". \n\n Click OK to replace all prior shims at these subs with the new oob figures. \n\n Click Cancel if you do not want to insert the new prelims, and restore the original oob file to the InputFiles folder."
-                data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
-                decision_data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
-            else:
-                refresh_alert = False
-                alert_text = ""
+        if len(refresh_list) > 0:
+            refresh_alert = True
+            alert_text = "The following subs had their initial oob values updated based on changes to the MSQs: " + ', '.join(map(str, refresh_list)) + ". \n\n Click OK to replace all prior shims at these subs with the new oob figures. \n\n Click Cancel if you do not want to insert the new prelims, and restore the original oob file to the InputFiles folder."
+            data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
+            decision_data_temp.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
         else:
-            refresh_alert = no_update
-            alert_text = no_update
+            refresh_alert = False
+            alert_text = ""
 
-        return file_used, file_load_error, refresh_alert, alert_text
+        return file_used, refresh_alert, alert_text
 
 @trend.callback([Output('dropman', 'options'),
                  Output('droproll', 'options'),
@@ -1525,18 +1558,18 @@ def intial_load(sector_val, curryr, currmon, msq_load):
                  [Input('sector', 'data'),
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
-                 Input('file_load_alert', 'is_open'),
                  Input('confirm_msq_refresh', 'submit_n_clicks'),
                  Input('confirm_msq_refresh', 'cancel_n_clicks')],
                  [State('store_flag_cols', 'data'),
                  State('store_msq_load', 'data'),
                  State('input_file', 'data')])
 
-def process_init_file(sector_val, curryr, currmon, load_error, yes_refresh, no_refresh, flag_cols, msq_load, file_used):
+def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, flag_cols, msq_load, file_used):
     
-    if sector_val is None or load_error == True or no_refresh == 1:
+    if sector_val is None or no_refresh == 1:
         raise PreventUpdate
     else:
+
         if yes_refresh == 1:
 
             data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
