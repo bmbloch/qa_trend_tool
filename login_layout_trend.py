@@ -110,7 +110,7 @@ def get_login_layout():
                                 html.Div([
                                     dcc.Checklist(
                                         id='msq_load',
-                                        value=["Y"],
+                                        value=['N'],
                                         options=[
                                             {'label': ' MSQs Updated', 'value': 'Y'},
                                             ],
