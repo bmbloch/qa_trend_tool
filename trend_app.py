@@ -1577,7 +1577,10 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
 
             data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/data_refresh_{}.pickle".format(get_home(), sector_val)))
             decision_data = pd.read_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/decision_data_refresh_{}.pickle".format(get_home(), sector_val)))
+            orig_decision_data = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
+            orig_decision_data.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/archived_decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
             decision_data.to_pickle(Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/decision_log_{}.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val)))
+            
         else:
             data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
         
