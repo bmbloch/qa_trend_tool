@@ -1559,12 +1559,12 @@ def check_refresh(sector_val, curryr, currmon, msq_load):
                  Input('curryr', 'data'),
                  Input('currmon', 'data'),
                  Input('confirm_msq_refresh', 'submit_n_clicks'),
-                 Input('confirm_msq_refresh', 'cancel_n_clicks')],
+                 Input('confirm_msq_refresh', 'cancel_n_clicks'),
+                 Input('input_file', 'data')],
                  [State('store_flag_cols', 'data'),
-                 State('store_msq_load', 'data'),
-                 State('input_file', 'data')])
+                 State('store_msq_load', 'data')])
 
-def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, flag_cols, msq_load, file_used):
+def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file_used, flag_cols, msq_load):
     
     if sector_val is None or no_refresh == 1:
         raise PreventUpdate
