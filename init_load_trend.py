@@ -856,12 +856,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
     if sector_val == "ind":
         msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
-
-    if file_used == "edits" and msq_load == "Y":
-        data = data.drop(['sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
-
-    if (file_used == "edits" and msq_load == "Y") or file_used == "oob":
-        data = data.join(msq_data_sub, on='join_ident')
+    
+    data = data.join(msq_data_sub, on='join_ident')
     data = data.drop(['join_ident'], axis=1)
     
     # Join in the most up to date sq insight stats (although this will only be refreshed if the actual sqinsight.do file is run after making edits to the msqs)
