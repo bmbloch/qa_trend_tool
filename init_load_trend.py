@@ -1037,7 +1037,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     data_surabs = data_surabs[(data_surabs['yr'] == curryr) & (data_surabs['currmon'] == currmon)]
     data_surabs = data_surabs[((data_surabs['yearx'] == curryr) & (data_surabs['month'] == currmon)) | (data_surabs['nc_first_surv'] == 1)]
     data_surabs['nc_surabs'] = np.where((data_surabs['availxM'] == 0), data_surabs['sizex'] - data_surabs['totavailx'], 0)
-    data_surabs['nc_surabs'] = np.where((data_surabs['availxM'] == 0) & (data_surabs['new_to_sq'] == 1) & (data_surabs['totavailx'].shift(1).isnull() == False) & (data_surabs['id'] == data_surabs['id'].shift(1)), data_surabs['currmon_abs'], data_surabs['nc_surabs'])
+    data_surabs['nc_surabs'] = np.where((data_surabs['availxM'] == 0) & (data_surabs['new_to_sq'] == 1) & (data_surabs['currmon_abs'].isnull() == False), data_surabs['currmon_abs'], data_surabs['nc_surabs'])
     data_surabs['nc_surabs'] = np.where((data_surabs['new_to_sq'] == 1) & (data_surabs['nc_surabs'] < 0), 0, data_surabs['nc_surabs'])
 
     data_surabs['sum_nc_surabs'] = data_surabs.groupby('identity')['nc_surabs'].transform('sum')
@@ -1053,7 +1053,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     data_surabs = data_surabs.set_index('identity')
     data = data.join(data_surabs, on='identity')
     data['nc_surabs'] = data['nc_surabs'].fillna(0)
-    display(data[(data['nc_surabs'] > 0) & (data['curr_tag'] == 1)][['nc_surabs']])
 
     # Get the ids that have greater than zero nc surabs, for display in tooltip for key metrics table
     nc_sur_props = data_surabs_all.copy()
