@@ -825,6 +825,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         msq_data = msq_data.join(msq_data3.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
         msq_data = msq_data.set_index('join_ident')
         msq_data['sqcons'] = msq_data['sqcons'].fillna(0)
+        if sector_val != "apt":
+            msq_data['sqcons'] = round(msq_data['sqcons'], -3)
 
         if sector_val == "ind":
             msq_data.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True, True], inplace=True)
