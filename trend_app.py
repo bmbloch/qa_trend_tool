@@ -2517,6 +2517,7 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
                 Output('man_view', 'columns'),
                 Output('man_view', 'style_data_conditional'),
                 Output('man_view_container', 'style'),
+                Output('man_view', 'style_cell_conditional'),
                 Output('key_metrics', 'data'),
                 Output('key_metrics', 'columns'),
                 Output('key_metrics_container', 'style'),
@@ -2614,6 +2615,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
         shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
 
+        
         # Drop flag columns to reduce dimensionality
         data = data.drop(flag_cols, axis=1)
 
@@ -3026,9 +3028,37 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             key_met_title = "Market Rent Key Metrics"
         elif key_met_val == "e":
             key_met_title = "Effective Rent Key Metrics"
+
+        # Set the column width of the main data display
+        dict_val = {}
+        style_cell_conditional = []
+
+        adjust_dict = {'conv shim': '4%',
+                       'demo shim': '4%',
+                       'avail shim': '4%',
+                       'mrent shim': '4%',
+                       'merent shim': '4%',
+                       'month': '4%',
+                       'rol merent': '4%',
+                       'sq vac': '4%',
+                       'sq vac chg': '4%',
+                       'sq avail': '4%',
+                       'sq Gmrent': '4%',
+                       'merent': '4%',
+                       'Gmerent': '4%'
+                    }
+
+        base = '3%'
+        
+        for x in list(display_data.columns):
+            if x not in list(adjust_dict.keys()):
+                temp_dict = {'if': {'column_id': x}, 'width': base}
+            else:
+                temp_dict = {'if': {'column_id': x}, 'width': adjust_dict[x]}
+            style_cell_conditional.append(temp_dict)
     
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
-                            for i in range(0, len(display_cols))], highlighting_display, man_view_display, key_metrics.to_dict('records'), [{'name': [key_met_title, key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
+                            for i in range(0, len(display_cols))], highlighting_display, man_view_display, style_cell_conditional, key_metrics.to_dict('records'), [{'name': [key_met_title, key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
                             for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_key_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
                             for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
 

@@ -10,6 +10,14 @@ def get_app_layout(curryr, currmon, sector_val):
     sector_long = {'apt': 'Apartment', 'ind': 'Industrial', 'off': 'Office', 'ret': 'Retail'}
     navbar_title = sector_long[sector_val] + " " + "Trend Review " + str(curryr) + "m" + str(currmon)
 
+    # Can remove this if DC starts using a monitor instead of just laptop screen
+    if sector_val == "ret":
+        padding_title = '600px'
+        padding_button = '50px'
+    else:
+        padding_title = '750px'
+        padding_button = '260px'
+
     navbar = dbc.Navbar(
     [
         html.Div([
@@ -24,7 +32,7 @@ def get_app_layout(curryr, currmon, sector_val):
                         ),
                     justify='center'
                         ),
-                    ], style={'display': 'inline-block', 'padding-left': '260px'}),  
+                    ], style={'display': 'inline-block', 'padding-left': padding_button}),  
             html.Div([
                 dbc.Row(
                 dbc.Col(
@@ -52,7 +60,7 @@ def get_app_layout(curryr, currmon, sector_val):
                     justify='center'
                         ),
                     ], style={'display': 'inline-block', 'padding-left': '50px'}),
-        ], style={'padding-left': '750px'}),
+        ], style={'padding-left': padding_title}),
     ],
     fixed='top'
     )
@@ -315,54 +323,6 @@ def get_app_layout(curryr, currmon, sector_val):
                                 page_action='none',
                                 style_table={'height': '510px', 'overflowY': 'auto'},
                                 fixed_rows={'headers': True},
-                                style_cell_conditional=[
-                                    {'if': {'column_id': 'inv shim'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'cons shim'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'conv shim'},
-                                            'width': '4%'},
-                                    {'if': {'column_id': 'demo shim'},
-                                            'width': '4%'},
-                                    {'if': {'column_id': 'avail shim'},
-                                            'width': '4%'},
-                                    {'if': {'column_id': 'mrent shim'},
-                                            'width': '4%'},
-                                    {'if': {'column_id': 'merent shim'},
-                                            'width': '4%'},
-                                    {'if': {'column_id': 'abs'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'sq abs'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'cons'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'conv'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'demo'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'sq cons'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'sq vac chg'},
-                                            'width': '3%'},
-                                        {'if': {'column_id': 'merent'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'Gmerent'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'sq Gmrent'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'month'},
-                                            'width': '4%'},
-                                    {'if': {'column_id': 'gap'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'gap chg'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'rol abs'},
-                                            'width': '3%'},
-                                    {'if': {'column_id': 'rol Gmrent'},
-                                            'width': '3%'},
-                                     {'if': {'column_id': 'rol merent'},
-                                            'width': '4%'},
-                                            ],
                                             ),
                                 ], style={'display': 'none'}, id='man_view_container'),
                             html.Div([
