@@ -1150,10 +1150,15 @@ def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
         if x == "identity":
             rank = data.copy()
             rank = rank[rank['curr_tag'] == 1]
+            if sector_val == "ind":
+                if roll_val[2:] == "DW":
+                    rank = rank[rank['subsector'] == "DW"]
+                else:
+                    rank = rank[rank['subsector'] == "F"]
         elif x == "identity_met":
             rank = rolled.copy()
             if sector_val == "ind":
-                if "DW" in roll_val:
+                if roll_val[2:] == "DW":
                     rank = rank[rank['subsector'] == "DW"]
                 else:
                     rank = rank[rank['subsector'] == "F"]
