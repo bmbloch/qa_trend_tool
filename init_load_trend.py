@@ -752,7 +752,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data1['sqvac_chg'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqvac'] - msq_data1['sqvac'].shift(1), np.nan)
             msq_data1['sq_Gmrent'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), (msq_data1['sqsren'] - msq_data1['sqsren'].shift(1)) / msq_data1['sqsren'].shift(1), np.nan)
         else:
-            msq_data1['sqabs'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqocc'] - msq_data1['metsqocc'].shift(1), np.nan)
+            msq_data1['sqabs'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqocc'] - msq_data1['sqocc'].shift(1), np.nan)
             msq_data1['sqvac_chg'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqvac'] - msq_data1['sqvac'].shift(1), np.nan)
             msq_data1['sq_Gmrent'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), (msq_data1['sqsren'] - msq_data1['sqsren'].shift(1)) / msq_data1['sqsren'].shift(1), np.nan)
         msq_data1['sq_Gmrent'] = round( msq_data1['sq_Gmrent'],3)
