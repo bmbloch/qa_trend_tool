@@ -656,7 +656,7 @@ def get_app_layout(curryr, currmon, sector_val):
                                         {'label': 'Gmrent', 'value': 'G_mrent'},
                                         {'label': 'Gap Chg', 'value': 'gap_chg'},
                                     ],
-                            value='vac_chg',
+                            value='cons',
                             labelStyle={'display': 'inline-block', 'margin': '0 10px 0 10px'}), 
                         ], style={'display': 'none'}, id='metro_sorts_container'),
                     html.Div([
