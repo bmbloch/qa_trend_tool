@@ -169,20 +169,22 @@ def get_types(sector_val):
     type_dict['Gmrent rank'] = 'numeric'
     type_dict['gap chg rank'] = 'numeric'
     type_dict['met wtdvacchg'] = 'numeric'
-    type_dict['final cons last3mos'] = 'numeric'
-    type_dict['final vacchg last3mos'] = 'numeric'
-    type_dict['final abs last3mos'] = 'numeric'
-    type_dict['final Gmrent last3mos'] = 'numeric'
-    type_dict['final gapchg last3mo'] = 'numeric'
-    type_dict['final cons ytd'] = 'numeric'
-    type_dict['final vacchg ytd'] = 'numeric'
-    type_dict['final abs ytd'] = 'numeric'
-    type_dict['final Gmrent ytd'] = 'numeric'
-    type_dict['final gapchg ytd'] = 'numeric'
+    type_dict['cons last3mos'] = 'numeric'
+    type_dict['vacchg last3mos'] = 'numeric'
+    type_dict['abs last3mos'] = 'numeric'
+    type_dict['Gmrent last3mos'] = 'numeric'
+    type_dict['gapchg last3mo'] = 'numeric'
+    type_dict['cons ytd'] = 'numeric'
+    type_dict['vacchg ytd'] = 'numeric'
+    type_dict['abs ytd'] = 'numeric'
+    type_dict['Gmrent ytd'] = 'numeric'
+    type_dict['gapchg ytd'] = 'numeric'
     type_dict['metsq Gmrent'] = 'numeric'
     type_dict['vac chg ytd'] = 'numeric'
     type_dict['Gmrent ytd'] = 'numeric'
     type_dict['gap chg ytd'] = 'numeric'
+    type_dict['sub wtdvacchg'] = 'numeric'
+
 
     
     type_dict['Subsector'] = 'text'
@@ -228,10 +230,10 @@ def get_types(sector_val):
     format_dict['newncsf'] = Format(group=",")
     format_dict['Surveyed Abs'] = Format(group=",")
     format_dict['nc surabs'] = Format(group=",")
-    format_dict['final cons last3mos'] = Format(group=",")
-    format_dict['final abs last3mos'] = Format(group=",")
-    format_dict['final cons ytd'] = Format(group=",")
-    format_dict['final abs ytd'] = Format(group=",")
+    format_dict['cons last3mos'] = Format(group=",")
+    format_dict['abs last3mos'] = Format(group=",")
+    format_dict['cons ytd'] = Format(group=",")
+    format_dict['abs ytd'] = Format(group=",")
     format_dict['rol abs'] = Format(group=",")
     
     format_dict['vac'] = FormatTemplate.percentage(2)
@@ -270,17 +272,18 @@ def get_types(sector_val):
     format_dict['gap perc 95'] = FormatTemplate.percentage(2)
     format_dict['Gmrent 12'] = FormatTemplate.percentage(2)
     format_dict['sq Gmrent 12'] = FormatTemplate.percentage(2)
-    format_dict['final vacchg last3mos'] = FormatTemplate.percentage(2)
-    format_dict['final Gmrent last3mos'] = FormatTemplate.percentage(2)
-    format_dict['final gapchg last3mo'] = FormatTemplate.percentage(2)
-    format_dict['final vacchg ytd'] = FormatTemplate.percentage(2)
-    format_dict['final Gmrent ytd'] = FormatTemplate.percentage(2)
-    format_dict['final gapchg ytd'] = FormatTemplate.percentage(2)
+    format_dict['vacchg last3mos'] = FormatTemplate.percentage(2)
+    format_dict['Gmrent last3mos'] = FormatTemplate.percentage(2)
+    format_dict['gapchg last3mo'] = FormatTemplate.percentage(2)
+    format_dict['vacchg ytd'] = FormatTemplate.percentage(2)
+    format_dict['Gmrent ytd'] = FormatTemplate.percentage(2)
+    format_dict['gapchg ytd'] = FormatTemplate.percentage(2)
     format_dict['metsq Gmrent'] = FormatTemplate.percentage(2)
     format_dict['rol Gmrent'] = FormatTemplate.percentage(2)
     format_dict['vac chg ytd'] = FormatTemplate.percentage(2)
     format_dict['Gmrent ytd'] = FormatTemplate.percentage(2)
     format_dict['gap chg ytd'] = FormatTemplate.percentage(2)
+    format_dict['sub wtdvacchg'] = FormatTemplate.percentage(2)
     
     format_dict['Survey Cover Pct'] = FormatTemplate.percentage(1)
     format_dict['% Currmon Trend Rows W Flag'] = FormatTemplate.percentage(1)
@@ -3136,7 +3139,10 @@ def output_rollup(roll_val, multi_view, currmon_view, sorts_val, tab_val, sector
                 for col in met_rank:
                     if "_" in col: 
                         met_rank.rename(columns={col: col.replace('_', ' ')}, inplace=True)
-                sub_rank = sub_rank.rename(columns={'G mrent': 'Gmrent', 'G mrent rank': 'Gmrent rank'})
+                for col in met_rank:
+                    if "final " in col: 
+                        met_rank.rename(columns={col: col.replace('final ', '')}, inplace=True)
+                sub_rank = sub_rank.rename(columns={'G mrent': 'Gmrent', 'G mrent ytd': 'Gmrent ytd', 'sub g renx mo wgt': 'sub grenx mo wgt', 'G mrent rank': 'Gmrent rank', 'sub sur v cov perc': 'sub sur v cov', 'sub sur r cov perc': 'sub sur r cov'})
                 met_rank = met_rank.rename(columns={'G mrent': 'Gmrent', 'G mrent rank': 'Gmrent rank', 'met sur v cov perc': 'met sur v cov', 'met sur r cov perc': 'met sur r cov', 'met g renx mo wgt': 'met grenx mo wgt'})
                 rolled = rolled[(rolled['metcode'] == roll_val[:2]) & (rolled['subsector'] == roll_val[2:])]
 
@@ -3168,8 +3174,8 @@ def output_rollup(roll_val, multi_view, currmon_view, sorts_val, tab_val, sector
 
         vac_series_met_display = {'width': '49%', 'display': 'inline-block'}
         rent_series_met_display = {'width': '49%', 'display': 'inline-block', 'padding-left': '50px'}
-        sub_rank_display = {'display': 'inline-block', 'padding-left': '10px', 'width': '25%', 'padding-top': '10px'}
-        met_rank_display = {'display': 'inline-block', 'padding-left': '150px', 'width': '65%', 'padding-top': '10px'}
+        sub_rank_display = {'display': 'inline-block', 'padding-left': '10px', 'width': '43%', 'padding-top': '10px'}
+        met_rank_display = {'display': 'inline-block', 'padding-left': '25px', 'width': '57%', 'padding-top': '10px'}
         metro_sorts_radios_display = {'display': 'block', 'padding-left': '1000px', 'padding-top': '75px'}
 
         roll_display = {'width': '95%', 'padding-left': '10px', 'display': 'block'}

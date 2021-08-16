@@ -1195,19 +1195,31 @@ def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
             elif sorts_val == "gap_chg":
                 support_cols = ['vac_chg', 'final_gapchg_last3mo', 'final_gapchg_ytd']
                 join_cols = []
+        elif x == "identity":
+            if sorts_val == "cons":
+                support_cols = []
+            elif sorts_val == "vac_chg":
+                support_cols = ['sub_wtdvacchg', 'sub_sur_v_cov_perc', 'vac_chg_ytd']
+            elif sorts_val == "abs":
+                support_cols = ['sub_sur_totabs', 'sub_sur_v_cov_perc']
+            elif sorts_val == "G_mrent":
+                support_cols = ['sq_Gmrent', 'sub_sur_r_cov_perc', 'sub_g_renx_mo_wgt', 'G_mrent_ytd']
+            elif sorts_val == "gap_chg":
+                support_cols = ['vac_chg', 'gap', 'gap_chg_ytd']
 
+        if x == "identity_met":
             support = data.copy()
             support = support[(data['yr'] == curryr) & (support['currmon'] == currmon)]
-            support = support[join_cols + ['identity_met']]
-            support = support.drop_duplicates('identity_met')
-            rank = rank.join(support.set_index('identity_met'), on='identity_met')
+            support = support[join_cols + [x]]
+            support = support.drop_duplicates(x)
+            rank = rank.join(support.set_index(x), on=x)
 
         rank = rank.set_index(x)
 
         if x == "identity_met":
             rank = rank[['metcode'] + [rank_col_name] + [sorts_val] + support_cols]
         else:
-            rank = rank[['metcode', 'subid'] + [rank_col_name, sorts_val]]
+            rank = rank[['metcode', 'subid'] + [rank_col_name, sorts_val] + support_cols]
 
         rank.sort_values(by=[rank_col_name], ascending=[True], inplace=True)
         
