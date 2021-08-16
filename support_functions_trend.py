@@ -1155,6 +1155,13 @@ def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
                     rank = rank[rank['subsector'] == "DW"]
                 else:
                     rank = rank[rank['subsector'] == "F"]
+            elif sector_val == "ret":
+                if roll_val[-2:] == "NC":
+                    rank = rank[rank['subsector'] == 'NC']
+                elif roll_val[-1] == "C":
+                    rank = rank[rank['subsector'] == 'C']
+                elif roll_val[-1] == "N":
+                    rank = rank[rank['subsector'] == 'N']
         elif x == "identity_met":
             rank = rolled.copy()
             if sector_val == "ind":
@@ -1162,6 +1169,13 @@ def metro_sorts(rolled, data, roll_val, curryr, currmon, sector_val, sorts_val):
                     rank = rank[rank['subsector'] == "DW"]
                 else:
                     rank = rank[rank['subsector'] == "F"]
+            elif sector_val == "ret":
+                if roll_val[-2:] == "NC":
+                    rank = rank[rank['subsector'] == 'NC']
+                elif roll_val[-1] == "C":
+                    rank = rank[rank['subsector'] == 'C']
+                elif roll_val[-1] == "N":
+                    rank = rank[rank['subsector'] == 'N']
             rank['identity_met'] = rank['metcode'] + rank['subsector']
             rank = calc_3mos(rank, curryr, currmon, "sorts")
             if currmon != 1:
