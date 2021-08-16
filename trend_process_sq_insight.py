@@ -233,7 +233,7 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
             if level_type == "met":
                 cols_to_keep = ['avg_mos_to_last_vacsur', 'vacchginv', 'us_avg_mos_to_last_vacsur', 'us_vacchginv', 'totabs', 'wtdvacchg']
             elif level_type == "sub":
-                cols_to_keep = ['avg_mos_to_last_vacsur', 'vacchginv', 'vacdrops', 'vacflats', 'vacincrs', 'totabs']
+                cols_to_keep = ['avg_mos_to_last_vacsur', 'vacchginv', 'vacdrops', 'vacflats', 'vacincrs', 'totabs', 'wtdvacchg']
 
         dataframe = dataframe[['yr', 'currmon'] + cols_to_keep]
 
