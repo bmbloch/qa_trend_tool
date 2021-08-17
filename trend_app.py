@@ -3055,6 +3055,8 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             else:
                 temp_dict = {'if': {'column_id': x}, 'width': adjust_dict[x]}
             style_cell_conditional.append(temp_dict)
+
+        display_data['month'] = np.where(display_data['month'] == 13, np.nan, display_data['month'])
     
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
                             for i in range(0, len(display_cols))], highlighting_display, man_view_display, style_cell_conditional, key_metrics.to_dict('records'), [{'name': [key_met_title, key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
