@@ -744,6 +744,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
 
         dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']
         dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
+        
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():
@@ -776,8 +777,8 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
                     break
         else:
             merent_check = False
-
-    if len(dataframe) > 0:
+    
+    if len(dataframe) > 0 and (avail_check == True or mrent_check == True or merent_check == True):
         dataframe = dataframe[dataframe['identity'] == identity]
         first_yr = dataframe.reset_index().loc[0]['yr']
         first_month = dataframe.reset_index().loc[0]['currmon']
