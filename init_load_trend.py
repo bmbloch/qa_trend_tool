@@ -73,10 +73,16 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
 
     data_refresh['subid'] = data_refresh['subid'].astype(int)
     data_refresh['yr'] = data_refresh['yr'].astype(int)
+    data_refresh['currmon'] = np.where(data_refresh['currmon'].isnull() == True, 13, data_refresh['currmon'])
     data_refresh['currmon'] = data_refresh['currmon'].astype(int)
     data['subid'] = data['subid'].astype(int)
     data['yr'] = data['yr'].astype(int)
     data['currmon'] = data['currmon'].astype(int)
+
+    if sector_val == "apt":
+        data_refresh = data_refresh.rename(columns={'sub1to99_Gavgrenx': 'sub1to99_Grenx'})
+    if sector_val == "ret":
+        data_refresh = data_refresh.rename(columns={'sub1to99_Gnrenx': 'sub1to99_Grenx'})
 
     if sector_val == "ind" or sector_val == "ret":
         data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['subsector'] + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
@@ -719,6 +725,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         msq_data.to_pickle(file_path)
 
         # Calculate the sub level sq vars. Will do this on the fly, since if msqs are update and edits have already been made, even refreshing the input file with the flat file output from DQ's program wont help update these vars, becasue that flat file wont be read in
+        
+        if sector_val == "ret":
+            msq_data_in['type1'] = np.where(msq_data_in['subid'] == 70, 'NC', msq_data_in['type1'])
+        
         msq_data1 = msq_data_in.copy()
         if sector_val == "ind":
             msq_data1['join_ident'] = msq_data1['metcode'] + msq_data1['subid'].astype(str) + msq_data1['type2'] + msq_data1['yr'].astype(str) + msq_data1['qtr'].astype(str) + msq_data1['currmon'].astype(str)
@@ -751,6 +761,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data1['sqabs'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqocc'] - msq_data1['sqocc'].shift(1), np.nan)
             msq_data1['sqvac_chg'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqvac'] - msq_data1['sqvac'].shift(1), np.nan)
             msq_data1['sq_Gmrent'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), (msq_data1['sqsren'] - msq_data1['sqsren'].shift(1)) / msq_data1['sqsren'].shift(1), np.nan)
+        elif sector_val == "ret":
+            msq_data1['sqabs'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type1'] == msq_data1['type1'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqocc'] - msq_data1['sqocc'].shift(1), np.nan)
+            msq_data1['sqvac_chg'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type1'] == msq_data1['type1'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqvac'] - msq_data1['sqvac'].shift(1), np.nan)
+            msq_data1['sq_Gmrent'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type1'] == msq_data1['type1'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), (msq_data1['sqsren'] - msq_data1['sqsren'].shift(1)) / msq_data1['sqsren'].shift(1), np.nan)
         else:
             msq_data1['sqabs'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqocc'] - msq_data1['sqocc'].shift(1), np.nan)
             msq_data1['sqvac_chg'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['subid'] == msq_data1['subid'].shift(1)), msq_data1['sqvac'] - msq_data1['sqvac'].shift(1), np.nan)
@@ -759,6 +773,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         msq_data1['sqsren'] = round(msq_data1['sqsren'], 2)
         if sector_val == "ind":
             msq_data1 = msq_data1[['join_ident','metcode', 'subid', 'yr', 'qtr', 'currmon', 'type2', 'sqinv', 'sqavail', 'sqvac', 'sqvac_chg', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent']]
+        elif sector_val == "ret":
+            msq_data1 = msq_data1[['join_ident','metcode', 'subid', 'yr', 'qtr', 'currmon', 'type1', 'sqinv', 'sqavail', 'sqvac', 'sqvac_chg', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent']]
         else:
             msq_data1 = msq_data1[['join_ident','metcode', 'subid', 'yr', 'qtr', 'currmon', 'sqinv', 'sqavail', 'sqvac', 'sqvac_chg', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent']]
         
@@ -785,6 +801,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         if sector_val == "ind":
             msq_data3['join_ident'] = msq_data3['metcode'] + msq_data3['subid'].astype(str) + msq_data3['type2'] + msq_data3['yearx'].astype(str) + msq_data3['qtr'].astype(str) + msq_data3['month'].astype(str)
+        elif sector_val == "ret":
+            msq_data3['join_ident'] = msq_data3['metcode'] + msq_data3['subid'].astype(str) + msq_data3['type1'] + msq_data3['yearx'].astype(str) + msq_data3['qtr'].astype(str) + msq_data3['month'].astype(str)
         else:
             msq_data3['join_ident'] = msq_data3['metcode'] + msq_data3['subid'].astype(str) + msq_data3['yearx'].astype(str) + msq_data3['qtr'].astype(str) + msq_data3['month'].astype(str)
         msq_data3 = msq_data3.drop_duplicates('id')
@@ -794,14 +812,13 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         msq_data3 = msq_data3.drop_duplicates('join_ident')
         if sector_val == "ind":
             msq_data3 = msq_data3[['join_ident','metcode', 'subid', 'yr', 'qtr', 'currmon', 'type2', 'sqcons']]
+        elif sector_val == "ret":
+            msq_data3 = msq_data3[['join_ident','metcode', 'subid', 'yr', 'qtr', 'currmon', 'type1', 'sqcons']]
         else:
             msq_data3 = msq_data3[['join_ident', 'metcode', 'subid', 'yr', 'qtr', 'currmon', 'sqcons']]
 
         data_all_periods = data.copy()
-        if sector_val != "ret":
-            data_all_periods = data_all_periods.drop_duplicates(['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'])
-        else:
-            data_all_periods = data_all_periods.drop_duplicates(['metcode', 'subid', 'yr', 'qtr', 'currmon'])
+        data_all_periods = data_all_periods.drop_duplicates(['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'])
         msq_data = data_all_periods.copy()
         msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 1), 3, msq_data['currmon'])
         msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 2), 6, msq_data['currmon'])
@@ -816,6 +833,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         if sector_val == "ind":
             drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type2']
+            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon']]
+        elif sector_val == "ret":
+            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type1']
             msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon']]
         else:
             drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon']
@@ -856,8 +876,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_substats.pickle".format(get_home(), sector_val))
     msq_data_sub = pd.read_pickle(file_path)
     msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
-    if sector_val == "ind":
+    if sector_val == "ind" or sector_val == "ret":
         msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
+
     data = data.join(msq_data_sub, on='join_ident')
     data = data.drop(['join_ident'], axis=1)
     
