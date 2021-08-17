@@ -195,7 +195,10 @@ def rollup(dataframe, drop_val, curryr, currmon, sector_val, filt_type):
         cols_to_roll += ['sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sqaskrev']
 
     roll[cols_to_roll] = roll.groupby([identity_filt, 'yr', 'currmon'])[cols_to_roll].transform('sum', min_count=1)
-
+    
+    if drop_val[:2] == "US":
+        roll[['sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sqaskrev']] = roll.groupby([identity_filt])[['sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sqaskrev']].bfill()
+    
     if filt_type == "reg":
         roll = roll.drop_duplicates([identity_filt, 'yr', 'currmon'])
 
