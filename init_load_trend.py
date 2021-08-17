@@ -849,7 +849,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     data = data.drop(['join_ident'], axis=1)
     
     # Join in the most up to date sq sub rollups
-    if sector_val == "ind":
+    if sector_val == "ind" or sector_val == "ret":
         data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
     else:
         data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
@@ -858,7 +858,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     msq_data_sub = msq_data_sub.drop(['metcode', 'subid', 'yr', 'qtr', 'currmon'], axis=1)
     if sector_val == "ind":
         msq_data_sub = msq_data_sub.drop(['subsector'], axis=1)
-    
     data = data.join(msq_data_sub, on='join_ident')
     data = data.drop(['join_ident'], axis=1)
     
