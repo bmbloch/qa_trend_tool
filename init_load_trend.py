@@ -46,7 +46,7 @@ def load_init_input(sector_val, curryr, currmon):
     elif sector_val == "apt" or sector_val == "off":
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
         data_in = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-        cols = list(data.columns)
+        cols = list(data_in.columns)
         data_in['subsector'] = sector_val.title()
         new_cols = ['subsector'] + cols
         data_in = data_in[new_cols]
