@@ -1047,12 +1047,11 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
 def filter_flags(dataframe_in, drop_flag):
 
     flag_filt = dataframe_in.copy()
-    if "rol" in drop_flag:
-        flag_filt[drop_flag + "_test"] = flag_filt.groupby('identity')[drop_flag].transform('sum')
-        flag_filt['skip_test'] = flag_filt['flag_skip'].str.contains(drop_flag)
-        flag_filt['skip_test'] = np.where(flag_filt['skip_test'] == True, 1, 0)
-        flag_filt['skip_test'] = flag_filt.groupby('identity')['skip_test'].transform('sum')
-        flag_filt[drop_flag] = np.where((flag_filt[drop_flag + "_test"] > 0) & (flag_filt['skip_test'] > 0), 0, flag_filt[drop_flag])
+    flag_filt[drop_flag + "_test"] = flag_filt.groupby('identity')[drop_flag].transform('sum')
+    flag_filt['skip_test'] = flag_filt['flag_skip'].str.contains(drop_flag)
+    flag_filt['skip_test'] = np.where(flag_filt['skip_test'] == True, 1, 0)
+    flag_filt['skip_test'] = flag_filt.groupby('identity')['skip_test'].transform('sum')
+    flag_filt[drop_flag] = np.where((flag_filt[drop_flag + "_test"] > 0) & (flag_filt['skip_test'] > 0), 0, flag_filt[drop_flag])
 
     flag_filt = flag_filt[[drop_flag, 'identity', 'flag_skip']]
     flag_filt = flag_filt[(flag_filt[drop_flag] > 0)]
