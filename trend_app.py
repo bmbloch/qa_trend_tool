@@ -2923,6 +2923,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 temp = temp[(temp[rol_val].isnull() == False) & (temp[display_highlight_list[0]].isnull() == False)]
                 if display_highlight_list[0] == "Gmrent":
                     temp = temp[temp['Gmrent'] != '']
+                    temp = temp[temp['rol Gmrent'] != '']
                 temp['diff'] = abs(temp[display_highlight_list[0]].astype(float) - temp[rol_val].astype(float))
                 temp = temp[temp['diff'] >= 0.001]
                 display_highlight_rows = list(temp['id'])
