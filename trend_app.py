@@ -2915,6 +2915,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                         check_for_rol_row = True
             if check_for_rol_row == True:
                 temp = temp[(temp['yr'] != curryr) | ((temp['month'] != currmon) & (temp['yr'] == curryr))]
+                temp = temp[temp['yr'] >= 2009]
                 if display_highlight_list[0] == "Gmrent":
                     rol_val = "rol Gmrent"
                 else:
