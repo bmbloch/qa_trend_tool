@@ -341,8 +341,9 @@ def get_app_layout(curryr, currmon, sector_val):
                                             id='subsequent_fix',
                                             value='r',
                                             options=[
-                                                        {'label': 'rol', 'value': 'r'},
-                                                        {'label': 'sq', 'value': 's'},
+                                                        {'label': 'rc', 'value': 'rc'},
+                                                        {'label': 'rl', 'value': 'rl'},
+                                                        {'label': 'sc', 'value': 'sq'},
                                                     ],
                                             labelStyle={'display': 'inline-block', 'margin': '0 5px 0 0'}), 
                                             ], style={'display': 'none'}, id='subsequent_change_container'),

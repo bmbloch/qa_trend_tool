@@ -2510,7 +2510,7 @@ def remove_options(submit_button, drop_val, sector_val, success_init):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:
-        return ['trunc'], 'r', ['N']
+        return ['trunc'], 'rc', ['N']
 
 @trend.callback([Output('man_view', 'data'),
                 Output('man_view', 'columns'),

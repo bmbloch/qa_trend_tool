@@ -953,12 +953,16 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
         dataframe['vac_chg'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row), dataframe['vac'] - dataframe['vac'].shift(1), dataframe['vac_chg'])
         dataframe['abs'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] >= index_row), dataframe['occ'] - dataframe['occ'].shift(1), dataframe['abs'])
     elif variable_fix == "v":
-        if subsequent_chg == "r":
+        if subsequent_chg == "rc":
             dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_row), dataframe['avail'] + avail_diff, dataframe['avail'])
             dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['avail'] + avail_diff >= 0) & (dataframe['avail'] + avail_diff <= dataframe['inv']), dataframe['avail'] + avail_diff, dataframe['avail'])
             dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['avail'] + avail_diff < 0), 0, dataframe['avail'])
             dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['avail'] + avail_diff > dataframe['inv']), dataframe['inv'], dataframe['avail'])
-        else:
+        elif subsequent_chg == "rl":
+            dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_row), dataframe['avail'] + avail_diff, dataframe['avail'])
+            dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['curr_tag'] == 0), dataframe['rol_avail'], dataframe['avail'])
+            dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['curr_tag'] == 1), dataframe['avail'].shift(1) - dataframe['abs'], dataframe['avail'])
+        elif subsequent_chg == "sq":
             dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_row), dataframe['avail'] + avail_diff, dataframe['avail'])
             for index_val in range(index_row + 1, l_index_row + 1):
                 dataframe['avail'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val) & (dataframe['avail'].shift(1) + (dataframe['sqavail'] - dataframe['sqavail'].shift(1)) >= 0) & (dataframe['avail'].shift(1) + (dataframe['sqavail'] - dataframe['sqavail'].shift(1)) <= dataframe['inv']), dataframe['avail'].shift(1) + (dataframe['sqavail'] - dataframe['sqavail'].shift(1)), dataframe['avail'])
@@ -972,11 +976,16 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     elif variable_fix == "g":
         dataframe.loc[index_row, 'mrent'] = fix
         dataframe['G_mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] == index_row), (dataframe['mrent'] - dataframe['mrent'].shift(1)) / dataframe['mrent'].shift(1), dataframe['G_mrent'])
-        if subsequent_chg == "r":
+        if subsequent_chg == "rc":
             for index_val in range(index_row + 1, l_index_row + 1):
                 dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
             dataframe['mrent'] = round(dataframe['mrent'], 2)
-        elif subsequent_chg == "s":
+            dataframe['G_mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] > index_row), (dataframe['mrent'] - dataframe['mrent'].shift(1)) / dataframe['mrent'].shift(1), dataframe['G_mrent'])
+        elif subsequent_chg == "rl":
+            dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] > index_row) & (dataframe['curr_tag'] == 0), dataframe['rol_mrent'], dataframe['mrent'])
+            dataframe['mrent'] = round(dataframe['mrent'], 2)
+            dataframe['G_mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['identity'] == dataframe['identity'].shift(1)) & (dataframe['index_row'] > index_row), (dataframe['mrent'] - dataframe['mrent'].shift(1)) / dataframe['mrent'].shift(1), dataframe['G_mrent'])
+        elif subsequent_chg == "sq":
             for index_val in range(index_row + 1, l_index_row + 1):
                 dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val) & (dataframe['identity'] == dataframe['identity'].shift(-1)), dataframe['mrent'].shift(1) * (1 + dataframe['sq_Gmrent']), dataframe['mrent'])
                 dataframe['mrent'] = np.where((dataframe['identity'] == identity_val) & (dataframe['index_row'] == index_val) & (dataframe['identity'] != dataframe['identity'].shift(-1)), dataframe['mrent'].shift(1) * (1 + dataframe['G_mrent']), dataframe['mrent'])
