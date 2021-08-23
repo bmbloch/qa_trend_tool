@@ -3112,7 +3112,8 @@ def output_rollup(roll_val, multi_view, currmon_view, sorts_val, tab_val, sector
         # Otherwise, the rollup data set can just be a copy of the current edited dataset
         if len(preview_data) > 0:
             data_temp = data.copy()
-            filt_cols = orig_cols + ['identity', 'identity_met', 'identity_us', 'metsq_Gmrent', 'metsqcons', 'metsqvacchg', 'metsqabs', 'metsqinv', 'metsqsren', 'curr_tag']
+            filt_cols = orig_cols + ['identity', 'identity_met', 'identity_us', 'metsq_Gmrent', 'metsqcons', 'metsqvacchg', 'metsqabs', 'metsqinv', 'metsqsren', 'curr_tag',
+                                        'sq_Gmrent', 'sqcons', 'sqvac_chg', 'sqabs', 'sqinv', 'sqsren']
             data_temp = data_temp[filt_cols]
             preview_data_temp = preview_data.copy()
             preview_data_temp = preview_data_temp[filt_cols]
