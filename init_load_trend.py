@@ -263,13 +263,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
     # Drop extra columns that the program wont use if this is the first run of the month - helps reduce dimensionality and size of dataframe
     if file_used == "oob":
-        data = data.drop(['sector', 'dbtime', 'dqinvav11', 'avail11d', 'dqinvav10', 'dqinvav00', 'dqinvav01', 'avail01d', 'dqinvren11', 
-        'dqren11d', 'dqinvren00', 'dqinvren01', 'dqren01d', 'ncreninv', 'pastsubsqinv', 'invdiffpast', 'vacdiffpast', 
-        'rntdiffpast', 'sqcons_full', 'gap_door1', 'gap_door2', 'gap_door3', 'prelimtime', 'p_askrev', 'p_effrev', 'shimtime', 'inv_shim', 'cons_shim', 
-        'avail_shim', 'mrent_shim', 'merent_shim', 'finals_time', 'askrev', 'effrev', 'actualsurveytime', 'rentdrops', 'rentflats', 'rentincrs', 'avg_rentchg', 'avg_rentchg_mo', 'avg_mos_to_last_rensur', 
-        'stddev_avg_rentchg', 'MET_avg_rentchg', 'MET_avg_rentchg_mo', 'MET_avg_mos_to_last_rensur', 'MET_stddev_avg_rentchg', 'US_avg_rentchg', 'US_avg_rentchg_mo', 
-        'US_avg_mos_to_last_rensur', 'audit', 'inv_rol_isdiff', 'cons_rol_isdiff', 'vac_rol_isdiff', 'gmrent_rol_isdiff', 'gmerent_rol_isdiff', 'inv_roldiff',
-        'sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
+        data = data.drop(['sector', 'avail01d', 'dqren11d', 'dqren01d', 'sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
 
         if sector_val == "apt" or sector_val == "off" or sector_val == "ret":
             data = data.drop(['conv_shim', 'demo_shim'], axis=1)
