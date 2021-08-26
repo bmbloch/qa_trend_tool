@@ -265,12 +265,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     if file_used == "oob":
         data = data.drop(['sector', 'avail01d', 'dqren11d', 'dqren01d', 'sqinv', 'sqcons', 'sqvac', 'sqvac_chg', 'sqavail', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent'], axis=1)
 
-        if sector_val == "apt" or sector_val == "off" or sector_val == "ret":
-            data = data.drop(['conv_shim', 'demo_shim'], axis=1)
-
-        if sector_val == "ind":
-            data = data.drop(['trend_yr1'], axis=1)
-
         # Convert surveyed avail vars to the consistent sign with abs in pub, and round to thousandths
         if sector_val != "apt":
             data[['avail10d', 'avail00d']] = round((data[['avail10d', 'avail00d']] * -1), -3)
