@@ -666,26 +666,26 @@ def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sec
     if var == 'vac':
         new_vac = data_temp.copy()
         new_vac = new_vac[new_vac['identity'] == drop_val]
-        new_vac = new_vac[[var, 'rol_' + var, var + "_oob"]]
+        new_vac = new_vac[[var, 'qrol_' + var, var + "_oob"]]
         rebench_to_check = rebench_to_check.join(new_vac)
     else:
         rol_var = data_temp.copy()
         rol_var = rol_var[rol_var['identity'] == drop_val]
-        rol_var = rol_var[['rol_' + var, var + "_oob"]]
+        rol_var = rol_var[['qrol_' + var, var + "_oob"]]
         rebench_to_check = rebench_to_check.join(rol_var)
-    rebench_to_check = rebench_to_check[[var, 'rol_' + var, var + '_oob']]
+    rebench_to_check = rebench_to_check[[var, 'qrol_' + var, var + '_oob']]
     orig_to_check = orig_to_check[orig_to_check['identity'] == drop_val]
     orig_to_check = orig_to_check[[var]]
     orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
     rebench_to_check = rebench_to_check.join(orig_to_check)
     if var == "vac":
         rebench_to_check['diff_to_oob'] = rebench_to_check[var] - rebench_to_check[var + "_oob"]
-        rebench_to_check['diff_to_rol'] = rebench_to_check[var] - rebench_to_check['rol_' + var]
-        rebench_to_check['orig_diff_to_rol'] = rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]
+        rebench_to_check['diff_to_rol'] = rebench_to_check[var] - rebench_to_check['qrol_' + var]
+        rebench_to_check['orig_diff_to_rol'] = rebench_to_check[var + "_orig"] - rebench_to_check['qrol_' + var]
     else:
         rebench_to_check['diff_to_oob'] = (rebench_to_check[var] - rebench_to_check[var + "_oob"]) / rebench_to_check[var + "_oob"]
-        rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
-        rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
+        rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['qrol_' + var]) / rebench_to_check['qrol_' + var]
+        rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['qrol_' + var]) / rebench_to_check['qrol_' + var]
     
     rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_oob']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['orig_diff_to_rol']))) | 
                                         ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
@@ -720,9 +720,9 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
     
     dataframe = dataframe_in.copy()
-    dataframe = dataframe[['rol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
+    dataframe = dataframe[['qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
     
-    dataframe['vac_diff'] = dataframe['vac'] - dataframe['rol_vac']
+    dataframe['vac_diff'] = dataframe['vac'] - dataframe['qrol_vac']
     dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
     if len(dataframe) > 0:
         dataframe = dataframe.drop_duplicates('identity')
@@ -740,9 +740,9 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     if avail_check == False:
         dataframe = dataframe_in.copy()
         dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-        dataframe = dataframe[['rol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
+        dataframe = dataframe[['qrol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
 
-        dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']
+        dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['qrol_mrent']) / dataframe['qrol_mrent']
         dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
         
         if len(dataframe) > 0:
@@ -761,9 +761,9 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     if avail_check == False and mrent_check == False:
         dataframe = dataframe_in.copy()
         dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-        dataframe = dataframe[['rol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
+        dataframe = dataframe[['qrol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
         
-        dataframe['merent_diff'] = (dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']
+        dataframe['merent_diff'] = (dataframe['merent'] - dataframe['qrol_merent']) / dataframe['qrol_merent']
         dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')

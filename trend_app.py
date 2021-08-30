@@ -899,7 +899,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         users = decision_data_test.copy()
         users = users[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user', 'inv_cons_comment', 'avail_comment',
-                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 
+                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 
                                                       'rol_cons', 'occ'], axis=1)
         
         update_data['vac'] = round(update_data['vac'], 3)
@@ -1599,7 +1599,7 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
             oob_cols = [x for x in list(data.columns) if "oob" in x]
             decision_data = data.copy()
             decision_data = decision_data.reset_index()
-            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons']]
+            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons', 'qrol_vac', 'qrol_mrent', 'qrol_merent']]
             update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
             if sector_val != "ind":
                 update_cols += ['conv_new', 'demo_new']
@@ -1877,10 +1877,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
-            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
-            rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['rol_vac']
-            rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']
-            rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']
+            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
+            rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['qrol_vac']
+            rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['qrol_mrent']) / rebench_log['qrol_mrent']
+            rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['qrol_merent']) / rebench_log['qrol_merent']
             rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
             for var in ['vac_diff', 'mrent_diff', 'merent_diff']:
                 first_rebench = rebench_log.copy()
