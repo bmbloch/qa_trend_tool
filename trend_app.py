@@ -2605,7 +2605,6 @@ def remove_options(submit_button, drop_val, sector_val, rebench_yr, rebench_mont
                 State('auto_rebench_var', 'data')])
 #@Timer("Output Display")
 def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_cd, show_skips, has_flag, flag_list, p_skip_list, orig_cols, curryr, currmon, flags_resolved, flags_unresolved, flags_new, flags_skipped, success_init, flag_cols, init_skips, init_comment_cons, init_comment_avail, init_comment_mrent, init_comment_erent, ncsur_props, surv_avail_props, all_avail_props, surv_rg_props, all_rg_props, newnc_props, test_auto_rebench, message, first_yr, first_month, auto_rebench_var):
-    input_id = get_input_id()
 
     if sector_val is None or success_init == False:
         raise PreventUpdate
@@ -2667,7 +2666,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
 
         # If the user chooses to expand the history displayed in the datatable, ensure that the new shim periods get added, but do not lose the shims already entered if there are some
-        if "full" in expand and (shim_data.reset_index().loc[0]['yr'] == curryr or ((shim_data.reset_index().loc[0]['yr'] == curryr - 1) and (shim_data.reset_index().loc[0]['currmon'] == currmon))):
+        if "full" in expand and first_yr == False and (shim_data.reset_index().loc[0]['yr'] == curryr or ((shim_data.reset_index().loc[0]['yr'] == curryr - 1) and (shim_data.reset_index().loc[0]['currmon'] == currmon))):
             shim_add = data.copy()
             shim_add = shim_add[['identity', 'currmon', 'yr'] + shim_cols]
             shim_add = shim_add[(shim_add['yr'] < curryr - 1) | ((shim_add['yr'] == curryr - 1) & (shim_add['currmon'] <= priormon))]
@@ -2690,7 +2689,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
         
         # If the user changed the sub they want to edit, reset the shim section and the preview dataset
-        if (len(preview_data) > 0 and  drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (shim_data.reset_index()['identity_row'].str.contains(drop_val).loc[0] == False) == True:
+        if (len(preview_data) > 0 and drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (drop_val not in shim_data.reset_index().loc[0]['identity_row']):
             sub_change = True
         else:
             sub_change = False
