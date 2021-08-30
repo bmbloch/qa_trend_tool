@@ -467,6 +467,8 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     issue_description_skipped = []
     if type_return == "specific":
         if test_auto_rebench == True:
+            if first_month == 13:
+                first_month = 12
             issue_description_noprev = "There was a rebench for construction in the auto rebench window that caused a significant difference to ROL {} in {}m{}. Enter a supporting comment to document what caused the rebench before moving on to flag review.".format(auto_rebench_var, first_yr, first_month)
         elif has_flag == 0:
             issue_description_noprev = "You have cleared all the flags"
