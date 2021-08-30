@@ -2503,14 +2503,30 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
                  Output('show_skips', 'value')],
                  [Input('store_submit_button', 'data'),
                  Input('dropman', 'value'),
-                 Input('sector', 'data')],
-                 [State('init_trigger', 'data')])
+                 Input('sector', 'data'),
+                 Input('rebench_first_yr', 'data'),
+                 Input('rebench_first_month', 'data')],
+                 [State('init_trigger', 'data'),
+                 State('curryr', 'data'),
+                 State('currmon', 'data')])
 #@Timer("Remove Options")
-def remove_options(submit_button, drop_val, sector_val, success_init):
+def remove_options(submit_button, drop_val, sector_val, rebench_yr, rebench_month, success_init, curryr, currmon):
     if sector_val is None or success_init == False:
         raise PreventUpdate
     else:
-        return ['trunc'], 'rc', ['N']
+        if rebench_yr != False:
+            if rebench_yr == curryr or (rebench_yr == curryr - 1 and rebench_month >= currmon):
+                expand = ['trunc']
+            else:
+                expand = ['full']
+        else:    
+            expand = ['trunc']
+        
+        subsequent = 'rc'
+        show_skips = ['N']
+        
+
+        return expand, subsequent, show_skips
 
 @trend.callback([Output('man_view', 'data'),
                 Output('man_view', 'columns'),
