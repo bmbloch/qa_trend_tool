@@ -1644,7 +1644,7 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
             decision_data['c_user'] = np.where((abs(decision_data['cons_diff']) > 0), "Cons Auto Rebench", np.nan)
             decision_data['v_user'] = np.where((abs(decision_data['vac_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
             decision_data['g_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
-            decision_data['e_user'] = np.where((abs(decision_data['mrent_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
+            decision_data['e_user'] = np.where((abs(decision_data['merent_diff']) >= 0.001), "Cons Auto Rebench", np.nan)
 
             for col in ['i_user', 'c_user', 'v_user', 'g_user', 'e_user']:
                 decision_data[col] = np.where(decision_data[col] == 'nan', np.nan, decision_data[col]) 
