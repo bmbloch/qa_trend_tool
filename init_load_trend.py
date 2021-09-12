@@ -355,6 +355,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     # Join the past sq_cons data in if this is run for apt
     if sector_val == "apt" and file_used == "oob":
         data = data.join(past_data)
+        del past_data
 
     # Load last month's archived msq data. This will allow us to identify what props are being rebenched in the nc window
     if file_used == "oob":
@@ -410,7 +411,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
         p_data_in.to_pickle(file_path)
-
+        del p_data_in
     
     # Load all msqs for the sector and combine into one dataframe
     # Only need to do this if the msqs havent been refreshed, so analyst has option to skip this section and rely on the data that was saved upon first load of module
@@ -478,6 +479,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         temp['has_l_surv'] = 1
         temp = temp.set_index('id')
         data_in = data_in.join(temp, on='id')
+        del temp
         data_in['has_l_surv'] = data_in['has_l_surv'].fillna(0)
 
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
@@ -485,6 +487,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         # Calculate avail and rent survey coverage by met for 2 year historical period, and use that to set the coverage thresholds for flags
         trunc = data_in.copy()
+        del data_in
         trunc['currmon_fill'] = np.where(trunc['currmon'].isnull() == True, trunc['qtr'] * 3, trunc['currmon'])
         trunc = trunc[(trunc['yr'] >= curryr - 1) | ((trunc['yr'] == curryr - 2) & (trunc['currmon_fill'] > currmon))]
         trunc = trunc.reset_index(drop=True)
@@ -522,6 +525,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_surv_coverage.pickle".format(get_home(), sector_val))
         cov_thresh.to_pickle(file_path)
+        del trunc
     
         # Call the function to load and process the sq insight stats. The processed files will be saved to the network and can then be read in at any time
         if currmon < 4:
@@ -555,6 +559,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         msq_data_in['qtr_ident'] = msq_data_in['yr'].astype(str) + msq_data_in['qtr'].astype(str)
         msq_data_in = msq_data_in.join(msq_data_only_qtr, on='qtr_ident')
+        del msq_data_only_qtr
 
         msq_data_in['currmon'] = np.where((msq_data_in['only_qtr'] == 1) & (msq_data_in['qtr'] == 1), 3, msq_data_in['currmon'])
         msq_data_in['currmon'] = np.where((msq_data_in['only_qtr'] == 1) & (msq_data_in['qtr'] == 2), 6, msq_data_in['currmon'])
@@ -576,6 +581,31 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             round_val = -3
 
+        data_all_periods = data.copy()
+        if sector_val != "ret":
+            data_all_periods = data_all_periods.drop_duplicates(['subsector', 'metcode', 'yr', 'qtr', 'currmon'])
+        else:
+            data_all_periods = data_all_periods.drop_duplicates(['metcode', 'yr', 'qtr', 'currmon'])
+        msq_data = data_all_periods.copy()
+        del data_all_periods
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 1), 3, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 2), 6, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 3), 9, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 4), 12, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 5) & ((msq_data['qtr'].shift(1) != 4) | ((msq_data['metcode'] != msq_data['metcode'].shift(1)) & (msq_data['subsector'] != msq_data['subsector'].shift(1)))), 12, msq_data['currmon'])
+
+        if sector_val == "ind":
+            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subsector'] + msq_data['yr'].astype(str) + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)
+        else:
+            msq_data['join_ident'] = msq_data['metcode'] + msq_data['yr'].astype(str) +  + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)   
+
+        if sector_val == "ind":
+            drop_list = ['metcode', 'yr', 'qtr', 'currmon', 'type2']
+            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'yr', 'qtr', 'currmon']]
+        else:
+            drop_list = ['metcode', 'yr', 'qtr', 'currmon']
+            msq_data = msq_data[['join_ident'] + drop_list]
+
         msq_data1 = msq_data_in.copy()
         msq_data1['currmon'] = np.where((msq_data1['only_qtr'] == 1) & (msq_data1['currmon'] % 3 != 0), np.nan, msq_data1['currmon'])
         msq_data1 = msq_data1[(np.isnan(msq_data1['currmon']) == False)]
@@ -593,7 +623,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         msq_data1['met_rev'] = msq_data1.groupby('join_ident')['mrev'].transform('sum')
         msq_data1['metsqsren'] = msq_data1['met_rev'] / msq_data1['metsqinv']
         msq_data1['metsqsren'] = round(msq_data1['metsqsren'], 2)
+
         msq_data1 = msq_data1.drop_duplicates('join_ident')
+        
         if sector_val == "ind":
             msq_data1['metsqabs'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)), msq_data1['metsqoccstk'] - msq_data1['metsqoccstk'].shift(1), np.nan)
             msq_data1['metsqvacchg'] = np.where((msq_data1['metcode'] == msq_data1['metcode'].shift(1)) & (msq_data1['type2'] == msq_data1['type2'].shift(1)), msq_data1['metsqvac'] - msq_data1['metsqvac'].shift(1), np.nan)
@@ -608,6 +640,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             msq_data1 = msq_data1[['join_ident','metcode', 'yr', 'qtr', 'currmon', 'metsqinv', 'metsqavail', 'metsqvac', 'metsqvacchg', 'metsqoccstk', 'metsqabs', 'metsqsren', 'metsq_Gmrent']]
 
+        msq_data = msq_data.join(msq_data1.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
+        del msq_data1
 
         msq_data2 = msq_data_in.copy()
         if currmon == 1:
@@ -643,6 +677,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             msq_data2 = msq_data2[['join_ident','metcode', 'yr', 'qtr', 'currmon', 'metdqinvren10', 'metdqren10d']]
 
+        msq_data = msq_data.join(msq_data2.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
+        del msq_data2
+
         # Note: In an effort to align the sq cons data with the trend data, will move away from the method of only reporting square rollup in the third month of the quarter for periods that do not have a monthly breakout in the msq
         msq_data3 = msq_data_in.copy()
         msq_data3 = msq_data3[((msq_data3['yearx'] > 2008) | ((msq_data3['yearx'] == 2008) & (msq_data3['month'] >= 10)))]
@@ -674,33 +711,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             msq_data3 = msq_data3[['join_ident', 'metcode', 'yr', 'qtr', 'currmon', 'metsqcons', 'metncavail', 'metncvac']]
 
-        data_all_periods = data.copy()
-        if sector_val != "ret":
-            data_all_periods = data_all_periods.drop_duplicates(['subsector', 'metcode', 'yr', 'qtr', 'currmon'])
-        else:
-            data_all_periods = data_all_periods.drop_duplicates(['metcode', 'yr', 'qtr', 'currmon'])
-        msq_data = data_all_periods.copy()
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 1), 3, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 2), 6, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 3), 9, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 4), 12, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 5) & ((msq_data['qtr'].shift(1) != 4) | ((msq_data['metcode'] != msq_data['metcode'].shift(1)) & (msq_data['subsector'] != msq_data['subsector'].shift(1)))), 12, msq_data['currmon'])
-
-        if sector_val == "ind":
-            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subsector'] + msq_data['yr'].astype(str) + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)
-        else:
-            msq_data['join_ident'] = msq_data['metcode'] + msq_data['yr'].astype(str) +  + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)   
-
-        if sector_val == "ind":
-            drop_list = ['metcode', 'yr', 'qtr', 'currmon', 'type2']
-            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'yr', 'qtr', 'currmon']]
-        else:
-            drop_list = ['metcode', 'yr', 'qtr', 'currmon']
-            msq_data = msq_data[['join_ident'] + drop_list]
-
-        msq_data = msq_data.join(msq_data1.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
-        msq_data = msq_data.join(msq_data2.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
         msq_data = msq_data.join(msq_data3.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
+        del msq_data3
+
+        
         msq_data = msq_data.set_index('join_ident')
         msq_data['metdqinvren10'] = msq_data['metdqinvren10'].fillna(0)
         msq_data['metsqcons'] = msq_data['metsqcons'].fillna(0)
@@ -711,9 +725,35 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data.sort_values(by=['metcode', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True], inplace=True)
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_metstats.pickle".format(get_home(), sector_val))
         msq_data.to_pickle(file_path)
+        del msq_data
 
         # Calculate the sub level sq vars. Will do this on the fly, since if msqs are update and edits have already been made, even refreshing the input file with the flat file output from DQ's program wont help update these vars, becasue that flat file wont be read in
         
+        data_all_periods = data.copy()
+        data_all_periods = data_all_periods.drop_duplicates(['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'])
+        msq_data = data_all_periods.copy()
+        del data_all_periods
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 1), 3, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 2), 6, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 3), 9, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 4), 12, msq_data['currmon'])
+        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 5) & ((msq_data['qtr'].shift(1) != 4) | ((msq_data['metcode'] != msq_data['metcode'].shift(1)) & (msq_data['subid'] != msq_data['subid'].shift(1)) & (msq_data['subsector'] != msq_data['subsector'].shift(1)))), 12, msq_data['currmon'])
+
+        if sector_val == "ind" or sector_val == "ret":
+            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['subsector'] + msq_data['yr'].astype(str) + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)
+        else:
+            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['yr'].astype(str) +  + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)   
+
+        if sector_val == "ind":
+            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type2']
+            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon']]
+        elif sector_val == "ret":
+            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type1']
+            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon']]
+        else:
+            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon']
+            msq_data = msq_data[['join_ident'] + drop_list]
+
         if sector_val == "ret":
             msq_data_in['type1'] = np.where(msq_data_in['subid'] == 70, 'NC', msq_data_in['type1'])
         
@@ -766,6 +806,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             msq_data1 = msq_data1[['join_ident','metcode', 'subid', 'yr', 'qtr', 'currmon', 'sqinv', 'sqavail', 'sqvac', 'sqvac_chg', 'sqocc', 'sqabs', 'sqsren', 'sq_Gmrent']]
         
+        msq_data = msq_data.join(msq_data1.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
+        del msq_data1
+        
         # Note: In an effort to align the sq cons data with the trend data, will move away from the method of only reporting square rollup in the third month of the quarter for periods that do not have a monthly breakout in the msq
         msq_data3 = msq_data_in.copy()
         if sector_val == "ind":
@@ -805,32 +848,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             msq_data3 = msq_data3[['join_ident', 'metcode', 'subid', 'yr', 'qtr', 'currmon', 'sqcons']]
 
-        data_all_periods = data.copy()
-        data_all_periods = data_all_periods.drop_duplicates(['subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon'])
-        msq_data = data_all_periods.copy()
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 1), 3, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 2), 6, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 3), 9, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 4), 12, msq_data['currmon'])
-        msq_data['currmon'] = np.where((np.isnan(msq_data['currmon']) == True) & (msq_data['qtr'] == 5) & ((msq_data['qtr'].shift(1) != 4) | ((msq_data['metcode'] != msq_data['metcode'].shift(1)) & (msq_data['subid'] != msq_data['subid'].shift(1)) & (msq_data['subsector'] != msq_data['subsector'].shift(1)))), 12, msq_data['currmon'])
-
-        if sector_val == "ind" or sector_val == "ret":
-            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['subsector'] + msq_data['yr'].astype(str) + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)
-        else:
-            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['yr'].astype(str) +  + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)   
-
-        if sector_val == "ind":
-            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type2']
-            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon']]
-        elif sector_val == "ret":
-            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type1']
-            msq_data = msq_data[['join_ident', 'subsector', 'metcode', 'subid', 'yr', 'qtr', 'currmon']]
-        else:
-            drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon']
-            msq_data = msq_data[['join_ident'] + drop_list]
-
-        msq_data = msq_data.join(msq_data1.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
         msq_data = msq_data.join(msq_data3.set_index('join_ident').drop(drop_list, axis=1), on='join_ident')
+        del msq_data3
+        
         msq_data = msq_data.set_index('join_ident')
         msq_data['sqcons'] = msq_data['sqcons'].fillna(0)
         if sector_val != "apt":
@@ -842,6 +862,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data.sort_values(by=['metcode', 'subid', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_substats.pickle".format(get_home(), sector_val))
         msq_data.to_pickle(file_path)
+        del msq_data
         
     # Join in the most up to date sq met rollups
     if sector_val == "ind":
@@ -922,6 +943,11 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     else:
         data = data.join(sq_insight_met_vac, on='identity_met')
     data = data.join(sq_insight_sub_vac, on='identity')
+
+    del sq_insight_met_rent
+    del sq_insight_sub_rent
+    del sq_insight_met_vac
+    del sq_insight_sub_vac
     
     data = data.rename(columns={'sub_rentdrops': 'rentdrops', 'sub_rentflats': 'rentflats', 'sub_rentincrs': 'rentincrs', 'sub_vacdrops': 'vacdrops', 'sub_vacflats': 'vacflats', 'sub_vacincrs': 'vacincrs'})
     data = data.rename(columns={'met_totabs': 'met_sur_totabs', 'sub_totabs': 'sub_sur_totabs'})
@@ -1000,6 +1026,13 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/ret_combined_insight_data.pickle".format(get_home()))
         insight_combined.to_pickle(file_path)
 
+        del insight_NC
+        del insight_c
+        del insight_n
+        del insight_nc
+        del insight_combined
+        del insight
+
     # Fill in nans for the first period abs in 2020q2 new subs
     data['abs'] = np.where((data['yr'] == 2019) & (data['currmon'] == 1) & (data['identity'] != data['identity'].shift(1)), np.nan, data['abs'])
 
@@ -1036,7 +1069,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     for index, row in curr.iterrows():
         newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
                                                                     'sizex': row['sizex'], 'totavailx': row['totavailx'], 'renx': row['renx']}
-    
+    del curr
+
     # Use the MSQ data set to calculate the total surveyed abs from NC properties in currmon for use in flags
     data_surabs = msq_input.copy()
     data_surabs['surveyed'] = np.where(data_surabs['availxM'] == 0, 1, 0)
@@ -1062,15 +1096,19 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         data_surabs['nc_surabs'] = round(data_surabs['nc_surabs'], -3)
     data_surabs = data_surabs.set_index('identity')
     data = data.join(data_surabs, on='identity')
+    del data_surabs
     data['nc_surabs'] = data['nc_surabs'].fillna(0)
 
     # Get the ids that have greater than zero nc surabs, for display in tooltip for key metrics table
     nc_sur_props = data_surabs_all.copy()
+    del data_surabs_all
     nc_sur_props = nc_sur_props[nc_sur_props['nc_surabs'] > 0]
     nc_sur_props = nc_sur_props[['id', 'identity', 'nc_surabs', 'yearx', 'month']]
     ncsur_prop_dict = {}
     for index, row in nc_sur_props.iterrows():
         ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
+
+    del nc_sur_props
 
     # Use the MSQ data set to calculate the top ids for total surveyed abs for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
     sur_avail = msq_input.copy()
@@ -1086,6 +1124,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     for index, row in sur_avail.iterrows():
         avail_10_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'abs': row['abs']}
 
+    del sur_avail
+
     # Use the MSQ data set to calculate the top ids for rent chg regardless of survey status in currmon for display in tooltip for key metrics table
     sq_avail = msq_input.copy()
     sq_avail = sq_avail[((sq_avail['yr'] == curryr) & (sq_avail['currmon'] == currmon)) | ((sq_avail['yr'].shift(-1) == curryr) & (sq_avail['currmon'].shift(-1) == currmon))]
@@ -1099,6 +1139,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     for index, row in sq_avail.iterrows():
         sq_avail_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'abs': row['abs'], 'availxM': row['availxM']}
     
+    del sq_avail
+
     # Use the MSQ data set to calculate the top ids for rent chg for the 10 pool (surveyed this month, squared last month) in currmon for display in tooltip for key metrics table
     sur_rg = msq_input.copy()
     sur_rg['10_tag'] = np.where((sur_rg['renxM'] == 0) & (sur_rg['renxM'].shift(1) == 1) & (sur_rg['id'] == sur_rg['id'].shift(1)) & (sur_rg['yr'] == curryr) & (sur_rg['currmon'] == currmon), 1, 0)
@@ -1114,6 +1156,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     for index, row in sur_rg.iterrows():
         rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg']}
 
+    del sur_rg
+
     # Use the MSQ data set to calculate the top ids for rent chg regardless of survey status in currmon for display in tooltip for key metrics table
     sq_rg = msq_input.copy()
     sq_rg = sq_rg[((sq_rg['yr'] == curryr) & (sq_rg['currmon'] == currmon)) | ((sq_rg['yr'].shift(-1) == curryr) & (sq_rg['currmon'].shift(-1) == currmon))]
@@ -1127,5 +1171,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     sq_rg_dict = {}
     for index, row in sq_rg.iterrows():
         sq_rg_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
+
+    del sq_rg
 
     return data, orig_cols, ncsur_prop_dict, avail_10_dict, sq_avail_dict, rg_10_dict, sq_rg_dict, newnc_dict
