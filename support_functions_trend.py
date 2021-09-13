@@ -722,7 +722,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
     
     dataframe = dataframe_in.copy()
-    dataframe = dataframe[['rol_vaq', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
+    dataframe = dataframe[['rol_vac', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
     
     dataframe['vac_diff'] = dataframe['vac'] - dataframe['qrol_vac']
     dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & (round(dataframe['vac'],4) != round(dataframe['rol_vac'],4))]
