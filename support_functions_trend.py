@@ -15,7 +15,7 @@ from init_load_trend import get_home
 from timer_trend import Timer
 
 # Function that filters the dataframe for the columns to display on the data tab to the user, based on what type of flag is currently being analyzed
-def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon, flag_list, test_auto_rebench, message):
+def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curryr, currmon, flag_list, test_auto_rebench, message, issue_description_noprev):
     dataframe = dataframe_in.copy()
 
     dataframe = dataframe[dataframe['identity'] == identity_val]
@@ -40,11 +40,12 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
                 display_cols.remove('sqvac')
                 display_cols.remove('sqvac_chg')
                 display_cols.remove('sqavail')
-            elif "market rent" in message:
-                display_cols.insert(24, 'rol_mrent')
-                display_cols.remove('sqsren')
-            elif "effective rent" in message:
-                display_cols.insert(27, 'rol_merent')
+            elif "vacancy" in issue_description_noprev:
+                display_cols.insert(13, 'qrol_vac')
+            elif "market rent" in message or "market rent" in issue_description_noprev:
+                display_cols.insert(24, 'qrol_mrent')
+            elif "effective rent" in message or "effective rent" in issue_description_noprev:
+                display_cols.insert(28, 'qrol_merent')
         else:
             if "vacancy" in message:
                 display_cols.insert(20, 'rol_vac_chg')
@@ -52,11 +53,12 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
                 display_cols.remove('sqvac')
                 display_cols.remove('sqvac_chg')
                 display_cols.remove('sqavail')
-            elif "market rent" in message:
-                display_cols.insert(28, 'rol_mrent')
-                display_cols.remove('sqsren')
-            elif "effective rent" in message:
-                display_cols.insert(31, 'rol_merent')
+            elif "vacancy" in issue_description_noprev:
+                display_cols.insert(17, 'qrol_vac')
+            elif "market rent" in message or "market rent" in issue_description_noprev:
+                display_cols.insert(28, 'qrol_mrent')
+            elif "effective rent" in message or "effective rent" in issue_description_noprev:
+                display_cols.insert(32, 'qrol_merent')
     
     if dataframe['merent'].isnull().all(axis=0) == True:
         display_cols.remove('merent')
@@ -668,14 +670,14 @@ def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sec
     if var == 'vac':
         new_vac = data_temp.copy()
         new_vac = new_vac[new_vac['identity'] == drop_val]
-        new_vac = new_vac[[var, 'qrol_' + var, var + "_oob"]]
+        new_vac = new_vac[[var, 'rol_' + var, 'qrol_' + var, var + "_oob"]]
         rebench_to_check = rebench_to_check.join(new_vac)
     else:
         rol_var = data_temp.copy()
         rol_var = rol_var[rol_var['identity'] == drop_val]
-        rol_var = rol_var[['qrol_' + var, var + "_oob"]]
+        rol_var = rol_var[['rol_' + var, 'qrol_' + var, var + "_oob"]]
         rebench_to_check = rebench_to_check.join(rol_var)
-    rebench_to_check = rebench_to_check[[var, 'qrol_' + var, var + '_oob']]
+    rebench_to_check = rebench_to_check[[var, 'rol_' + var, 'qrol_' + var, var + '_oob']]
     orig_to_check = orig_to_check[orig_to_check['identity'] == drop_val]
     orig_to_check = orig_to_check[[var]]
     orig_to_check = orig_to_check.rename(columns={var: var + "_orig"})
@@ -684,13 +686,17 @@ def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sec
         rebench_to_check['diff_to_oob'] = rebench_to_check[var] - rebench_to_check[var + "_oob"]
         rebench_to_check['diff_to_rol'] = rebench_to_check[var] - rebench_to_check['qrol_' + var]
         rebench_to_check['orig_diff_to_rol'] = rebench_to_check[var + "_orig"] - rebench_to_check['qrol_' + var]
+        rebench_to_check['diff_to_mrol'] = rebench_to_check[var] - rebench_to_check['rol_' + var]
     else:
         rebench_to_check['diff_to_oob'] = (rebench_to_check[var] - rebench_to_check[var + "_oob"]) / rebench_to_check[var + "_oob"]
         rebench_to_check['diff_to_rol'] = (rebench_to_check[var] - rebench_to_check['qrol_' + var]) / rebench_to_check['qrol_' + var]
         rebench_to_check['orig_diff_to_rol'] = (rebench_to_check[var + "_orig"] - rebench_to_check['qrol_' + var]) / rebench_to_check['qrol_' + var]
+        rebench_to_check['diff_to_mrol'] = (rebench_to_check[var] - rebench_to_check['rol_' + var]) / rebench_to_check['rol_' + var]
     
     rebench_to_check = rebench_to_check[((abs(rebench_to_check['diff_to_oob']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= thresh) & (abs(rebench_to_check['diff_to_rol']) >= abs(rebench_to_check['orig_diff_to_rol']))) | 
-                                        ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh))]
+                                        ((abs(rebench_to_check['diff_to_rol']) > abs(rebench_to_check['orig_diff_to_rol'])) & (abs(rebench_to_check['diff_to_rol']) >= thresh)) | (abs(rebench_to_check['diff_to_mrol']) > thresh)]
+    
+    rebench_to_check = rebench_to_check[((rebench_to_check[var] > rebench_to_check['rol_' + var]) & (rebench_to_check['diff_to_rol'] > 0)) | ((rebench_to_check[var] < rebench_to_check['rol_' + var]) & (rebench_to_check['diff_to_rol'] < 0)) | (abs(rebench_to_check['diff_to_mrol']) > thresh)]
     
     if len(rebench_to_check) > 0:
         check = True
@@ -725,7 +731,8 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe = dataframe[['rol_vac', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
     
     dataframe['vac_diff'] = dataframe['vac'] - dataframe['qrol_vac']
-    dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & (round(dataframe['vac'],4) != round(dataframe['rol_vac'],4))]
+    dataframe = dataframe[((abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & (round(dataframe['vac'],4) != round(dataframe['rol_vac'],4))) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
+    dataframe = dataframe[((dataframe['vac'] > dataframe['rol_vac']) & (dataframe['vac_diff'] > 0)) | ((dataframe['vac'] < dataframe['rol_vac']) & (dataframe['vac_diff'] < 0)) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
     if len(dataframe) > 0:
         dataframe = dataframe.drop_duplicates('identity')
         for index, row in dataframe.iterrows():
@@ -745,8 +752,9 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
         dataframe = dataframe[['rol_mrent', 'qrol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
 
         dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['qrol_mrent']) / dataframe['qrol_mrent']
-        dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2)) & (round(dataframe['mrent'],2) != round(dataframe['rol_mrent'],2))]
-        
+        dataframe = dataframe[((abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2)) & (round(dataframe['mrent'],2) != round(dataframe['rol_mrent'],2))) | (abs((dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']) > 0.03)]
+        dataframe = dataframe[((dataframe['mrent'] > dataframe['rol_mrent']) & (dataframe['mrent_diff'] > 0)) | ((dataframe['mrent'] < dataframe['rol_mrent']) & (dataframe['mrent_diff'] < 0)) | (abs((dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']) > 0.03)]
+    
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():
@@ -766,7 +774,9 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
         dataframe = dataframe[['rol_merent', 'qrol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
         
         dataframe['merent_diff'] = (dataframe['merent'] - dataframe['qrol_merent']) / dataframe['qrol_merent']
-        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2)) & (round(dataframe['merent'],2) != round(dataframe['rol_merent'],2))]
+        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2)) & (round(dataframe['merent'],2) != round(dataframe['rol_merent'],2)) | (abs((dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']) > 0.03)]
+        dataframe = dataframe[((dataframe['merent'] > dataframe['rol_merent']) & (dataframe['merent_diff'] > 0)) | ((dataframe['merent'] < dataframe['rol_merent']) & (dataframe['merent_diff'] < 0)) | (abs((dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']) > 0.03)]
+        
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():

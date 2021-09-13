@@ -184,6 +184,10 @@ def get_types(sector_val):
     type_dict['Gmrent ytd'] = 'numeric'
     type_dict['gap chg ytd'] = 'numeric'
     type_dict['sub wtdvacchg'] = 'numeric'
+    type_dict['qrol vac'] = 'numeric'
+    type_dict['qrol mrent'] = 'numeric'
+    type_dict['qrol merent'] = 'numeric'
+
 
 
     
@@ -284,6 +288,7 @@ def get_types(sector_val):
     format_dict['Gmrent ytd'] = FormatTemplate.percentage(2)
     format_dict['gap chg ytd'] = FormatTemplate.percentage(2)
     format_dict['sub wtdvacchg'] = FormatTemplate.percentage(2)
+    format_dict['qrol vac'] = FormatTemplate.percentage(2)
     
     format_dict['Survey Cover Pct'] = FormatTemplate.percentage(1)
     format_dict['% Currmon Trend Rows W Flag'] = FormatTemplate.percentage(1)
@@ -321,6 +326,8 @@ def get_types(sector_val):
     format_dict['merent shim'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['rol merent'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['ncrenlev'] = Format(precision=2, scheme=Scheme.fixed)
+    format_dict['qrol mrent'] = Format(precision=2, scheme=Scheme.fixed)
+    format_dict['qrol merent'] = Format(precision=2, scheme=Scheme.fixed)
 
 
     format_dict['yr'] = Format(precision=0, scheme=Scheme.fixed)
@@ -1892,10 +1899,23 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 first_rebench = first_rebench.rename(columns={'rol_inv': 'init_rol_inv'})
                 first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", ''), 'init_rol_inv']]
                 rebench_log = rebench_log.join(first_rebench, on='identity')
+            
             rebench_log = rebench_log[
                                       ((abs(rebench_log['vac_diff']) >= 0.01) & (round(rebench_log['vac'],4) != round(rebench_log['rol_vac'],4))) | 
+                                      (abs(rebench_log['vac'] - rebench_log['rol_vac']) >= 0.01) | 
                                       ((abs(rebench_log['mrent_diff']) >= 0.03) & (round(rebench_log['mrent'],2) != round(rebench_log['rol_mrent'],2))) | 
-                                      ((abs(rebench_log['merent_diff']) >= 0.03) & (round(rebench_log['merent'],2) != round(rebench_log['rol_merent'],2)))]
+                                      (abs((rebench_log['mrent'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= 0.03) | 
+                                      ((abs(rebench_log['merent_diff']) >= 0.03) & (round(rebench_log['merent'],2) != round(rebench_log['rol_merent'],2))) |
+                                      (abs((rebench_log['merent'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= 0.03)
+                                     ]
+
+            rebench_log = rebench_log[
+                                      (((rebench_log['vac'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac'] - rebench_log['rol_vac']) > 0.01)) | 
+                                      (((rebench_log['mrent'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > 0.03))
+                                      (((rebench_log['merent'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > 0.03))
+                                     ]
+    
+
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['merent_diff'])
@@ -2786,7 +2806,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         # Use key_met_val to set display cols, and if there is none selected, set the display cols based on the first flag type for the sub
         if key_met_val is None:
             key_met_val = flag_list[0][0]
-        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list, test_auto_rebench, message)
+        display_cols, key_met_cols, key_met_2 = set_display_cols(data, drop_val, key_met_val, sector_val, curryr, currmon, flag_list, test_auto_rebench, message, issue_description_noprev)
 
         display_data = display_frame(display_data, drop_val, display_cols, curryr, sector_val)
 
@@ -2951,21 +2971,21 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             if test_auto_rebench == False:
                 key_metrics_highlight_list = []
                 if "vacancy" in message:
-                    display_highlight_list = ['vac', 'rol vac']
+                    display_highlight_list = ['vac', 'qrol vac']
                 elif "market rent" in message:
-                    display_highlight_list = ['mrent', 'rol mrent']
+                    display_highlight_list = ['mrent', 'qrol mrent']
                 elif "effective rent" in message:
-                    display_highlight_list = ['merent', 'rol merent']
+                    display_highlight_list = ['merent', 'qrol merent']
             elif test_auto_rebench == True:
                 key_metrics_highlight_list = ['cons roldiff']
                 if auto_rebench_var == "vacancy":
-                    display_highlight_list = ['vac', 'rol vac']
+                    display_highlight_list = ['vac', 'qrol vac']
                     key_metrics_highlight_list += ['vac roldiff', 'newncava']
                 elif auto_rebench_var == "market rent":
-                    display_highlight_list = ['mrent', 'rol mrent']
+                    display_highlight_list = ['mrent', 'qrol mrent']
                     key_metrics_highlight_list += ['gmrent roldiff']
                 elif auto_rebench_var == "effective rent":
-                    display_highlight_list = ['merent', 'rol merent']
+                    display_highlight_list = ['merent', 'qrol merent']
             temp = display_data.copy()
             temp['id'] = temp.index
             display_highlight_rows = list(temp[(temp['yr'] == first_yr) & (temp['month'] == first_month)]['id'])
@@ -2988,8 +3008,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         type_dict_metrics, format_dict_metrics = get_types(sector_val)
 
         # Drop the rol vars that were only included to help identify the flag row for highlighting purposes
-        if test_auto_rebench == False and "governance" not in message:
-            display_data = display_data.drop(['rol vac'], axis=1)
+        display_data = display_data.drop(['rol vac'], axis=1)
         if "c_flag_rolg" not in flag_list:
             display_data = display_data.drop(['rol Gmrent'], axis=1)
 
