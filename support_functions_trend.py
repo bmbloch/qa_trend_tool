@@ -722,10 +722,10 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
     
     dataframe = dataframe_in.copy()
-    dataframe = dataframe[['qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
+    dataframe = dataframe[['rol_vaq', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
     
     dataframe['vac_diff'] = dataframe['vac'] - dataframe['qrol_vac']
-    dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4))]
+    dataframe = dataframe[(abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & (round(dataframe['vac'],4) != round(dataframe['rol_vac'],4))]
     if len(dataframe) > 0:
         dataframe = dataframe.drop_duplicates('identity')
         for index, row in dataframe.iterrows():
@@ -742,10 +742,10 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     if avail_check == False:
         dataframe = dataframe_in.copy()
         dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-        dataframe = dataframe[['qrol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
+        dataframe = dataframe[['rol_mrent', 'qrol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
 
         dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['qrol_mrent']) / dataframe['qrol_mrent']
-        dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2))]
+        dataframe = dataframe[(abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2)) & (round(dataframe['mrent'],2) != round(dataframe['rol_mrent'],2))]
         
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
@@ -763,10 +763,10 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     if avail_check == False and mrent_check == False:
         dataframe = dataframe_in.copy()
         dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-        dataframe = dataframe[['qrol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
+        dataframe = dataframe[['rol_merent', 'qrol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
         
         dataframe['merent_diff'] = (dataframe['merent'] - dataframe['qrol_merent']) / dataframe['qrol_merent']
-        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2))]
+        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2)) & (round(dataframe['merent'],2) != round(dataframe['rol_merent'],2))]
         if len(dataframe) > 0:
             dataframe = dataframe.drop_duplicates('identity')
             for index, row in dataframe.iterrows():
