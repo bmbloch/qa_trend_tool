@@ -1892,7 +1892,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 first_rebench = first_rebench.rename(columns={'rol_inv': 'init_rol_inv'})
                 first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", ''), 'init_rol_inv']]
                 rebench_log = rebench_log.join(first_rebench, on='identity')
-            rebench_log = rebench_log[(abs(rebench_log['vac_diff']) >= 0.01) | (abs(rebench_log['mrent_diff']) >= 0.03) | (abs(rebench_log['merent_diff']) >= 0.03)]
+            rebench_log = rebench_log[
+                                      ((abs(rebench_log['vac_diff']) >= 0.01) & (round(rebench_log['vac'],4) != round(rebench_log['rol_vac'],4))) | 
+                                      ((abs(rebench_log['mrent_diff']) >= 0.03) & (round(rebench_log['mrent'],2) != round(rebench_log['rol_mrent'],2))) | 
+                                      ((abs(rebench_log['merent_diff']) >= 0.03) & (round(rebench_log['merent'],2) != round(rebench_log['rol_merent'],2)))]
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['merent_diff'])
