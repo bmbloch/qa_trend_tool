@@ -3,6 +3,9 @@ import numpy as np
 from pathlib import Path
 import re
 import os
+import sys
+from IPython.core.display import display, HTML
+import gc
 
 def get_home():
     if os.name == "nt": return "//odin/reisadmin/"
@@ -143,6 +146,8 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
         msq_data = pd.read_pickle(file_path)
         msq_data = msq_data.join(temp, on='identity_met')
         msq_data.to_pickle(file_path)
+        del msq_data
+        gc.collect()
     
     if sector_val == "ind":
         print("Take out qtr aggregation for ind once the new sq code is live")
@@ -271,3 +276,9 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
     sq_insight_met_vac.to_pickle(file_path)
     file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_sq_insight_sub_vac.pickle".format(get_home(), sector_val))
     sq_insight_sub_vac.to_pickle(file_path)
+
+    del sq_insight_met_rent
+    del sq_insight_sub_rent
+    del sq_insight_met_vac
+    del sq_insight_sub_vac
+    gc.collect()
