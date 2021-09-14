@@ -312,6 +312,20 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             data['qrol_vac'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_vac'].shift(2), data['qrol_vac'])
             data['qrol_mrent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_mrent'].shift(2), data['qrol_mrent'])
             data['qrol_merent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_merent'].shift(2), data['qrol_merent'])
+
+        # Since we only need qrol for months in the current quarter for the rebench check (older periods will just check against mrol), set qrol to mrol in those periods
+        if currmon in [1,2,3]:
+            currmon_cut = 12
+        elif currmon in [4,5,6]:
+            currmon_cut = 3
+        elif currmon in [7,8,9]:
+            currmon_cut = 6
+        elif currmon in [10,11,12]: 
+            currmon_cut = 9
+
+        data['qrol_vac'] = np.where((data['yr'] == curryr) & (data['currmon'] > currmon_cut), data['qrol_vac'], data['rol_vac'])
+        data['qrol_mrent'] = np.where((data['yr'] == curryr) & (data['currmon'] > currmon_cut), data['qrol_mrent'], data['rol_mrent'])
+        data['qrol_merent'] = np.where((data['yr'] == curryr) & (data['currmon'] > currmon_cut), data['qrol_merent'], data['rol_merent'])
     
     orig_cols = list(data.columns)
     if sector_val == "apt" and file_used == "oob":
@@ -547,24 +561,15 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_surv_coverage.pickle".format(get_home(), sector_val))
         cov_thresh.to_pickle(file_path)
+        del cov_thresh
         del data_in
         gc.collect()
-    
-        # Call the function to load and process the sq insight stats. The processed files will be saved to the network and can then be read in at any time
-        if currmon < 4:
-            currqtr = 1
-        elif currmon < 7:
-            currqtr = 2
-        elif currmon < 10: 
-            currqtr = 3
-        else:
-            currqtr = 4
-        process_sq_insight(sector_val, curryr, currmon, currqtr)     
 
-        # Calculate metro level sq vars
+        # Create second dataset that will be used to calc metro and sub level sq stats
+        # Better for memory management to have this as pickled file to read in each time it is needed, instead of creating copies
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
         msq_data_in = pd.read_pickle(file_path)
-
+        
         # Special caveat here for office is that 99 subnames are ok if they are in a sub that represents non-cbd. But this is only the case for rolling up metsq data, for the review packet, it looks like DQ removed even these cases
         msq_data_in['balance_test'] = msq_data_in['submkt'].str.slice(0,2)
         if sector_val != "off":
@@ -600,6 +605,30 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data_in.sort_values(by=['id', 'metcode', 'yr', 'qtr', 'currmon'], inplace=True)
             msq_data_in['join_ident'] = msq_data_in['metcode'] + msq_data_in['yr'].astype(str) + msq_data_in['qtr'].astype(str) + msq_data_in['currmon'].astype(str)
 
+        if sector_val == "ret":
+            msq_data_in['type1'] = np.where(msq_data_in['subid'] == 70, 'NC', msq_data_in['type1'])
+        
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_for_roll.pickle".format(get_home(), sector_val))
+        msq_data_in.to_pickle(file_path)
+        
+        del msq_data_in
+        gc.collect()
+    
+        # Call the function to load and process the sq insight stats. The processed files will be saved to the network and can then be read in at any time
+        if currmon < 4:
+            currqtr = 1
+        elif currmon < 7:
+            currqtr = 2
+        elif currmon < 10: 
+            currqtr = 3
+        else:
+            currqtr = 4
+        process_sq_insight(sector_val, curryr, currmon, currqtr)     
+
+        # Calculate metro level sq vars
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_for_roll.pickle".format(get_home(), sector_val))
+        msq_data1 = pd.read_pickle(file_path)
+        
         if sector_val == "apt":
             round_val = 0
         else:
@@ -631,7 +660,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             drop_list = ['metcode', 'yr', 'qtr', 'currmon']
             msq_data = msq_data[['join_ident'] + drop_list]
 
-        msq_data1 = msq_data_in.copy()
         msq_data1['currmon'] = np.where((msq_data1['only_qtr'] == 1) & (msq_data1['currmon'] % 3 != 0), np.nan, msq_data1['currmon'])
         msq_data1 = msq_data1[(np.isnan(msq_data1['currmon']) == False)]
         msq_data1['metsqinv'] = msq_data1.groupby('join_ident')['sizex'].transform('sum')
@@ -669,7 +697,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         del msq_data1
         gc.collect()
 
-        msq_data2 = msq_data_in.copy()
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_for_roll.pickle".format(get_home(), sector_val))
+        msq_data2 = pd.read_pickle(file_path)
+
         if currmon == 1:
             msq_data2 = msq_data2[((msq_data2['yr'] == curryr) & (msq_data2['currmon'] == currmon)) | ((msq_data2['yr'] == curryr - 1) & (msq_data2['currmon'] == 12))]
         else:
@@ -708,7 +738,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         gc.collect()
 
         # Note: In an effort to align the sq cons data with the trend data, will move away from the method of only reporting square rollup in the third month of the quarter for periods that do not have a monthly breakout in the msq
-        msq_data3 = msq_data_in.copy()
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_for_roll.pickle".format(get_home(), sector_val))
+        msq_data3 = pd.read_pickle(file_path)
+
         msq_data3 = msq_data3[((msq_data3['yearx'] > 2008) | ((msq_data3['yearx'] == 2008) & (msq_data3['month'] >= 10)))]
         msq_data3['qtr'] = np.where(msq_data3['month'] <= 3, 1, 4)
         msq_data3['qtr'] = np.where((msq_data3['month'] <= 6) & (msq_data3['month'] >= 4), 2, msq_data3['qtr'])
@@ -742,7 +774,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         del msq_data3
         gc.collect()
 
-        
         msq_data = msq_data.set_index('join_ident')
         msq_data['metdqinvren10'] = msq_data['metdqinvren10'].fillna(0)
         msq_data['metsqcons'] = msq_data['metsqcons'].fillna(0)
@@ -783,11 +814,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon']
             msq_data = msq_data[['join_ident'] + drop_list]
-
-        if sector_val == "ret":
-            msq_data_in['type1'] = np.where(msq_data_in['subid'] == 70, 'NC', msq_data_in['type1'])
         
-        msq_data1 = msq_data_in.copy()
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_for_roll.pickle".format(get_home(), sector_val))
+        msq_data1 = pd.read_pickle(file_path)
+
         if sector_val == "ind":
             msq_data1['join_ident'] = msq_data1['metcode'] + msq_data1['subid'].astype(str) + msq_data1['type2'] + msq_data1['yr'].astype(str) + msq_data1['qtr'].astype(str) + msq_data1['currmon'].astype(str)
             msq_data1.sort_values(by=['type2', 'metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
@@ -841,7 +871,9 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         gc.collect()
         
         # Note: In an effort to align the sq cons data with the trend data, will move away from the method of only reporting square rollup in the third month of the quarter for periods that do not have a monthly breakout in the msq
-        msq_data3 = msq_data_in.copy()
+        file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_for_roll.pickle".format(get_home(), sector_val))
+        msq_data3 = pd.read_pickle(file_path)
+        
         if sector_val == "ind":
             msq_data3['join_ident'] = msq_data3['metcode'] + msq_data3['subid'].astype(str) + msq_data3['type2'] + msq_data3['yr'].astype(str) + msq_data3['qtr'].astype(str) + msq_data3['currmon'].astype(str)
             msq_data3.sort_values(by=['type2', 'metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
