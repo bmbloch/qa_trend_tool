@@ -1106,9 +1106,9 @@ def filter_flags(dataframe_in, drop_flag):
 
 
 #This function produces the items that need to be returned by the update_data callback if the user has just loaded the program
-def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
+def first_update(data, file_used, sector_val, orig_cols, curryr, currmon):
 
-    data_init = calc_stats(data_init, curryr, currmon, True, sector_val)
+    data = calc_stats(data, curryr, currmon, True, sector_val)
 
     file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_surv_coverage.pickle".format(get_home(), sector_val))
     cov_thresh = pd.read_pickle(file_path)
@@ -1117,7 +1117,6 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
     v_threshold_true = cov_thresh['v_cov_true'].loc[0]
     r_threshold_true = cov_thresh['r_cov_true'].loc[0]
     
-    data = data_init.copy()
     if file_used == "oob":
         data['deep_hist_first_period'] = np.where((data['yr'] == 2008) & (data['yr'].shift(-1) == 2009), 1, 0)
         # Can drop the deep deep history prior to 2009, because that doesnt get edited, but do need to save it so it can be appended back for the final econ file
@@ -1125,7 +1124,8 @@ def first_update(data_init, file_used, sector_val, orig_cols, curryr, currmon):
         deep_hist = deep_hist[(deep_hist['yr'] < 2008) | ((deep_hist['deep_hist_first_period'] == 0) & (deep_hist['yr'] == 2008))]
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/{}_deep_hist.pickle".format(get_home(), sector_val, str(curryr), str(currmon), sector_val))
         deep_hist.to_pickle(file_path)
-    
+        del deep_hist
+
         data = data[(data['yr'] > 2008) | ((data['yr'] == 2008) & (data['deep_hist_first_period'] == 1))]
         data = data.drop(['deep_hist_first_period'], axis=1)
     
