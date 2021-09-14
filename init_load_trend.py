@@ -300,6 +300,18 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         if sector_val == "ret":
             data = data.rename(columns={'sub1to99_Gnrenx': 'sub1to99_Grenx'})
 
+        # If this is month 2 or 3 of the quarter, bring down the qrol vars into the m1 or m1 and m2 month rows
+        if currmon in [2, 5, 8, 11]:
+            data['qrol_vac'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_vac'].shift(1), data['qrol_vac'])
+            data['qrol_mrent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_mrent'].shift(1), data['qrol_mrent'])
+            data['qrol_merent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_merent'].shift(1), data['qrol_merent'])
+        if currmon in [3, 6, 9, 12]:
+            data['qrol_vac'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 2), data['qrol_vac'].shift(1), data['qrol_vac'])
+            data['qrol_mrent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 2), data['qrol_mrent'].shift(1), data['qrol_mrent'])
+            data['qrol_merent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 2), data['qrol_merent'].shift(1), data['qrol_merent'])
+            data['qrol_vac'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_vac'].shift(2), data['qrol_vac'])
+            data['qrol_mrent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_mrent'].shift(2), data['qrol_mrent'])
+            data['qrol_merent'] = np.where((data['yr'] == curryr) & (data['currmon'] == currmon - 1), data['qrol_merent'].shift(2), data['qrol_merent'])
     
     orig_cols = list(data.columns)
     if sector_val == "apt" and file_used == "oob":
