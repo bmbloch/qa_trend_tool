@@ -184,10 +184,9 @@ def get_types(sector_val):
     type_dict['Gmrent ytd'] = 'numeric'
     type_dict['gap chg ytd'] = 'numeric'
     type_dict['sub wtdvacchg'] = 'numeric'
-    type_dict['qrol vac'] = 'numeric'
-    type_dict['qrol mrent'] = 'numeric'
-    type_dict['qrol merent'] = 'numeric'
-
+    type_dict['rol vac use'] = 'numeric'
+    type_dict['rol mrent use'] = 'numeric'
+    type_dict['rol merent use'] = 'numeric'
 
 
     
@@ -288,7 +287,7 @@ def get_types(sector_val):
     format_dict['Gmrent ytd'] = FormatTemplate.percentage(2)
     format_dict['gap chg ytd'] = FormatTemplate.percentage(2)
     format_dict['sub wtdvacchg'] = FormatTemplate.percentage(2)
-    format_dict['qrol vac'] = FormatTemplate.percentage(2)
+    format_dict['rol vac use'] = FormatTemplate.percentage(2)
     
     format_dict['Survey Cover Pct'] = FormatTemplate.percentage(1)
     format_dict['% Currmon Trend Rows W Flag'] = FormatTemplate.percentage(1)
@@ -326,8 +325,8 @@ def get_types(sector_val):
     format_dict['merent shim'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['rol merent'] = Format(precision=2, scheme=Scheme.fixed)
     format_dict['ncrenlev'] = Format(precision=2, scheme=Scheme.fixed)
-    format_dict['qrol mrent'] = Format(precision=2, scheme=Scheme.fixed)
-    format_dict['qrol merent'] = Format(precision=2, scheme=Scheme.fixed)
+    format_dict['rol mrent use'] = Format(precision=2, scheme=Scheme.fixed)
+    format_dict['rol merent use'] = Format(precision=2, scheme=Scheme.fixed)
 
 
     format_dict['yr'] = Format(precision=0, scheme=Scheme.fixed)
@@ -906,7 +905,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         users = decision_data_test.copy()
         users = users[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user', 'inv_cons_comment', 'avail_comment',
-                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 
+                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent', 'rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 
                                                       'rol_cons', 'occ'], axis=1)
         
         update_data['vac'] = round(update_data['vac'], 3)
@@ -1606,7 +1605,7 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
             oob_cols = [x for x in list(data.columns) if "oob" in x]
             decision_data = data.copy()
             decision_data = decision_data.reset_index()
-            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons', 'qrol_vac', 'qrol_mrent', 'qrol_merent']]
+            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons', 'rol_abs', 'rol_G_mrent', 'rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent']]
             update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
             if sector_val != "ind":
                 update_cols += ['conv_new', 'demo_new']
@@ -1879,12 +1878,22 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             decision_log.to_csv(decision_log_out_path, na_rep='')
 
             # Save a csv file with all the historical rebenches that crossed the data governance threshold
+
+            if currmon in [1,2,3]:
+                no_trend_mon = 12
+            if currmon in [4,5,6]:
+                no_trend_mon = 3
+            if currmon in [7,8,9]:
+                no_trend_mon = 6
+            if currmon in [10,11,12]:
+                no_trend_mon = 9
+
             rebench_log = decision_log.copy()
             comments = decision_log.copy()
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
-            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
+            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent','rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['qrol_vac']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['qrol_mrent']) / rebench_log['qrol_mrent']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['qrol_merent']) / rebench_log['qrol_merent']
@@ -1901,11 +1910,11 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 rebench_log = rebench_log.join(first_rebench, on='identity')
             
             rebench_log = rebench_log[
-                                      ((abs(rebench_log['vac_diff']) >= 0.01) & (abs(round(rebench_log['vac'],4) - round(rebench_log['rol_vac'],4)) >= 0.0005)) | 
+                                      ((abs(rebench_log['vac_diff']) >= 0.01) & ((rebench_log['abs_oob'] != rebench_log['rol_abs']) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) | 
                                       (abs(rebench_log['vac'] - rebench_log['rol_vac']) >= 0.01) | 
-                                      ((abs(rebench_log['mrent_diff']) >= 0.03) & (round(rebench_log['mrent'],2) != round(rebench_log['rol_mrent'],2))) | 
+                                      ((abs(rebench_log['mrent_diff']) >= 0.03) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) | 
                                       (abs((rebench_log['mrent'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= 0.03) | 
-                                      ((abs(rebench_log['merent_diff']) >= 0.03) & (round(rebench_log['merent'],2) != round(rebench_log['rol_merent'],2))) |
+                                      ((abs(rebench_log['merent_diff']) >= 0.03) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) |
                                       (abs((rebench_log['merent'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= 0.03)
                                      ]
 
@@ -1929,7 +1938,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
             rebench_log = rebench_log.drop_duplicates('identity')
-            rebench_log = rebench_log.drop(['rol_inv'], axis=1)
+            rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
             rebench_log.to_csv(file_path, index=False, na_rep='')
 
@@ -3023,6 +3032,8 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         else:
             display_cols = list(display_data.columns)
             for_highlight = display_data.copy()
+
+        display_data = display_data.rename(columns={'qrol vac': 'rol vac use', 'qrol mrent': 'rol mrent use', 'qrol merent': 'rol merent use'})
 
         type_dict_data, format_dict_data = get_types(sector_val)
         highlighting_display = get_style("full", for_highlight, curryr, currmon, display_highlight_list, display_highlight_rows)

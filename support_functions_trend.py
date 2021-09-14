@@ -715,6 +715,15 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     
     identity = False
 
+    if currmon in [1,2,3]:
+        no_trend_mon = 12
+    if currmon in [4,5,6]:
+        no_trend_mon = 3
+    if currmon in [7,8,9]:
+        no_trend_mon = 6
+    if currmon in [10,11,12]:
+        no_trend_mon = 9
+
     dataframe_in = data_temp.copy()
     dataframe_in['avail_comment'] = np.where(dataframe_in['avail_comment'] == '', np.nan, dataframe_in['avail_comment'])
     dataframe_in['mrent_comment'] = np.where(dataframe_in['mrent_comment'] == '', np.nan, dataframe_in['mrent_comment'])
@@ -728,10 +737,10 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe_in = dataframe_in[(dataframe_in['yr'] != curryr) | ((dataframe_in['yr'] == curryr) & (dataframe_in['currmon'] != currmon))]
     
     dataframe = dataframe_in.copy()
-    dataframe = dataframe[['rol_vac', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity']]
+    dataframe = dataframe[['rol_vac', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity', 'abs', 'rol_abs']]
     
     dataframe['vac_diff'] = dataframe['vac'] - dataframe['qrol_vac']
-    dataframe = dataframe[((abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & (abs(round(dataframe['vac'],4) - round(dataframe['rol_vac'],4)) >= 0.0005)) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
+    dataframe = dataframe[((abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & ((dataframe['abs'] != dataframe['rol_abs']) | (dataframe['yr'] < curryr) | (dataframe['currmon'] < no_trend_mon))) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
     dataframe = dataframe[((dataframe['vac'] > dataframe['rol_vac']) & (dataframe['vac_diff'] > 0)) | ((dataframe['vac'] < dataframe['rol_vac']) & (dataframe['vac_diff'] < 0)) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
     if len(dataframe) > 0:
         dataframe = dataframe.drop_duplicates('identity')
@@ -749,10 +758,10 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     if avail_check == False:
         dataframe = dataframe_in.copy()
         dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-        dataframe = dataframe[['rol_mrent', 'qrol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity']]
+        dataframe = dataframe[['rol_mrent', 'qrol_mrent', 'mrent', 'mrent_oob', 'yr', 'currmon', 'mrent_comment', 'identity', 'G_mrent', 'rol_G_mrent']]
 
         dataframe['mrent_diff'] = (dataframe['mrent'] - dataframe['qrol_mrent']) / dataframe['qrol_mrent']
-        dataframe = dataframe[((abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2)) & (round(dataframe['mrent'],2) != round(dataframe['rol_mrent'],2))) | (abs((dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']) > 0.03)]
+        dataframe = dataframe[((abs(dataframe['mrent_diff']) >= 0.03) & (round(dataframe['mrent'],2) == round(dataframe['mrent_oob'],2)) & ((abs(round(dataframe['G_mrent'],4) - round(dataframe['rol_G_mrent'],4)) >= 0.0005) | (dataframe['yr'] < curryr) | (dataframe['currmon'] < no_trend_mon))) | (abs((dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']) > 0.03)]
         dataframe = dataframe[((dataframe['mrent'] > dataframe['rol_mrent']) & (dataframe['mrent_diff'] > 0)) | ((dataframe['mrent'] < dataframe['rol_mrent']) & (dataframe['mrent_diff'] < 0)) | (abs((dataframe['mrent'] - dataframe['rol_mrent']) / dataframe['rol_mrent']) > 0.03)]
     
         if len(dataframe) > 0:
@@ -771,10 +780,10 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     if avail_check == False and mrent_check == False:
         dataframe = dataframe_in.copy()
         dataframe = dataframe[(dataframe['yr'] != curryr) | ((dataframe['yr'] == curryr) & (dataframe['currmon'] != currmon))]
-        dataframe = dataframe[['rol_merent', 'qrol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity']]
+        dataframe = dataframe[['rol_merent', 'qrol_merent', 'merent', 'merent_oob', 'yr', 'currmon', 'erent_comment', 'identity', 'G_merent', 'rol_G_merent']]
         
         dataframe['merent_diff'] = (dataframe['merent'] - dataframe['qrol_merent']) / dataframe['qrol_merent']
-        dataframe = dataframe[(abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2)) & (round(dataframe['merent'],2) != round(dataframe['rol_merent'],2)) | (abs((dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']) > 0.03)]
+        dataframe = dataframe[((abs(dataframe['merent_diff']) >= 0.03) & (round(dataframe['merent'],2) == round(dataframe['merent_oob'],2)) & ((abs(round(dataframe['G_merent'],4) - round(dataframe['rol_G_merent'],4)) >= 0.0005) | (dataframe['yr'] < curryr) | (dataframe['currmon'] < no_trend_mon))) | (abs((dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']) > 0.03)]
         dataframe = dataframe[((dataframe['merent'] > dataframe['rol_merent']) & (dataframe['merent_diff'] > 0)) | ((dataframe['merent'] < dataframe['rol_merent']) & (dataframe['merent_diff'] < 0)) | (abs((dataframe['merent'] - dataframe['rol_merent']) / dataframe['rol_merent']) > 0.03)]
         
         if len(dataframe) > 0:
