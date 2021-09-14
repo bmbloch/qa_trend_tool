@@ -1151,7 +1151,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     data['nc_surabs'] = data['nc_surabs'].fillna(0)
     if sector_val == "ind":
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/nc_surabs.csv".format(get_home(), sector_val, curryr, currmon))
-        data[data['nc_surabs'] != 0][['identity', 'nc_surabs']].to_csv(file_path)
+        data[data['nc_surabs'] != 0].drop_duplicates('identity')[['identity', 'nc_surabs']].to_csv(file_path)
 
     # Get the ids that have greater than zero nc surabs, for display in tooltip for key metrics table
     nc_sur_props = data_surabs_all.copy()
