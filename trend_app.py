@@ -1901,7 +1901,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 rebench_log = rebench_log.join(first_rebench, on='identity')
             
             rebench_log = rebench_log[
-                                      ((abs(rebench_log['vac_diff']) >= 0.01) & (round(rebench_log['vac'],4) != round(rebench_log['rol_vac'],4))) | 
+                                      ((abs(rebench_log['vac_diff']) >= 0.01) & (abs(round(rebench_log['vac'],4) - round(rebench_log['rol_vac'],4)) >= 0.0005)) | 
                                       (abs(rebench_log['vac'] - rebench_log['rol_vac']) >= 0.01) | 
                                       ((abs(rebench_log['mrent_diff']) >= 0.03) & (round(rebench_log['mrent'],2) != round(rebench_log['rol_mrent'],2))) | 
                                       (abs((rebench_log['mrent'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= 0.03) | 
