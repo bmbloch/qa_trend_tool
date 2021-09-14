@@ -28,6 +28,7 @@ def load_msqs(sector_val, file_path):
     # Keep only relevant periods and rows that the property was in existance for
     msq = msq[((msq['yr'] > 2008) | ((msq['yr'] == 2008) & (msq['qtr'] == 4)))]
     msq = msq[msq['existsx'] == 1]
+    msq = msq.drop(['existsx'], axis=1)
 
     return msq
 
@@ -558,6 +559,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         if sector_val == "ret":
             msq_data_in['type1'] = np.where(msq_data_in['subid'] == 70, 'NC', msq_data_in['type1'])
 
+        msq_data_in = msq_data_in.drop(['submkt', 'has_l_surv', 'qtr_ident'],axis=1)
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
         msq_data_in.to_pickle(file_path)
 
@@ -1102,14 +1104,13 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     curr = pd.read_pickle(file_path)
     curr = curr[(curr['yr'] == curryr) & (curr['currmon'] == currmon)]
     curr = curr[curr['yearx'] >= curryr - 3]
-    curr['balance_test'] = curr['submkt'].str.slice(0,2)
     curr = curr[curr['balance_test'] != '99']
-    curr = curr[['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity', 'existsx']]
+    curr = curr[['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
     curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
     curr = curr.join(prior, on='id')
     del prior
     curr = curr[curr['in_last_month'].isnull() == True]
-    curr = curr[curr['existsx'] == 1]
+    curr = curr[curr['renx'].isnull() == False]
     curr.sort_values(by=['id', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True], inplace=True)
     curr = curr.drop_duplicates('id')
     new_ids = list(curr['id'])

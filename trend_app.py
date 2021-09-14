@@ -2265,7 +2265,6 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
         # Drop ids in balance subs, to be consistent with DQ
         # Caveat here is it will not match DQs figure, since his method leaves out ids built later in the cycle
         data_msq = msq_input.copy()
-        data_msq['balance_test'] = data_msq['submkt'].str.slice(0,2)
         data_msq = data_msq[data_msq['balance_test'] != '99']
         data_msq = data_msq[(data_msq['yr'] == curryr) & (data_msq['currmon'] == currmon)]
         data_msq['sq_ids'] = data_msq.groupby('identity_met')['sizex'].transform('count')
@@ -2321,7 +2320,6 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
         # Calculate the survey vars for vacancy and rent, if this is ind and a qtr rollup month. Otherwise, it has already been calculated
         if sector_val == "ind" and currmon in [2,3,6,9,12]:
             temp = msq_input.copy()
-            temp['balance_test'] = temp['submkt'].str.slice(0,2)
             temp = temp[temp['balance_test'] != '99']
             temp = temp[(temp['yr'] == curryr) & (temp['currmon'] == currmon)]
             temp['metsqinv'] = temp.groupby('identity_met')['sizex'].transform('sum')
@@ -2336,7 +2334,6 @@ def output_edits(sector_val, submit_button, download_button, curryr, currmon, su
 
             # Note: DQ only included properties with a lagged survey within the sq window, so will drop any ids that do not have surveys with a non nan currmon var value
             temp = msq_input.copy()
-            temp['balance_test'] = temp['submkt'].str.slice(0,2)
             temp = temp[temp['balance_test'] != '99']
             temp = temp[(temp['yr'] == curryr) & (temp['currmon'] == currmon)]
             temp['metsqinv'] = temp.groupby('identity_met')['sizex'].transform('sum')
