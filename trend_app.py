@@ -1932,6 +1932,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                                       (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > 0.03))
                                      ]
     
+            rebench_log['vac_diff'] = np.where(rebench_log['abs_oob'] == rebench_log['rol_abs'], np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where(abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.0005, np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where(abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.0005, np.nan, rebench_log['merent_diff'])
+            
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['merent_diff'])
@@ -1950,9 +1954,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['vac_diff'] = rebench_log.groupby('identity')['abs_vac_diff'].transform('max')
             rebench_log['mrent_diff'] = rebench_log.groupby('identity')['abs_mrent_diff'].transform('max')
             rebench_log['merent_diff'] = rebench_log.groupby('identity')['abs_merent_diff'].transform('max')
-            rebench_log['vac_comment'] = np.where(rebench_log['vac_diff'].isnull() == True, np.nan, rebench_lgo['vac_comment'])
-            rebench_log['mrent_comment'] = np.where(rebench_log['mrent_diff'].isnull() == True, np.nan, rebench_lgo['mrent_comment'])
-            rebench_log['merent_comment'] = np.where(rebench_log['merent_diff'].isnull() == True, np.nan, rebench_lgo['merent_comment'])
+            rebench_log['vac_comment'] = np.where(rebench_log['vac_diff'].isnull() == True, np.nan, rebench_log['vac_comment'])
+            rebench_log['mrent_comment'] = np.where(rebench_log['mrent_diff'].isnull() == True, np.nan, rebench_log['mrent_comment'])
+            rebench_log['merent_comment'] = np.where(rebench_log['merent_diff'].isnull() == True, np.nan, rebench_log['merent_comment'])
             rebench_log = rebench_log.drop_duplicates('identity')
             rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
             rebench_log = rebench_log.drop(['abs_oob', 'G_mrent_oob', 'G_merent_oob', 'yr', 'currmon', 'abs_vac_diff', 'abs_mrent_diff','abs_merent_diff'], axis=1)
