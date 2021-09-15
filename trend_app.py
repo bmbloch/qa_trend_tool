@@ -1894,10 +1894,11 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
             rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent','rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user', 'abs_oob', 'G_mrent_oob', 'G_merent_oob']]
+            rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['qrol_vac']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['qrol_mrent']) / rebench_log['qrol_mrent']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['qrol_merent']) / rebench_log['qrol_merent']
-            rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
+            
             diff_list = ['vac_diff', 'mrent_diff', 'merent_diff']
             for var in diff_list:
                 first_rebench = rebench_log.copy()
