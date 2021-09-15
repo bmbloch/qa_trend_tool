@@ -1956,7 +1956,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['merent_diff'] = rebench_log.groupby('identity')['abs_merent_diff'].transform('max')
             rebench_log['vac_comment'] = np.where(rebench_log['vac_diff'].isnull() == True, np.nan, rebench_log['vac_comment'])
             rebench_log['mrent_comment'] = np.where(rebench_log['mrent_diff'].isnull() == True, np.nan, rebench_log['mrent_comment'])
-            rebench_log['merent_comment'] = np.where(rebench_log['merent_diff'].isnull() == True, np.nan, rebench_log['merent_comment'])
+            rebench_log['erent_comment'] = np.where(rebench_log['merent_diff'].isnull() == True, np.nan, rebench_log['erent_comment'])
             rebench_log = rebench_log.drop_duplicates('identity')
             rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
             rebench_log = rebench_log.drop(['abs_oob', 'G_mrent_oob', 'G_merent_oob', 'yr', 'currmon', 'abs_vac_diff', 'abs_mrent_diff','abs_merent_diff'], axis=1)
