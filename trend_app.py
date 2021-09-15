@@ -1731,7 +1731,7 @@ def output_flags(sector_val, init_flags_triggered, all_buttons, curryr, currmon,
                 [State('curryr', 'data'),
                 State('currmon', 'data'),
                 State('init_trigger', 'data')])
-#@Timer("Confirm Finalizer")
+
 def confirm_finalizer(sector_val, submit_button, finalize_button, curryr, currmon, success_init):
     input_id = get_input_id()
 
@@ -1893,35 +1893,42 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
-            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent','rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user']]
+            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent','rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user', 'abs_oob', 'G_mrent_oob', 'G_merent_oob']]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['qrol_vac']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['qrol_mrent']) / rebench_log['qrol_mrent']
             rebench_log['merent_diff'] = (rebench_log['merent_new'] - rebench_log['qrol_merent']) / rebench_log['qrol_merent']
             rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
-            for var in ['vac_diff', 'mrent_diff', 'merent_diff']:
+            diff_list = ['vac_diff', 'mrent_diff', 'merent_diff']
+            for var in diff_list:
                 first_rebench = rebench_log.copy()
                 first_rebench = first_rebench[abs(first_rebench[var]) > 0.001]
                 first_rebench.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
                 first_rebench = first_rebench.drop_duplicates('identity')
                 first_rebench['init_shim_period_' + var.replace("_diff", '')] = first_rebench['yr'].astype(str) + "m" + first_rebench['currmon'].astype(str)
                 first_rebench = first_rebench.set_index('identity')
-                first_rebench = first_rebench.rename(columns={'rol_inv': 'init_rol_inv'})
-                first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", ''), 'init_rol_inv']]
+                first_rebench = first_rebench.rename(columns={'rol_inv': 'temp_init_rol_inv'})
+                first_rebench = first_rebench[['init_shim_period_' + var.replace("_diff", ''), 'temp_init_rol_inv']]
                 rebench_log = rebench_log.join(first_rebench, on='identity')
+                if var == diff_list[0]:
+                    rebench_log = rebench_log.rename(columns={'temp_init_rol_inv': 'init_rol_inv'})
+                else:
+                    rebench_log['init_rol_inv'] = np.where(rebench_log['init_rol_inv'].isnull() == True, rebench_log['temp_init_rol_inv'], rebench_log['init_rol_inv'])
+                    rebench_log = rebench_log.drop(['temp_init_rol_inv'], axis=1)
+            rebench_log = rebench_log.drop(['rol_inv'], axis=1)
             
             rebench_log = rebench_log[
                                       ((abs(rebench_log['vac_diff']) >= 0.01) & ((rebench_log['abs_oob'] != rebench_log['rol_abs']) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) | 
-                                      (abs(rebench_log['vac'] - rebench_log['rol_vac']) >= 0.01) | 
+                                      (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) >= 0.01) | 
                                       ((abs(rebench_log['mrent_diff']) >= 0.03) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) | 
-                                      (abs((rebench_log['mrent'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= 0.03) | 
+                                      (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= 0.03) | 
                                       ((abs(rebench_log['merent_diff']) >= 0.03) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) |
-                                      (abs((rebench_log['merent'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= 0.03)
+                                      (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= 0.03)
                                      ]
 
             rebench_log = rebench_log[
-                                      (((rebench_log['vac'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac'] - rebench_log['rol_vac']) > 0.01)) | 
-                                      (((rebench_log['mrent'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > 0.03))
-                                      (((rebench_log['merent'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > 0.03))
+                                      (((rebench_log['vac_new'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac_new'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) > 0.01)) | 
+                                      (((rebench_log['mrent_new'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent_new'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > 0.03)) |
+                                      (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > 0.03))
                                      ]
     
 
@@ -1939,6 +1946,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
             rebench_log = rebench_log.drop_duplicates('identity')
             rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
+            rebench_log = rebench_log.drop(['abs_oob', 'G_mrent_oob', 'G_merent_oob'], axis=1)
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
             rebench_log.to_csv(file_path, index=False, na_rep='')
 
@@ -3324,7 +3332,7 @@ def output_rollup(roll_val, multi_view, currmon_view, sorts_val, tab_val, sector
                   State('currmon', 'data'),
                   State('init_trigger', 'data'),
                   State('dropman', 'value')])
-#@Timer("Finalize Shims")
+
 def finalize_shims(shim_data, sector_val, curryr, currmon, success_init, drop_val):
   
     if sector_val is None or success_init == False:
