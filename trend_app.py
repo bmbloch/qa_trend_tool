@@ -1931,7 +1931,6 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                                       (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > 0.03))
                                      ]
     
-
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['merent_diff'])
@@ -1944,9 +1943,17 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log = rebench_log.join(comments, on='identity')
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
+            rebench_log['abs_vac_diff'] = abs(rebench_log['vac_diff'])
+            rebench_log['abs_mrent_diff'] = abs(rebench_log['mrent_diff'])
+            rebench_log['abs_merent_diff'] = abs(rebench_log['merent_diff'])
+            rebench_log['vac_diff'] = rebench_log.groupby('identity')['abs_vac_diff'].transform('max')
+            rebench_log['mrent_diff'] = rebench_log.groupby('identity')['abs_mrent_diff'].transform('max')
+            rebench_log['merent_diff'] = rebench_log.groupby('identity')['abs_merent_diff'].transform('max')
             rebench_log = rebench_log.drop_duplicates('identity')
             rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
-            rebench_log = rebench_log.drop(['abs_oob', 'G_mrent_oob', 'G_merent_oob'], axis=1)
+            rebench_log = rebench_log.drop(['abs_oob', 'G_mrent_oob', 'G_merent_oob', 'yr', 'currmon', 'abs_vac_diff', 'abs_mrent_diff','abs_merent_diff'], axis=1)
+            move_col= rebench_log.pop('init_rol_inv')
+            rebench_log.insert(4, 'init_rol_inv', move_col)
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
             rebench_log.to_csv(file_path, index=False, na_rep='')
 
