@@ -1920,24 +1920,31 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                     rebench_log = rebench_log.drop(['temp_init_rol_inv'], axis=1)
             rebench_log = rebench_log.drop(['rol_inv'], axis=1)
             
+            rebench_log['include_check_vac_1'] = np.where(((abs(rebench_log['vac_diff']) >= vac_thresh) & ((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
+                                                        (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) >= vac_thresh), 1, 0)
+
+            rebench_log['include_check_vac_2'] = np.where((((rebench_log['vac_new'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac_new'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) > vac_thresh)), 1, 0)
+            
+            rebench_log['include_check_mrent_1'] = np.where(((abs(rebench_log['mrent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
+                                                            (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= rent_thresh), 1, 0)
+
+            rebench_log['include_check_mrent_2'] = np.where((((rebench_log['mrent_new'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent_new'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > rent_thresh)), 1, 0)
+
+            rebench_log['include_check_merent_1'] = np.where(((abs(rebench_log['merent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) |
+                                                              (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= rent_thresh),1, 0)
+
+            rebench_log['include_check_merent_2'] = np.where((((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > rent_thresh)), 1, 0)
+            
             rebench_log = rebench_log[
-                                      ((abs(rebench_log['vac_diff']) >= vac_thresh) & ((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
-                                      (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) >= vac_thresh) | 
-                                      ((abs(rebench_log['mrent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
-                                      (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= rent_thresh) | 
-                                      ((abs(rebench_log['merent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) |
-                                      (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= rent_thresh)
+                                      ((rebench_log['include_check_vac_1'] == 1) & (rebench_log['include_check_vac_2'] == 1)) | 
+                                      ((rebench_log['include_check_mrent_1'] == 1) & (rebench_log['include_check_mrent_2'] == 1)) | 
+                                      ((rebench_log['include_check_merent_1'] == 1) & (rebench_log['include_check_merent_2'] == 1))
                                      ]
 
-            rebench_log = rebench_log[
-                                      (((rebench_log['vac_new'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac_new'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) > vac_thresh)) | 
-                                      (((rebench_log['mrent_new'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent_new'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > rent_thresh)) |
-                                      (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > rent_thresh))
-                                     ]
             display(rebench_log.set_index('identity').loc['HO3Off'])
-            rebench_log['vac_diff'] = np.where((abs(round(rebench_log['vac_chg_oob'],4) - round(rebench_log['rol_vac_chg'],4)) <= 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon) & (abs(rebench_log['vac_new'] - rebench_log['vac_oob']) < vac_thresh), np.nan, rebench_log['vac_diff'])
-            rebench_log['mrent_diff'] = np.where((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) <= 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon) & (abs((rebench_log['mrent_new'] - rebench_log['mrent_oob']) / rebench_log['mrent_oob']) < rent_thresh), np.nan, rebench_log['mrent_diff'])
-            rebench_log['merent_diff'] = np.where((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) <= 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon) & (abs((rebench_log['merent_new'] - rebench_log['merent_oob']) / rebench_log['merent_oob']) < rent_thresh), np.nan, rebench_log['merent_diff'])
+            rebench_log['vac_diff'] = np.where((rebench_log['include_check_vac_1'] == 0) | (rebench_log['include_check_vac_2'] == 0), np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where((rebench_log['include_check_mrent_1'] == 0) | (rebench_log['include_check_mrent_2'] == 0), np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where((rebench_log['include_check_merent_1'] == 0) | (rebench_log['include_check_merent_2'] == 0), np.nan, rebench_log['merent_diff'])
             
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < vac_thresh, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < rent_thresh, np.nan, rebench_log['mrent_diff'])
@@ -1963,6 +1970,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log = rebench_log.drop_duplicates('identity')
             rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
             rebench_log = rebench_log.drop(['vac_oob', 'vac_chg_oob', 'mrent_oob', 'G_mrent_oob', 'merent_oob', 'G_merent_oob', 'yr', 'currmon', 'abs_vac_diff', 'abs_mrent_diff','abs_merent_diff'], axis=1)
+            rebench_log = rebench_log.drop(['include_check_vac_1', 'include_check_vac_2', 'include_check_mrent_1', 'include_check_mrent_2', 'include_check_merent_1', 'include_check_merent_2'], axis=1)
             move_col= rebench_log.pop('init_rol_inv')
             rebench_log.insert(4, 'init_rol_inv', move_col)
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
