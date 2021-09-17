@@ -1921,11 +1921,11 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log = rebench_log.drop(['rol_inv'], axis=1)
             
             rebench_log = rebench_log[
-                                      ((abs(rebench_log['vac_diff']) >= vac_thresh) & ((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) >= 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
+                                      ((abs(rebench_log['vac_diff']) >= vac_thresh) & ((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
                                       (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) >= vac_thresh) | 
-                                      ((abs(rebench_log['mrent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
+                                      ((abs(rebench_log['mrent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
                                       (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= rent_thresh) | 
-                                      ((abs(rebench_log['merent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) |
+                                      ((abs(rebench_log['merent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) > 0.001) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) |
                                       (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= rent_thresh)
                                      ]
 
@@ -1935,9 +1935,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                                       (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > rent_thresh))
                                      ]
     
-            rebench_log['vac_diff'] = np.where((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) < 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['vac_diff'])
-            rebench_log['mrent_diff'] = np.where((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) < 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['mrent_diff'])
-            rebench_log['merent_diff'] = np.where((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) < 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['merent_diff'])
+            rebench_log['vac_diff'] = np.where((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) <= 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) <= 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) <= 0.001) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['merent_diff'])
             
             rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < vac_thresh, np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < rent_thresh, np.nan, rebench_log['mrent_diff'])
