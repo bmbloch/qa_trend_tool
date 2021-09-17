@@ -740,7 +740,7 @@ def auto_rebench_check(data_temp, curryr, currmon, sector_val, avail_check, mren
     dataframe = dataframe[['rol_vac', 'qrol_vac', 'vac', 'vac_oob', 'yr', 'currmon', 'avail_comment', 'identity', 'vac_chg', 'rol_vac_chg']]
     
     dataframe['vac_diff'] = dataframe['vac'] - dataframe['qrol_vac']
-    dataframe = dataframe[((abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & ((abs(dataframe['vac_chg'] - dataframe['rol_vac_chg']) > 0.001) | (dataframe['yr'] < curryr) | (dataframe['currmon'] <= no_trend_mon))) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
+    dataframe = dataframe[((abs(dataframe['vac_diff']) >= 0.01) & (round(dataframe['vac'],4) == round(dataframe['vac_oob'],4)) & ((abs(round(dataframe['vac_chg'],4) - round(dataframe['rol_vac_chg'],4)) > 0.001) | (dataframe['yr'] < curryr) | (dataframe['currmon'] <= no_trend_mon))) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
     dataframe = dataframe[((dataframe['vac'] > dataframe['rol_vac']) & (dataframe['vac_diff'] > 0)) | ((dataframe['vac'] < dataframe['rol_vac']) & (dataframe['vac_diff'] < 0)) | (abs(dataframe['vac'] - dataframe['rol_vac']) > 0.01)]
     if len(dataframe) > 0:
         dataframe = dataframe.drop_duplicates('identity')
