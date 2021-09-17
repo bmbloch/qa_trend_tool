@@ -905,7 +905,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
         users = decision_data_test.copy()
         users = users[['i_user', 'c_user', 'v_user', 'g_user', 'e_user']]
         decision_data_test = decision_data_test.drop(['i_user', 'c_user', 'v_user', 'g_user', 'e_user', 'inv_cons_comment', 'avail_comment',
-                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent', 'rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 
+                                                      'mrent_comment', 'erent_comment', 'skipped', 'skip_user', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_vac_chg', 'rol_G_mrent', 'rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 
                                                       'rol_cons', 'occ'], axis=1)
         
         update_data['vac'] = round(update_data['vac'], 3)
@@ -1605,7 +1605,7 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
             oob_cols = [x for x in list(data.columns) if "oob" in x]
             decision_data = data.copy()
             decision_data = decision_data.reset_index()
-            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons', 'rol_abs', 'rol_G_mrent', 'rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent']]
+            decision_data = decision_data[['identity_row', 'identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon'] + oob_cols + ['rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_cons', 'rol_vac_chg', 'rol_G_mrent', 'rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent']]
             update_cols = ['cons_new', 'vac_new', 'abs_new', 'G_mrent_new', 'G_merent_new', 'gap_new', 'inv_new', 'avail_new', 'mrent_new', 'merent_new', 'vac_chg_new'] 
             if sector_val != "ind":
                 update_cols += ['conv_new', 'demo_new']
@@ -1658,6 +1658,13 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
             decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
         
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
+        # else:
+        #     temp = data.copy()
+        #     temp = temp[['rol_vac_chg']]
+        #     decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
+        #     decision_data = decision_data.join(temp)
+        #     decision_data = decision_data.drop(['rol_abs'], axis=1)
+        #     use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
             
 
         temp = data.copy()
@@ -1879,6 +1886,9 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
 
             # Save a csv file with all the historical rebenches that crossed the data governance threshold
 
+            vac_thresh = 0.01
+            rent_thresh = 0.03
+
             if currmon in [1,2,3]:
                 no_trend_mon = 12
             if currmon in [4,5,6]:
@@ -1893,7 +1903,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             comments = comments[(comments['yr'] == curryr) & (comments['currmon'] == currmon)]
             comments = comments.set_index('identity')
             comments = comments[['avail_comment', 'mrent_comment', 'erent_comment']]
-            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_abs', 'rol_G_mrent','rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user', 'abs_oob', 'G_mrent_oob', 'G_merent_oob']]
+            rebench_log = rebench_log[['identity', 'subsector', 'metcode', 'subid', 'yr', 'currmon', 'rol_inv', 'rol_vac', 'rol_mrent', 'rol_merent', 'rol_vac_chg', 'rol_G_mrent','rol_G_merent', 'qrol_vac', 'qrol_mrent', 'qrol_merent', 'vac_new', 'mrent_new', 'merent_new', 'v_user', 'g_user', 'e_user', 'vac_chg_oob', 'G_mrent_oob', 'G_merent_oob']]
             rebench_log = rebench_log[(rebench_log['yr'] != curryr) | ((rebench_log['yr'] == curryr) & (rebench_log['currmon'] != currmon))]
             rebench_log['vac_diff'] = rebench_log['vac_new'] - rebench_log['qrol_vac']
             rebench_log['mrent_diff'] = (rebench_log['mrent_new'] - rebench_log['qrol_mrent']) / rebench_log['qrol_mrent']
@@ -1918,33 +1928,33 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log = rebench_log.drop(['rol_inv'], axis=1)
             
             rebench_log = rebench_log[
-                                      ((abs(rebench_log['vac_diff']) >= 0.01) & ((rebench_log['abs_oob'] != rebench_log['rol_abs']) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) | 
-                                      (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) >= 0.01) | 
-                                      ((abs(rebench_log['mrent_diff']) >= 0.03) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) | 
-                                      (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= 0.03) | 
-                                      ((abs(rebench_log['merent_diff']) >= 0.03) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] < no_trend_mon))) |
-                                      (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= 0.03)
+                                      ((abs(rebench_log['vac_diff']) >= vac_thresh) & ((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) >= 0.005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
+                                      (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) >= vac_thresh) | 
+                                      ((abs(rebench_log['mrent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) | 
+                                      (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) >= rent_thresh) | 
+                                      ((abs(rebench_log['merent_diff']) >= rent_thresh) & ((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.0005) | (rebench_log['yr'] < curryr) | (rebench_log['currmon'] <= no_trend_mon))) |
+                                      (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) >= rent_thresh)
                                      ]
 
             rebench_log = rebench_log[
-                                      (((rebench_log['vac_new'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac_new'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) > 0.01)) | 
-                                      (((rebench_log['mrent_new'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent_new'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > 0.03)) |
-                                      (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > 0.03))
+                                      (((rebench_log['vac_new'] > rebench_log['rol_vac']) & (rebench_log['vac_diff'] > 0)) | ((rebench_log['vac_new'] < rebench_log['rol_vac']) & (rebench_log['vac_diff'] < 0)) | (abs(rebench_log['vac_new'] - rebench_log['rol_vac']) > vac_thresh)) | 
+                                      (((rebench_log['mrent_new'] > rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] > 0)) | ((rebench_log['mrent_new'] < rebench_log['rol_mrent']) & (rebench_log['mrent_diff'] < 0)) | (abs((rebench_log['mrent_new'] - rebench_log['rol_mrent']) / rebench_log['rol_mrent']) > rent_thresh)) |
+                                      (((rebench_log['merent_new'] > rebench_log['rol_merent']) & (rebench_log['merent_diff'] > 0)) | ((rebench_log['merent_new'] < rebench_log['rol_merent']) & (rebench_log['merent_diff'] < 0)) | (abs((rebench_log['merent_new'] - rebench_log['rol_merent']) / rebench_log['rol_merent']) > rent_thresh))
                                      ]
     
-            rebench_log['vac_diff'] = np.where(rebench_log['abs_oob'] == rebench_log['rol_abs'], np.nan, rebench_log['vac_diff'])
-            rebench_log['mrent_diff'] = np.where(abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) >= 0.0005, np.nan, rebench_log['mrent_diff'])
-            rebench_log['merent_diff'] = np.where(abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) >= 0.0005, np.nan, rebench_log['merent_diff'])
+            rebench_log['vac_diff'] = np.where((abs(rebench_log['vac_chg_oob'] - rebench_log['rol_vac_chg']) < 0.0005) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where((abs(round(rebench_log['G_mrent_oob'],4) - round(rebench_log['rol_G_mrent'],4)) < 0.0005) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where((abs(round(rebench_log['G_merent_oob'],4) - round(rebench_log['rol_G_merent'],4)) < 0.0005) & (rebench_log['yr'] == curryr) & (rebench_log['currmon'] > no_trend_mon), np.nan, rebench_log['merent_diff'])
             
-            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['vac_diff'])
-            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['mrent_diff'])
-            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['merent_diff'])
-            rebench_log['init_shim_period_vac'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['init_shim_period_vac'])
-            rebench_log['init_shim_period_mrent'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['init_shim_period_mrent'])
-            rebench_log['init_shim_period_merent'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['init_shim_period_merent'])
-            rebench_log['v_user'] = np.where(abs(rebench_log['vac_diff']) < 0.01, np.nan, rebench_log['v_user'])
-            rebench_log['g_user'] = np.where(abs(rebench_log['mrent_diff']) < 0.03, np.nan, rebench_log['g_user'])
-            rebench_log['e_user'] = np.where(abs(rebench_log['merent_diff']) < 0.03, np.nan, rebench_log['e_user'])
+            rebench_log['vac_diff'] = np.where(abs(rebench_log['vac_diff']) < vac_thresh, np.nan, rebench_log['vac_diff'])
+            rebench_log['mrent_diff'] = np.where(abs(rebench_log['mrent_diff']) < rent_thresh, np.nan, rebench_log['mrent_diff'])
+            rebench_log['merent_diff'] = np.where(abs(rebench_log['merent_diff']) < rent_thresh, np.nan, rebench_log['merent_diff'])
+            rebench_log['init_shim_period_vac'] = np.where(abs(rebench_log['vac_diff']) < vac_thresh, np.nan, rebench_log['init_shim_period_vac'])
+            rebench_log['init_shim_period_mrent'] = np.where(abs(rebench_log['mrent_diff']) < rent_thresh, np.nan, rebench_log['init_shim_period_mrent'])
+            rebench_log['init_shim_period_merent'] = np.where(abs(rebench_log['merent_diff']) < rent_thresh, np.nan, rebench_log['init_shim_period_merent'])
+            rebench_log['v_user'] = np.where(abs(rebench_log['vac_diff']) < vac_thresh, np.nan, rebench_log['v_user'])
+            rebench_log['g_user'] = np.where(abs(rebench_log['mrent_diff']) < rent_thresh, np.nan, rebench_log['g_user'])
+            rebench_log['e_user'] = np.where(abs(rebench_log['merent_diff']) < rent_thresh, np.nan, rebench_log['e_user'])
             rebench_log = rebench_log.join(comments, on='identity')
             rebench_log = rebench_log.rename(columns={'avail_comment': 'vac_comment'})
             rebench_log.sort_values(by=['subsector', 'metcode', 'subid', 'yr', 'currmon'], ascending=[True, True, True, False, False], inplace=True)
@@ -1959,7 +1969,7 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
             rebench_log['erent_comment'] = np.where(rebench_log['merent_diff'].isnull() == True, np.nan, rebench_log['erent_comment'])
             rebench_log = rebench_log.drop_duplicates('identity')
             rebench_log = rebench_log.rename(columns={'qrol_vac': 'rol_vac_used', 'qrol_mrent': 'rol_mrent_used', 'qrol_merent': 'rol_merent_used'})
-            rebench_log = rebench_log.drop(['abs_oob', 'G_mrent_oob', 'G_merent_oob', 'yr', 'currmon', 'abs_vac_diff', 'abs_mrent_diff','abs_merent_diff'], axis=1)
+            rebench_log = rebench_log.drop(['vac_chg_oob', 'G_mrent_oob', 'G_merent_oob', 'yr', 'currmon', 'abs_vac_diff', 'abs_mrent_diff','abs_merent_diff'], axis=1)
             move_col= rebench_log.pop('init_rol_inv')
             rebench_log.insert(4, 'init_rol_inv', move_col)
             file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/OutputFiles/rebench_log_{}_{}m{}.csv".format(get_home(), sector_val, str(curryr), str(currmon), sector_val, str(curryr), str(currmon)))
