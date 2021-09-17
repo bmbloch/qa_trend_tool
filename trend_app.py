@@ -1941,7 +1941,6 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                                       ((rebench_log['include_check_merent_1'] == 1) & (rebench_log['include_check_merent_2'] == 1))
                                      ]
 
-            display(rebench_log.set_index('identity').loc['HO3Off'])
             rebench_log['vac_diff'] = np.where((rebench_log['include_check_vac_1'] == 0) | (rebench_log['include_check_vac_2'] == 0), np.nan, rebench_log['vac_diff'])
             rebench_log['mrent_diff'] = np.where((rebench_log['include_check_mrent_1'] == 0) | (rebench_log['include_check_mrent_2'] == 0), np.nan, rebench_log['mrent_diff'])
             rebench_log['merent_diff'] = np.where((rebench_log['include_check_merent_1'] == 0) | (rebench_log['include_check_merent_2'] == 0), np.nan, rebench_log['merent_diff'])
