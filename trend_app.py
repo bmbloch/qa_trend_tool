@@ -1658,13 +1658,6 @@ def process_init_file(sector_val, curryr, currmon, yes_refresh, no_refresh, file
             decision_data = decision_data.drop(['cons_diff', 'vac_diff', 'mrent_diff', 'merent_diff'], axis=1)
         
             use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
-        # else:
-        #     temp = data.copy()
-        #     temp = temp[['rol_vac_chg']]
-        #     decision_data = use_pickle("in", "decision_log_" + sector_val, False, curryr, currmon, sector_val)
-        #     decision_data = decision_data.join(temp)
-        #     decision_data = decision_data.drop(['rol_abs'], axis=1)
-        #     use_pickle("out", "decision_log_" + sector_val, decision_data, curryr, currmon, sector_val)
             
 
         temp = data.copy()
