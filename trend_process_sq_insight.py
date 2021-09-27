@@ -149,58 +149,21 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
         del msq_data
         gc.collect()
     
-    if sector_val == "ind":
-        print("Take out qtr aggregation for ind once the new sq code is live")
+    # if sector_val == "ind":
+    #     print("Take out qtr aggregation for ind once the new sq code is live")
     def roll_sq_insight(dataframe_in, curryr, currmon, currqtr, sector_val, var_type, level_type):
         dataframe = dataframe_in.copy()
         if var_type == "rent":
-            if sector_val == "ind":
-                if currmon in [2, 3, 6, 9, 12]:
-                    if currmon in [3, 6, 9, 12]:
-                        dataframe['roll_tag'] = np.where((dataframe['yr'] == curryr) & (dataframe['qtr'] == currqtr), 1, 0)
-                    elif currmon == 2:
-                        dataframe['roll_tag'] = np.where((dataframe['yr'] == curryr) & ((dataframe['currmon'] == 1) | (dataframe['currmon'] == 2)), 1, 0)
-                    
-                    if level_type == "sub":
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + dataframe['subsector']
-                    else:
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subsector']
-                    dataframe['avg_mos_to_last_rensur'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['avg_mos_to_last_rensur'].transform('mean')
-                    
-                    dataframe['wgt_rg'] = dataframe['rntchginv'] * dataframe['g_renx_mo_wgt']
-                    dataframe['sum_wgt_rg'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['wgt_rg'].transform('sum')
-                    dataframe['sum_rntinv'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['rntchginv'].transform('sum')
-                    dataframe['wgt_rg_qtr'] = dataframe['sum_wgt_rg'] / dataframe['sum_rntinv']
-                    if level_type == "met":
-                        dataframe['wgt_rg_us'] = dataframe['us_rntchginv'] * dataframe['us_g_renx_mo_wgt']
-                        dataframe['sum_wgt_rg_us'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['wgt_rg_us'].transform('sum')
-                        dataframe['sum_rntinv_us'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['us_rntchginv'].transform('sum')
-                        dataframe['wgt_rg_qtr_us'] = dataframe['sum_wgt_rg_us'] / dataframe['sum_rntinv_us']
-                    if level_type == "sub":
-                        dataframe['rentdrops_sum'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['rentdrops'].transform('sum')
-                        dataframe['rentflats_sum'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['rentflats'].transform('sum')
-                        dataframe['rentincrs_sum'] = dataframe[(dataframe['roll_tag'] == 1)].groupby('identity')['rentincrs'].transform('sum')
-                        dataframe.drop(['g_renx_mo_wgt', 'rntchginv', 'us_g_renx_mo_wgt', 'us_rntchginv', 'rentdrops', 'rentflats', 'rentincrs'], axis=1, inplace=True)
-                        dataframe.rename(columns={'wgt_rg_qtr': 'g_renx_mo_wgt', 'sum_rntinv': 'rntchginv', 'wgt_rg_qtr_us': 'us_g_renx_mo_wgt', 'sum_rntinv_us': 'us_rntchginv', 'rentdrops_sum': 'rentdrops', 'rentflats_sum': 'rentflats', 'rentincrs_sum': 'rentincrs'}, inplace=True)        
-                    else:
-                        dataframe.drop(['g_renx_mo_wgt', 'rntchginv', 'us_g_renx_mo_wgt', 'us_rntchginv'], axis=1, inplace=True)
-                        dataframe.rename(columns={'wgt_rg_qtr': 'g_renx_mo_wgt', 'sum_rntinv': 'rntchginv', 'wgt_rg_qtr_us': 'us_g_renx_mo_wgt', 'sum_rntinv_us': 'us_rntchginv'}, inplace=True)        
+            if level_type == "sub":
+                if sector_val == "ret":
+                    dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + dataframe['subsector']
                 else:
-                    if level_type == "sub":
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + dataframe['subsector']
-                    else:
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subsector']
-            elif sector_val != "ind":
-                if level_type == "sub":
-                    if sector_val == "ret":
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + dataframe['subsector']
-                    else:
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + sector_val.title()
+                    dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + sector_val.title()
+            else:
+                if sector_val == "ret":
+                    dataframe['identity'] = dataframe['metcode'] + dataframe['subsector']
                 else:
-                    if sector_val == "ret":
-                        dataframe['identity'] = dataframe['metcode'] + dataframe['subsector']
-                    else:
-                        dataframe['identity'] = dataframe['metcode'] + sector_val.title()
+                    dataframe['identity'] = dataframe['metcode'] + sector_val.title()
 
         elif var_type == "vac":
             if sector_val == "ind" or sector_val == "ret":
