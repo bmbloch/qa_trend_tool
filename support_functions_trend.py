@@ -1391,7 +1391,9 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
     us_roll['askrevenue'] = us_roll['inv'] * us_roll['mrent']
     us_roll['effrevenue'] = us_roll['inv'] * us_roll['merent']
 
-    cols_to_roll = ['inv', 'cons', 'avail', 'occ', 'abs', 'askrevenue', 'effrevenue', 'conv', 'demo']
+    us_roll['sq_askrevenue'] = us_roll['sqinv'] * us_roll['sqsren']
+
+    cols_to_roll = ['inv', 'cons', 'avail', 'occ', 'abs', 'askrevenue', 'effrevenue', 'conv', 'demo', 'sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sq_askrevenue']
     for x in cols_to_roll:
         us_roll[x + "_sum"] = us_roll.groupby([identity_val, 'yr', 'qtr', 'currmon'])[x].transform('sum')
         us_roll = us_roll.drop([x], axis=1)
@@ -1400,11 +1402,15 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
 
     us_roll['vac'] = round(us_roll['avail'] / us_roll['inv'], 4)
     us_roll['vac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), us_roll['vac'] - us_roll['vac'].shift(1), np.nan)
+    us_roll['sqvac'] = round(us_roll['sqavail'] / us_roll['sqinv'], 4)
+    us_roll['sqvac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), us_roll['sqvac'] - us_roll['sqvac'].shift(1), np.nan)
     
     us_roll['mrent'] = round(us_roll['askrevenue'] / us_roll['inv'],2)
+    us_roll['sqmrent'] = round(us_roll['sq_askrevenue'] / us_roll['sqinv'],2)
     us_roll['merent'] = round(us_roll['effrevenue'] / us_roll['inv'],2)
     
     us_roll['Gmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), (us_roll['mrent'] - us_roll['mrent'].shift(1)) / us_roll['mrent'].shift(1), np.nan)
+    us_roll['sqGmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), (us_roll['sqmrent'] - us_roll['sqmrent'].shift(1)) / us_roll['sqmrent'].shift(1), np.nan)
     us_roll['Gmerent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), (us_roll['merent'] - us_roll['merent'].shift(1)) / us_roll['merent'].shift(1), np.nan)
     
     us_roll['gap'] = (us_roll['mrent'] - us_roll['merent']) / us_roll['mrent']
@@ -1424,11 +1430,11 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
         us_roll = us_roll[us_roll['tier'] == 1]
     
     if sector_val != "ind":
-        cols_to_display = ['sector', 'subsector', 'tier', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'conv', 'demo', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'Gmrent', 'merent', 'Gmerent', 'gap']
+        cols_to_display = ['sector', 'subsector', 'tier', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'conv', 'demo', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'Gmrent', 'merent', 'Gmerent', 'gap', 'sqinv', 'sqcons', 'sqocc', 'sqabs', 'sqvac', 'sqvac_chg', 'sqmrent', 'sqGmrent']
         if sector_val == "apt" or sector_val == "off":
             cols_to_display.remove('subsector')
     else:
-        cols_to_display = ['sector', 'subsector', 'trend_yr1', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'Gmrent', 'merent', 'Gmerent', 'gap']
+        cols_to_display = ['sector', 'subsector', 'trend_yr1', 'yr', 'qtr', 'currmon', 'inv', 'cons', 'vac', 'vac_chg', 'avail', 'occ', 'abs', 'mrent', 'Gmrent', 'merent', 'Gmerent', 'gap', 'sqinv', 'sqcons', 'sqocc', 'sqabs', 'sqvac', 'sqvac_chg', 'sqmrent', 'sqGmrent']
     us_roll = us_roll[cols_to_display]
 
     for x in cols_to_display:
@@ -1441,7 +1447,9 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
         us_roll['subsector'] = "NC"
 
     us_roll['vac_chg_nat'] = round(us_roll['vac_chg_nat'], 4)
+    us_roll['sqvac_chg_nat'] = round(us_roll['sqvac_chg_nat'], 4)
     us_roll['Gmrent_nat'] = round(us_roll['Gmrent_nat'], 4)
+    us_roll['sqGmrent_nat'] = round(us_roll['sqGmrent_nat'], 4)
     us_roll['Gmerent_nat'] = round(us_roll['Gmerent_nat'], 4)
     us_roll['gap_nat'] = round(us_roll['gap_nat'], 4)
 
