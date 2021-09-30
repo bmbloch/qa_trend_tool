@@ -1037,7 +1037,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
     # Fill in a zero for vars that are blank and should be zero
     data[['rentdrops', 'rentflats', 'rentincrs', 'vacdrops', 'vacflats', 'vacincrs', 'gmrent_roldiff', 'covren', 'covvac']] = data[['rentdrops', 'rentflats', 'rentincrs', 'vacdrops', 'vacflats', 'vacincrs', 'gmrent_roldiff', 'covren', 'covvac']].fillna(0)
-
+    
     if sector_val == "apt":
         a_round_val = 0
     else:

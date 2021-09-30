@@ -2523,7 +2523,6 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
             sum_data = use_pickle("in", "sum_data_" + sector_val, False, curryr, currmon, sector_val)
             nat_data_vac = use_pickle("in", "nat_data_vac_" + sector_val, False, curryr, currmon, sector_val)
             nat_data_rent = use_pickle("in", "nat_data_rent_" + sector_val, False, curryr, currmon, sector_val)
-
             nat_data_vac['30 Perc Cov Pct'] = v_threshold_true
             nat_data_rent['30 Perc Cov Pct'] = r_threshold_true
 
