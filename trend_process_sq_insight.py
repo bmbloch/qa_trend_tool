@@ -155,12 +155,12 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
         dataframe = dataframe_in.copy()
         if var_type == "rent":
             if level_type == "sub":
-                if sector_val == "ret":
+                if sector_val == "ret" or sector_val == "ind":
                     dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + dataframe['subsector']
                 else:
                     dataframe['identity'] = dataframe['metcode'] + dataframe['subid'].astype(str) + sector_val.title()
             else:
-                if sector_val == "ret":
+                if sector_val == "ret" or sector_val == "ind":
                     dataframe['identity'] = dataframe['metcode'] + dataframe['subsector']
                 else:
                     dataframe['identity'] = dataframe['metcode'] + sector_val.title()
