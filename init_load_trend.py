@@ -82,6 +82,8 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
     data['yr'] = data['yr'].astype(int)
     data['currmon'] = data['currmon'].astype(int)
 
+    data_refresh = data_refresh[((data_refresh['yr'] > 2008) | ((data_refresh['yr'] == 2008) & (data_refresh['qtr'] == 4)))]
+
     if sector_val == "apt":
         data_refresh = data_refresh.rename(columns={'sub1to99_Gavgrenx': 'sub1to99_Grenx'})
     if sector_val == "ret":
@@ -123,7 +125,7 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
             if sector_val == "ind" or sector_val == "ret":
                 testing['identity'] = testing['metcode'] + testing['subid'].astype(str) + testing['subsector']
             else:
-                testing['identity'] = testng['metcode'] + testing['subid'].astype(str)
+                testing['identity'] = testing['metcode'] + testing['subid'].astype(str)
             sub_list = testing['identity'].unique()
             sub_add = [x for x in sub_list if x not in refresh_list]
             refresh_list += sub_add
