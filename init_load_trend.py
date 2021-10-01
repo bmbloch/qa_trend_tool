@@ -109,7 +109,7 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
 
     prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap'] 
     data = data.join(data_refresh.set_index('join_ident')[prelim_cols], on='join_ident')
-
+    display(data.set_index('identity').loc['AK1DW'].tail(1)[['merent', 'p_merent']])
     has_diff = False
     diff_cols = []
     refresh_list = []
@@ -561,7 +561,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         if sector_val == "ret":
             msq_data_in['type1'] = np.where(msq_data_in['subid'] == 70, 'NC', msq_data_in['type1'])
 
-        msq_data_in = msq_data_in.drop(['submkt', 'has_l_surv', 'qtr_ident'],axis=1)
+        msq_data_in = msq_data_in.drop(['submkt', 'qtr_ident'],axis=1)
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
         msq_data_in.to_pickle(file_path)
 
