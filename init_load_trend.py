@@ -116,7 +116,7 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
         diff_cols.append(col + "_diff")
         diff_cols.append(col + "_has_diff")
         data[col + "_diff"] = data[col] - data[col[2:] + "_oob"]
-        data[col + "_has_diff"] = np.where((abs(data[col + "_diff"]) > 0.001) & (data[col].isnull() == False), 1, 0)
+        data[col + "_has_diff"] = np.where((abs(data[col + "_diff"]) > 0.0009) & (data[col].isnull() == False), 1, 0)
         testing = data.copy()
         testing = testing[testing[col + "_has_diff"] == 1]
         if len(testing) > 0:
