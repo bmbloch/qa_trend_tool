@@ -109,7 +109,6 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
 
     prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap'] 
     data = data.join(data_refresh.set_index('join_ident')[prelim_cols], on='join_ident')
-    display(data.set_index('identity').loc['AK1DW'].tail(1)[['merent', 'p_merent']])
     has_diff = False
     diff_cols = []
     refresh_list = []
