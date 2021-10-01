@@ -43,7 +43,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     calc_names.append('calc_vlow')
     data['v_flag_low'] = np.where(((data['vac'] < 0) |
                                      ((data['vac'] == 0) & (data['sqvac'] != 0)) |
-                                     ((data['vac'] < 0.01) & (data['curr_tag'] == 1) & (data['vac'].shift(1) > 0.01) & (data['sqvac'] > 0.01))),
+                                     ((data['vac'] < 0.01) & (data['curr_tag'] == 1) & (data['vac'].shift(1) > 0.01) & ((data['sqavail'] > data['avail']) | (data['sqinv'] > data['inv'])))),
                                      1, 0)
     data['calc_vlow'] = np.where(data['v_flag_low'] > 0, (data['vac']) * -1, np.nan)
     
