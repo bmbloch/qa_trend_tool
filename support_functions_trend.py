@@ -1395,24 +1395,30 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
 
     cols_to_roll = ['inv', 'cons', 'avail', 'occ', 'abs', 'askrevenue', 'effrevenue', 'conv', 'demo', 'sqinv', 'sqcons', 'sqavail', 'sqocc', 'sqabs', 'sq_askrevenue']
     for x in cols_to_roll:
-        us_roll[x + "_sum"] = us_roll.groupby([identity_val, 'yr', 'qtr', 'currmon'])[x].transform('sum')
+        us_roll[x + "_sum"] = us_roll.groupby([identity_val, 'yr', 'qtr', 'currmon'])[x].transform('sum', min_count=1)
         us_roll = us_roll.drop([x], axis=1)
         us_roll = us_roll.rename(columns={x + "_sum": x})
     us_roll = us_roll.drop_duplicates([identity_val, 'yr', 'qtr', 'currmon'])
 
+    test_qtr = us_roll.copy()
+    test_qtr = test_qtr[test_qtr['sq_askrevenue'].isnull() == True]
+    test_qtr.sort_values(by=['yr'], ascending=[False], inplace=True)
+    test_qtr = test_qtr.drop_duplicates('yr')
+    qtr_yr = test_qtr.reset_index().loc[0]['yr']
+
     us_roll['vac'] = round(us_roll['avail'] / us_roll['inv'], 4)
     us_roll['vac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), us_roll['vac'] - us_roll['vac'].shift(1), np.nan)
     us_roll['sqvac'] = round(us_roll['sqavail'] / us_roll['sqinv'], 4)
-    us_roll['sqvac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)) & (us_roll['yr'] >= curryr - 1), us_roll['sqvac'] - us_roll['sqvac'].shift(1), np.nan)
-    us_roll['sqvac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(3)) & (us_roll['yr'] < curryr - 1), us_roll['sqvac'] - us_roll['sqvac'].shift(3), us_roll['sqvac_chg'])
+    us_roll['sqvac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)) & (us_roll['yr'] > qtr_yr), us_roll['sqvac'] - us_roll['sqvac'].shift(1), np.nan)
+    us_roll['sqvac_chg'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(3)) & (us_roll['yr'] <= qtr_yr), us_roll['sqvac'] - us_roll['sqvac'].shift(3), us_roll['sqvac_chg'])
     
     us_roll['mrent'] = round(us_roll['askrevenue'] / us_roll['inv'],2)
     us_roll['sqmrent'] = round(us_roll['sq_askrevenue'] / us_roll['sqinv'],2)
     us_roll['merent'] = round(us_roll['effrevenue'] / us_roll['inv'],2)
     
     us_roll['Gmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), (us_roll['mrent'] - us_roll['mrent'].shift(1)) / us_roll['mrent'].shift(1), np.nan)
-    us_roll['sqGmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)) & (us_roll['yr'] >= curryr - 1), (us_roll['sqmrent'] - us_roll['sqmrent'].shift(1)) / us_roll['sqmrent'].shift(1), np.nan)
-    us_roll['sqGmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(3)) & (us_roll['yr'] < curryr - 1), (us_roll['sqmrent'] - us_roll['sqmrent'].shift(3)) / us_roll['sqmrent'].shift(3), us_roll['sqGmrent'])
+    us_roll['sqGmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)) & (us_roll['yr'] > qtr_yr), (us_roll['sqmrent'] - us_roll['sqmrent'].shift(1)) / us_roll['sqmrent'].shift(1), np.nan)
+    us_roll['sqGmrent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(3)) & (us_roll['yr'] <= qtr_yr), (us_roll['sqmrent'] - us_roll['sqmrent'].shift(3)) / us_roll['sqmrent'].shift(3), us_roll['sqGmrent'])
     us_roll['Gmerent'] = np.where((us_roll[identity_val] == us_roll[identity_val].shift(1)), (us_roll['merent'] - us_roll['merent'].shift(1)) / us_roll['merent'].shift(1), np.nan)
     
     us_roll['gap'] = (us_roll['mrent'] - us_roll['merent']) / us_roll['mrent']
@@ -1440,7 +1446,7 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
     us_roll = us_roll[cols_to_display]
 
     for x in ['sqinv', 'sqocc', 'sqabs']:
-        us_roll[x] = np.where((us_roll['yr'] < curryr - 1) & (us_roll['currmon'].isin([1, 2, 4, 5, 7, 8, 10, 11])), np.nan, us_roll[x])
+        us_roll[x] = np.where((us_roll['yr'] <= qtr_yr) & (us_roll['currmon'].isin([1, 2, 4, 5, 7, 8, 10, 11])), np.nan, us_roll[x])
 
     for x in cols_to_display:
         if x not in ['sector', 'subsector', 'tier', 'trend_yr1', 'yr', 'qtr', 'currmon']:
