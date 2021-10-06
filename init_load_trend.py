@@ -468,6 +468,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         msq_data_in = pd.DataFrame()
         msq_data_in = msq_data_in.append(results, ignore_index=True)
+        msq_data_in['subid'] = msq_data_in['subid'].astype(int)
+        msq_data_in['yr'] = msq_data_in['yr'].astype(int)
+        msq_data_in['qtr'] = msq_data_in['qtr'].astype(int)
+        msq_data_in['yearx'] = msq_data_in['yearx'].astype(int)
         msq_data_in.sort_values(by=['metcode', 'id', 'yr', 'qtr', 'currmon'], ascending=[True, True, True, True, True], inplace=True)
         msq_data_in = msq_data_in.reset_index(drop=True)
 
@@ -485,10 +489,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         if sector_val == "ret":
             msq_data_in = msq_data_in[(msq_data_in['type1'] == "C") | (msq_data_in['type1'] == "N")]
-
-        msq_data_in['subid'] = msq_data_in['subid'].astype(int)
-        msq_data_in['yr'] = msq_data_in['yr'].astype(int)
-        msq_data_in['qtr'] = msq_data_in['qtr'].astype(int)
         
         if sector_val == "apt" or sector_val == "off":
             msq_data_in['identity_met'] = msq_data_in['metcode'] + sector_val.title()
@@ -530,14 +530,15 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data_in = msq_data_in[(msq_data_in['balance_test'] != '99') | ((msq_data_in['subid'] >= 81) & (msq_data_in['metcode'] != "FM"))]
 
         msq_data_only_qtr = msq_data_in.copy()
+        msq_data_only_qtr = msq_data_only_qtr[msq_data_only_qtr['yearx'] < 2009]
         msq_data_only_qtr = msq_data_only_qtr[np.isnan(msq_data_only_qtr['currmon']) == True]
         msq_data_only_qtr = msq_data_only_qtr.drop_duplicates(['yr', 'qtr'])
         msq_data_only_qtr['only_qtr'] = 1
         msq_data_only_qtr['qtr_ident'] = msq_data_only_qtr['yr'].astype(str) + msq_data_only_qtr['qtr'].astype(str)
-        msq_data_only_qtr = msq_data_only_qtr.set_index('qtr_ident')
         msq_data_only_qtr = msq_data_only_qtr[['only_qtr']]
 
         msq_data_in['qtr_ident'] = msq_data_in['yr'].astype(str) + msq_data_in['qtr'].astype(str)
+        msq_data_in = msq_data_in.drop_duplicates('qtr_ident')
         msq_data_in = msq_data_in.join(msq_data_only_qtr, on='qtr_ident')
         del msq_data_only_qtr
         gc.collect()
@@ -795,7 +796,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         if sector_val == "ind" or sector_val == "ret":
             msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['subsector'] + msq_data['yr'].astype(str) + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)
         else:
-            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['yr'].astype(str) +  + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)   
+            msq_data['join_ident'] = msq_data['metcode'] + msq_data['subid'].astype(str) + msq_data['yr'].astype(str)  + msq_data['qtr'].astype(str) + msq_data['currmon'].astype(str)   
 
         if sector_val == "ind":
             drop_list = ['metcode', 'subid', 'yr', 'qtr', 'currmon', 'type2']
