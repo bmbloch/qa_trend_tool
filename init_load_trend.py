@@ -496,7 +496,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             msq_data_in['identity_met'] = msq_data_in['metcode'] + msq_data_in['type1']
         elif sector_val == "ind":
             msq_data_in['identity_met'] = msq_data_in['metcode'] + msq_data_in['type2']
-
         # Tag props that have lagged rent surveys within the range to be included in the survey packet rent chg inventory
         temp = msq_data_in.copy()
         temp = temp[np.isnan(temp['currmon']) == False]
@@ -535,10 +534,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         msq_data_only_qtr = msq_data_only_qtr.drop_duplicates(['yr', 'qtr'])
         msq_data_only_qtr['only_qtr'] = 1
         msq_data_only_qtr['qtr_ident'] = msq_data_only_qtr['yr'].astype(str) + msq_data_only_qtr['qtr'].astype(str)
+        msq_data_only_qtr = msq_data_only_qtr.set_index('qtr_ident')
         msq_data_only_qtr = msq_data_only_qtr[['only_qtr']]
 
         msq_data_in['qtr_ident'] = msq_data_in['yr'].astype(str) + msq_data_in['qtr'].astype(str)
-        msq_data_in = msq_data_in.drop_duplicates('qtr_ident')
         msq_data_in = msq_data_in.join(msq_data_only_qtr, on='qtr_ident')
         del msq_data_only_qtr
         gc.collect()
@@ -810,7 +809,6 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
         msq_data1 = pd.read_pickle(file_path)
-
         if sector_val == "ind":
             msq_data1['join_ident'] = msq_data1['metcode'] + msq_data1['subid'].astype(str) + msq_data1['type2'] + msq_data1['yr'].astype(str) + msq_data1['qtr'].astype(str) + msq_data1['currmon'].astype(str)
             msq_data1.sort_values(by=['type2', 'metcode', 'subid', 'yr', 'qtr', 'currmon'], inplace=True)
