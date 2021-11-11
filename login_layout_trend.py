@@ -32,7 +32,6 @@ def get_login_layout():
         else:
             slice_use = -1
         if (int(folder[0:4]) == latest_year and int(folder[slice_use:]) >= latest_month) or int(folder[0:4]) > latest_year:
-            print(folder, "inner")
             latest_year = int(folder[0:4])
             latest_month = int(folder[slice_use:])
 
