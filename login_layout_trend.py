@@ -27,12 +27,14 @@ def get_login_layout():
     latest_month = 0
     month_to_display = 0
     for folder in dirlist:
-        if (int(folder[0:4]) == latest_year and int(folder[-1:]) >= latest_month) or int(folder[0:4]) > latest_year:
+        if len(folder) == 7:
+            slice_use = -2
+        else:
+            slice_use = -1
+        if (int(folder[0:4]) == latest_year and int(folder[slice_use:]) >= latest_month) or int(folder[0:4]) > latest_year:
+            print(folder, "inner")
             latest_year = int(folder[0:4])
-            if len(folder) == 7:
-                latest_month = int(folder[-2:])
-            else:
-                latest_month = int(folder[-1:])
+            latest_month = int(folder[slice_use:])
 
     return html.Div([
             dcc.Location(id='login-url',pathname='/login',refresh=False),
