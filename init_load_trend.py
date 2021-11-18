@@ -53,7 +53,7 @@ def load_init_input(sector_val, curryr, currmon):
         data_in['subsector'] = sector_val.title()
         new_cols = ['subsector'] + cols
         data_in = data_in[new_cols]
-    
+
     elif sector_val == "ret":
         frames = []
         for subsector in ['C', 'N', 'NC']:
@@ -247,7 +247,8 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
             pastyr = curryr
         file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/{}/{}m{}/InputFiles/{}sub_{}m{}-ysis.csv".format(get_home(), sector_val, str(pastyr), str(pastmon), sector_val, str(pastyr), str(pastmon)))
         past_data = pd.read_csv(file_path, encoding = 'utf-8',  na_values= "", keep_default_na = False)
-        past_data['currmon'] = np.where((np.isnan(past_data['currmon'])== True), 13, past_data['currmon'])
+        past_data['currmon'] = past_data['currmon'].astype(float)
+        past_data['currmon'] = np.where((past_data['currmon'].isnull()== True), 13, past_data['currmon'])
         past_data['subsector'] = "Apt"
         past_data['subid'] = past_data['subid'].astype(int)
         past_data['yr'] = past_data['yr'].astype(int)
@@ -277,7 +278,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
         # Create a column that will keep track if the user overrides a flag and does not think a change is warranted
         data['flag_skip'] = ''
-
+        
         # Rename the p columns with the oob prefix for consistency with forecast program
         for x in list(data.columns):
             if x[0:2] == "p_" and x != "p_sqcons":
@@ -332,7 +333,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     orig_cols = list(data.columns)
     if sector_val == "apt" and file_used == "oob":
         orig_cols = orig_cols + ['p_sqcons']
-
+    
     # Label Submarkets as Legacy or Expansion Metros for Industrial
     expansion_list = ["AA", "AB", "AK", "AN", "AQ", "BD", "BF", "BI", "BR", "BS", "CG", "CM", "CN", "CS", "DC", 
                     "DM", "DN", "EP", "FC", "FM", "FR", "GD", "GN", "GR", "HR", "HL", "HT", "KX", "LL", "LO", 
@@ -381,10 +382,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     data['gap_chg'] = round(data['gap_chg'], 4)
     data['rol_gap_chg'] = np.where((data['identity'] == data['identity'].shift(1)), data['rol_gap'] - data['rol_gap'].shift(1), np.nan)
     data['rol_gap_chg'] = round(data['rol_gap_chg'], 4)
-
+    
     # Join the past sq_cons data in if this is run for apt
     if sector_val == "apt" and file_used == "oob":
-        data = data.join(past_data)
+        data = data.join(past_data, on='identity_row')
         del past_data
         gc.collect()
 
@@ -444,7 +445,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         p_data_in.to_pickle(file_path)
         del p_data_in
         gc.collect()
-    
+
     # Load all msqs for the sector and combine into one dataframe
     # Only need to do this if the msqs havent been refreshed, so analyst has option to skip this section and rely on the data that was saved upon first load of module
     if msq_load == "Y" or file_used == "oob":                
@@ -609,7 +610,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         del cov_thresh
         del msq_data_in
         gc.collect()
-    
+
         # Call the function to load and process the sq insight stats. The processed files will be saved to the network and can then be read in at any time
         if currmon < 4:
             currqtr = 1
@@ -950,7 +951,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
     data = data.join(msq_data_sub, on='join_ident')
     data = data.drop(['join_ident'], axis=1)
-    
+
     # Join in the most up to date sq insight stats (although this will only be refreshed if the actual sqinsight.do file is run after making edits to the msqs)
     cols_before_join = list(data.columns)
 
@@ -1242,5 +1243,5 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
 
     del sq_rg
     gc.collect()
-
+    
     return data, orig_cols, ncsur_prop_dict, avail_10_dict, sq_avail_dict, rg_10_dict, sq_rg_dict, newnc_dict
