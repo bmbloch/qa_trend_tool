@@ -2183,7 +2183,7 @@ def ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols)
                                                 Top Props Absorption
                                                 | id   |  Yr Built               |  Size   | Totavail        |  Rent      |
                                                 |------|-------------------------|---------|-----------------|------------|
-                                                | {id} | {yearbuilt}m{monthbuilt}|  {size:,} | {totavail:,}  | {renx:.3}  |    
+                                                | {id} | {yearbuilt}m{monthbuilt}|  {size:,} | {totavail:,}  | {renx:.2f}  |    
                                                 '''.format(
                                                     id=newnc_props[key]['id'],
                                                     yearbuilt=newnc_props[key]['yearx'],
@@ -2196,7 +2196,7 @@ def ncbackfill_tooltip(newnc_props, sub_newncprops_keys, tables, underline_cols)
             else:
                 table_ncbackfill += textwrap.dedent(
                                                 '''
-                                                {id} {yearbuilt}m{monthbuilt}  {size:,} {totavail:,} {renx:.3}  
+                                                {id} {yearbuilt}m{monthbuilt}  {size:,} {totavail:,} {renx:.2f}  
                                                 '''.format(
                                                     id=newnc_props[key]['id'],
                                                     yearbuilt=newnc_props[key]['yearx'],
