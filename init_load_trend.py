@@ -254,6 +254,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         past_data['yr'] = past_data['yr'].astype(int)
         past_data['currmon'] = past_data['currmon'].astype(int)
         past_data['identity_row'] = np.where((past_data['currmon'] != 13), past_data['metcode'] + past_data['subid'].astype(str) + past_data['subsector'] + past_data['yr'].astype(str) + past_data['currmon'].astype(str), past_data['metcode'] + past_data['subid'].astype(str) + past_data['subsector'] + past_data['yr'].astype(str) + past_data['qtr'].astype(str))
+        past_data = past_data.drop_duplicates('identity_row')
         past_data = past_data.set_index('identity_row')
         past_data['p_sqcons'] = past_data['sqcons']
         past_data = past_data[['p_sqcons']]
