@@ -22,11 +22,11 @@ def drop_cols(dataframe):
 # This function will calculate the key metrics needed to assess viability of oob forecast
 def calc_stats(data, curryr, currmon, first, sector_val):
 
-    if first == False:    
+    if not first:    
         data = drop_cols(data)
 
     # Calculate the 5 and 95 gap percentiles based on the initial levels prior to shims for use in flags (remember that a large gap is bad, so label bottom 5 with the 95 percentile value, and top 5 with the 5 percentile value)
-    if first == True:
+    if first:
         data_filt = data.copy()
         if currmon == 1:
             data_filt = data_filt[(data_filt['yr'] == curryr - 1) & (data_filt['currmon'] == 12)]
@@ -40,6 +40,28 @@ def calc_stats(data, curryr, currmon, first, sector_val):
         data_95 = pd.DataFrame(data_95.groupby('subsector')['gap'].quantile(0.05))
         data_95.columns = ['gap_perc_95']
         data = data.join(data_95, on='subsector')
+
+        # Calculate the typical market rent growth for positive chg and for negative chg, for use in flag benchmarks
+        pos_avg = data.copy()
+        pos_avg = pos_avg[pos_avg['cons'] == 0]
+        pos_avg = pos_avg[(pos_avg['currmon'] != currmon) | (pos_avg['yr'] != curryr)]
+        pos_avg = pos_avg[pos_avg['yr'] >= curryr - 5]
+        pos_avg = pos_avg[round(pos_avg['G_mrent'],3) > 0]
+        pos_avg['g_avg_pos'] = pos_avg.groupby('subsector')['G_mrent'].transform('mean')
+        pos_avg = pos_avg.drop_duplicates('subsector')
+        data = data.join(pos_avg.set_index('subsector')[['g_avg_pos']], on='subsector')
+        data['g_avg_pos'] = np.where((data['g_avg_pos'] < 0.015), 0.015, data['g_avg_pos'])
+
+        neg_avg = data.copy()
+        neg_avg = neg_avg[neg_avg['cons'] == 0]
+        neg_avg = neg_avg[(neg_avg['currmon'] != currmon) | (neg_avg['yr'] != curryr)]
+        neg_avg = neg_avg[neg_avg['yr'] >= curryr - 5]
+        neg_avg = neg_avg[round(neg_avg['G_mrent'],3) < 0]
+        neg_avg['g_avg_neg'] = neg_avg.groupby('subsector')['G_mrent'].transform('mean')
+        neg_avg = neg_avg.drop_duplicates('subsector')
+        data = data.join(neg_avg.set_index('subsector')[['g_avg_neg']], on='subsector')
+        data['g_avg_neg'] = np.where((data['g_avg_neg'] > -0.007), -0.007, data['g_avg_neg'])
+        
 
     # Create a column called Recalc Insert, so that we can drop everything created after it from the dataframe and the stats can be recalculated after a fix is entered
     data['Recalc Insert'] = 0
