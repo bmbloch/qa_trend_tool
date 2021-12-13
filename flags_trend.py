@@ -199,6 +199,10 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Dont flag if there is a shim and the new value is supported by survey data
     data['g_flag_sqdiff'] = np.where((data['g_flag_sqdiff'] == 1) & (data['G_mrent'] != data['G_mrent_oob']) & (abs(data['G_mrent']) <= abs(data['sub_g_renx_mo_wgt_fill']) + 0.001) & (data['G_mrent'] * data['sub_g_renx_mo_wgt_fill'] >= 0), 0, data['g_flag_sqdiff'])
 
+    # Dont flag if this is apt and the difference is attributed to "catch up" code in trend aggregation program to get the 12 month sq/pub rent growths in line
+    if sector_val == 'apt':
+        data['g_flag_sqdiff'] = np.where((data['g_flag_sqdiff'] == 1) & (round(data['G_mrent'],3) == round(data['G_mrent_oob'],3)) & (abs(data['sq_Gmrent_12'] - data['G_mrent_12']) < 0.02) & (data['sq_Gmrent_12'] * data['G_mrent_12'] >= 0) & (((round(data['sq_Gmrent_12'],3) < round(data['G_mrent_12'],3)) & (data['G_mrent'] <= data['sq_Gmrent'])) | ((round(data['sq_Gmrent_12'],3) > round(data['G_mrent_12'],3)) & (data['G_mrent'] >= data['sq_Gmrent'])) | (round(data['sq_Gmrent_12'],3) == round(data['G_mrent_12'],3)) | (abs(data['sq_Gmrent_12'] - data['G_mrent_12'] <= 0.005))), 0, data['g_flag_sqdiff'])
+        
     data['calc_gsqdiff'] = np.where(data['g_flag_sqdiff'] > 0, abs(data['G_mrent'] - data['sq_Gmrent']), np.nan)
 
     # Flag cases where the published rent change is significantly different than the surveyed rent change, with coverage thresholds set
