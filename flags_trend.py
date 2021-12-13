@@ -168,7 +168,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     calc_names.append('calc_glarge')
     data['sub_g_renx_mo_wgt_fill'] = data['sub_g_renx_mo_wgt'].fillna(0).round(3)
     data['met_g_renx_mo_wgt_fill'] = data['met_g_renx_mo_wgt'].fillna(0).round(3)
-    data['g_flag_large'] = np.where(((data['G_mrent'] > 0.015) | (data['G_mrent'] < -0.007)) & (data['g_flag_consp'] == 0) & (data['curr_tag'] == 1), 1, 0)
+    data['g_flag_large'] = np.where(((data['G_mrent'] > data['g_avg_pos']) | (data['G_mrent'] < data['g_avg_neg'])) & (data['g_flag_consp'] == 0) & (data['curr_tag'] == 1), 1, 0)
     
     # Dont flag if there is survey data to back it up with enough coverage
     data['g_flag_large'] = np.where((data['g_flag_large'] == 1) & (data['sub_sur_r_cov_perc'] >= r_threshold) & (data['G_mrent'] > 0) & (data['sub_g_renx_mo_wgt_fill'] > 0) & (data['sub_g_renx_mo_wgt_fill'] + 0.002 >= data['G_mrent']), 0, data['g_flag_large'])
