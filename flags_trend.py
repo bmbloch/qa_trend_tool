@@ -348,7 +348,6 @@ def e_mdir(data, curryr, currmon, sector_val, calc_names):
 
     return data, calc_names
 
-@Timer("Calc Flags")
 def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     
     data = data_in.copy()
