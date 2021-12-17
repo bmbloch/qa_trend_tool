@@ -2693,6 +2693,25 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
         shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
 
+        if sector_val != "ind":
+            shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
+        else:
+            shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
+
+        # Reset the shim view to all nulls, unless there are shims entered
+        if len(shim_data) == 0:
+            shim_data = data.copy()
+            shim_data[shim_cols] = np.nan
+            shim_data = shim_data[(shim_data['identity'] == drop_val)]
+        shim_data = shim_data[['currmon', 'yr'] + shim_cols]
+
+        # If the user changed the sub they want to edit, reset the stored flag decisions
+        if (len(preview_data) > 0 and drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (drop_val not in shim_data.reset_index().loc[0]['identity_row']):
+            flags_resolved = []
+            flags_unresolved = []
+            flags_new = []
+            flags_skipped = []
+
         # Set the color of the show skips text based on whether there are flags that have been skipped
         if data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip'] != '':
             color = 'green'
@@ -2724,18 +2743,6 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & (preview_data['currmon'] >= priormon))]
             if len(shim_data) > 0:
                 shim_data = shim_data[(shim_data['yr'] == curryr) | ((shim_data['yr'] == curryr - 1) & (shim_data['currmon'] > priormon))]
-
-        if sector_val != "ind":
-            shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
-        else:
-            shim_cols = ['inv', 'cons', 'avail', 'mrent', 'merent']
-
-        # Reset the shim view to all nulls, unless there are shims entered
-        if len(shim_data) == 0:
-            shim_data = data.copy()
-            shim_data[shim_cols] = np.nan
-            shim_data = shim_data[(shim_data['identity'] == drop_val)]
-        shim_data = shim_data[['currmon', 'yr'] + shim_cols]
 
         # If the user chooses to expand the history displayed in the datatable, ensure that the new shim periods get added, but do not lose the shims already entered if there are some
         if "full" in expand and first_yr == False and (shim_data.reset_index().loc[0]['yr'] == curryr or ((shim_data.reset_index().loc[0]['yr'] == curryr - 1) and (shim_data.reset_index().loc[0]['currmon'] == currmon))):
