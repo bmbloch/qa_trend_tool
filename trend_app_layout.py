@@ -289,7 +289,7 @@ def get_app_layout(curryr, currmon, sector_val):
                                             {'label': ' Show Skips', 'value': 'Y'},
                                             ],
                                 labelStyle={'display': 'block'}), 
-                            ],  style={'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top'}),
+                            ], id='show_skips_container'),
                         html.Div([
                             dcc.Checklist(
                                 id='show_cd',

@@ -2630,7 +2630,8 @@ def remove_options(submit_button, drop_val, sector_val, rebench_yr, rebench_mont
                 Output('key_met_radios_container', 'style'),
                 Output('submit_button_container', 'style'),
                 Output('preview_button_container', 'style'),
-                Output('subsequent_change_container', 'style')],
+                Output('subsequent_change_container', 'style'),
+                Output('show_skips_container', 'style')],
                 [Input('sector', 'data'),
                 Input('dropman', 'value'),
                 Input('store_all_buttons', 'data'),
@@ -2692,6 +2693,14 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         preview_data = use_pickle("in", "preview_data_" + sector_val, False, curryr, currmon, sector_val)
         shim_data = use_pickle("in", "shim_data_" + sector_val, False, curryr, currmon, sector_val)
 
+        # Set the color of the show skips text based on whether there are flags that have been skipped
+        if data.loc[drop_val + str(curryr) + str(currmon)]['flag_skip'] != '':
+            color = 'green'
+            font_weight = 'bold'
+        else:
+            color = 'red'
+            font_weight = 'normal'
+        show_skips_style = {'padding-left': '10px', 'width': '6%', 'display': 'inline-block', 'vertical-align': 'top', 'color': color, 'font-weight': font_weight}
         
         # Drop flag columns to reduce dimensionality
         data = data.drop(flag_cols, axis=1)
@@ -3142,7 +3151,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
     return display_data.to_dict('records'), [{'name': [col_header[i], display_data.columns[i]], 'id': display_data.columns[i], 'type': type_dict_data[display_data.columns[i]], 'format': format_dict_data[display_data.columns[i]], 'editable': edit_dict[display_data.columns[i]]} 
                             for i in range(0, len(display_cols))], highlighting_display, man_view_display, style_cell_conditional, key_metrics.to_dict('records'), [{'name': [key_met_title, key_metrics.columns[i]], 'id': key_metrics.columns[i], 'type': type_dict_metrics[key_metrics.columns[i]], 'format': format_dict_metrics[key_metrics.columns[i]]} 
                             for i in range(0, len(key_metrics.columns))], key_metrics_display, highlighting_metrics, tooltip_key_metrics, key_met_2.to_dict('records'), [{'name': ['Other Subsector Data', key_met_2.columns[i]], 'id': key_met_2.columns[i], 'type': type_dict_met_2[key_met_2.columns[i]], 'format': format_dict_met_2[key_met_2.columns[i]]} 
-                            for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display
+                            for i in range(0, len(key_met_2.columns))], key_met_2_display, highlighting_key2, issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, style_noprev, style_resolved, style_unresolved, style_new, style_skipped, go.Figure(data=data_vac), vac_series_display, go.Figure(data=data_rent), rent_series_display, cons_comment, avail_comment, mrent_comment, erent_comment, cons_comment_display, avail_comment_display, mrent_comment_display, erent_comment_display, key_met_radios_display, submit_button_display, preview_button_display, subsequent_radios_display, show_skips_style
 
 @trend.callback([Output('vac_series_met', 'figure'),
                 Output('rent_series_met', 'figure'),
