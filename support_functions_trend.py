@@ -702,8 +702,12 @@ def manual_rebench_check(data, data_temp, rebench_to_check, curryr, currmon, sec
     if len(rebench_to_check) > 0:
         check = True
         first_yr = rebench_to_check.reset_index().loc[0]['identity_row']
-        first_month = first_yr[-1]
-        first_yr = first_yr[-5:-1]
+        if currmon < 10:
+            first_month = first_yr[-1]
+            first_yr = first_yr[-5:-1]
+        else:
+            first_month = first_yr[-2:]
+            first_yr = first_yr[-6:-2]
     else:
         check = False
         first_yr = False
