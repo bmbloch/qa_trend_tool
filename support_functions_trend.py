@@ -1611,7 +1611,6 @@ def check_skips(dataframe_in, decision_data, curryr, currmon, sector_val, flag_c
     for x, y in zip(rol_flag_cols, test_cols):
         dataframe[x] = np.where((dataframe[y] > 0) & (dataframe[x] == 0) & (dataframe['yr'] == curryr) & (dataframe['currmon'] == currmon), 1, dataframe[x])
     
-    dataframe[flag_cols]
     dataframe = dataframe[(dataframe['identity'] == init_drop_val) & (dataframe['curr_tag'] == 1)]
     skips = list(dataframe['flag_skip'])
     skips = skips[0].replace(' ', '').split(",")
