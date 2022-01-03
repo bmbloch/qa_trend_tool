@@ -2119,7 +2119,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             orig_drop_val = drop_val
             flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
             
-            if orig_drop_val != drop_val and input_id == "submit-button"::
+            if orig_drop_val != drop_val and input_id == "submit-button":
                 flags_resolved = []
                 flags_unresolved = []
                 flags_new = []
@@ -2802,7 +2802,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
             preview_status = True
         else:
             preview_status = False
-        
+
         issue_description_noprev, issue_description_resolved, issue_description_unresolved, issue_description_new, issue_description_skipped, display_highlight_list, key_metrics_highlight_list = get_issue("specific", sector_val, data_full, has_flag, flag_list, p_skip_list, show_skips, flags_resolved, flags_unresolved, flags_new, flags_skipped, curryr, currmon, preview_status, init_skips, test_auto_rebench, first_yr, first_month, auto_rebench_var)
 
         if len(issue_description_noprev) == 0:
