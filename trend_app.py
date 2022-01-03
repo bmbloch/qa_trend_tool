@@ -2115,8 +2115,16 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             type_dict_countdown, format_dict_countdown = get_types(sector_val)
             countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
 
-            # Get the next sub flagged
+            # Get the next sub flagged, and if all flags were resolved and moving on to a new sub for review, clear out the stored flag decision variables
+            orig_drop_val = drop_val
             flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+            
+            if orig_drop_val != drop_val and input_id == "submit-button"::
+                flags_resolved = []
+                flags_unresolved = []
+                flags_new = []
+                skip_list = []
+
             if test_auto_rebench == True:
                 if avail_check == True:
                     var_for_message = "vacancy"
@@ -2760,9 +2768,13 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
                 preview_data = preview_add.copy()
                 use_pickle("out", "preview_data_" + sector_val, preview_data, curryr, currmon, sector_val)
         
-        # If the user changed the sub they want to edit, reset the shim section and the preview dataset
+        # If the user changed the sub they want to edit, reset the shim section and the preview dataset and the flag decision variables
         if (len(preview_data) > 0 and drop_val != preview_data[preview_data['sub_prev'] == 1].reset_index().loc[0]['identity']) or (drop_val not in shim_data.reset_index().loc[0]['identity_row']):
             sub_change = True
+            flags_resolved = []
+            flags_unresolved = []
+            flags_new = []
+            flags_skipped = []
         else:
             sub_change = False
         if sub_change == True:
