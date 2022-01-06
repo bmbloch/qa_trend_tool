@@ -92,7 +92,8 @@ def get_types(sector_val):
     type_dict['Total Flags'] = 'numeric'
     type_dict['Cons Flags'] = 'numeric'
     type_dict['Vac Flags'] = 'numeric'
-    type_dict['Rent Flags'] = 'numeric'
+    type_dict['Mrent Flags'] = 'numeric'
+    type_dict['Erent Flags'] = 'numeric'
     type_dict['% Currmon Trend Rows W Flag'] = 'numeric'
     type_dict['% Trend Rows W Flag'] = 'numeric'
     type_dict['% Subs W Flag'] = 'numeric'
@@ -348,7 +349,8 @@ def get_types(sector_val):
     format_dict['Total Flags'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['Cons Flags'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['Vac Flags'] = Format(precision=0, scheme=Scheme.fixed)
-    format_dict['Rent Flags'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['Mrent Flags'] = Format(precision=0, scheme=Scheme.fixed)
+    format_dict['Erent Flags'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['cons rank'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['vac chg rank'] = Format(precision=0, scheme=Scheme.fixed)
     format_dict['abs rank'] = Format(precision=0, scheme=Scheme.fixed)

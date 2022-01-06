@@ -280,27 +280,28 @@ def live_flag_count(dataframe, sector_val, flag_cols, curryr, currmon):
     
     dataframe['c_flag_tot_sub'] = dataframe.filter(regex="^c_flag*").sum(axis=1)
     dataframe['v_flag_tot_sub'] = dataframe.filter(regex="^v_flag*").sum(axis=1)
-    dataframe['g_flag_tot_temp1'] = dataframe.filter(regex="^g_flag*").sum(axis=1)
-    dataframe['g_flag_tot_temp2'] = dataframe.filter(regex="^e_flag*").sum(axis=1)
-    dataframe['g_flag_tot_sub'] = dataframe['g_flag_tot_temp1'] + dataframe['g_flag_tot_temp2']
-    dataframe = dataframe.drop(['g_flag_tot_temp1', 'g_flag_tot_temp2'], axis=1)
+    dataframe['g_flag_tot_sub'] = dataframe.filter(regex="^g_flag*").sum(axis=1)
+    dataframe['e_flag_tot_sub'] = dataframe.filter(regex="^e_flag*").sum(axis=1)
 
     dataframe["c_skip"] = dataframe["flag_skip"].str.count("c_flag")
     dataframe["v_skip"] = dataframe["flag_skip"].str.count("v_flag")
-    dataframe["g_skip"] = dataframe["flag_skip"].str.count("g_flag") + dataframe["flag_skip"].str.count("e_flag")
+    dataframe["g_skip"] = dataframe["flag_skip"].str.count("g_flag")
+    dataframe["e_skip"] = dataframe["flag_skip"].str.count("e_flag")
 
     dataframe['extra_c_skip'] = dataframe['c_skip'] - dataframe['c_flag_tot_sub']
     dataframe['extra_v_skip'] = dataframe['v_skip'] - dataframe['v_flag_tot_sub']
     dataframe['extra_g_skip'] =  dataframe['g_skip'] - dataframe['g_flag_tot_sub']
-    dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip']] = np.where(dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip']] < 1, 0, dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip']])
+    dataframe['extra_e_skip'] =  dataframe['e_skip'] - dataframe['e_flag_tot_sub']
+    dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip', 'extra_e_skip']] = np.where(dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip', 'extra_e_skip']] < 1, 0, dataframe[['extra_c_skip', 'extra_v_skip', 'extra_g_skip', 'extra_e_skip']])
 
     c_left = dataframe['c_flag_tot_sub'].sum() -  dataframe['flag_skip'].str.count('c_flag').sum() + dataframe['extra_c_skip'].sum()
     v_left = dataframe['v_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('v_flag').sum() + dataframe['extra_v_skip'].sum()
-    g_left = dataframe['g_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('g_flag').sum() - dataframe['flag_skip'].str.count('e_flag').sum() + dataframe['extra_g_skip'].sum()
+    g_left = dataframe['g_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('g_flag').sum() + dataframe['extra_g_skip'].sum()
+    e_left = dataframe['e_flag_tot_sub'].sum() - dataframe['flag_skip'].str.count('e_flag').sum() + dataframe['extra_e_skip'].sum()
 
 
-    countdown_dict = {'Totals': [c_left, v_left, g_left]}
-    countdown = pd.DataFrame.from_dict(countdown_dict, orient='index', columns=["Cons Flags", "Vac Flags", "Rent Flags"])
+    countdown_dict = {'Totals': [c_left, v_left, g_left, e_left]}
+    countdown = pd.DataFrame.from_dict(countdown_dict, orient='index', columns=["Cons Flags", "Vac Flags", "Mrent Flags", "Erent Flags"])
     
     return countdown
 
@@ -361,13 +362,12 @@ def summarize_flags(dataframe_in, sum_val, flag_cols):
     dataframe[flag_cols] = np.where((dataframe[flag_cols] != 0), 1, dataframe[flag_cols])
     dataframe['c_flag_tot'] = dataframe.filter(regex="^c_flag*").sum(axis=1)
     dataframe['v_flag_tot'] = dataframe.filter(regex="^v_flag*").sum(axis=1)
-    dataframe['g_flag_tot_temp1'] = dataframe.filter(regex="^g_flag*").sum(axis=1)
-    dataframe['g_flag_tot_temp2'] = dataframe.filter(regex="^e_flag*").sum(axis=1)
-    dataframe['g_flag_tot'] = dataframe['g_flag_tot_temp1'] + dataframe['g_flag_tot_temp2']
+    dataframe['g_flag_tot'] = dataframe.filter(regex="^g_flag*").sum(axis=1)
+    dataframe['e_flag_tot'] = dataframe.filter(regex="^e_flag*").sum(axis=1)
 
     dataframe['total_subs'] = dataframe.groupby(identity_filt)['identity'].transform('nunique')
 
-    for x  in ["c", "v", "g"]:
+    for x  in ["c", "v", "g", "e"]:
         dataframe[x + '_flag_sum'] = dataframe.groupby(identity_filt)[x + '_flag_tot'].transform('sum')
         
         dataframe['has_flag'] = np.where((dataframe[x + '_flag_tot'] != 0), 1, 0)    
@@ -385,10 +385,10 @@ def summarize_flags(dataframe_in, sum_val, flag_cols):
     dataframe = dataframe.reset_index()
 
     input_dict = {
-                    'Flag Type': ['Cons Flags', 'Vac Flags', 'Rent Flags'], 
-                    'Total Flags': [dataframe['c_flag_sum'].loc[0], dataframe['v_flag_sum'].loc[0], dataframe['g_flag_sum'].loc[0]],
-                    '% Currmon Trend Rows W Flag': [dataframe['c_% Currmon Trend Rows W Flag'].loc[0], dataframe['v_% Currmon Trend Rows W Flag'].loc[0], dataframe['g_% Currmon Trend Rows W Flag'].loc[0]],
-                    '% Subs W Flag': [dataframe['c_% Subs W Flag'].loc[0], dataframe['v_% Subs W Flag'].loc[0], dataframe['g_% Subs W Flag'].loc[0]]
+                    'Flag Type': ['Cons Flags', 'Vac Flags', 'Mrent Flags', 'Erent Flags'], 
+                    'Total Flags': [dataframe['c_flag_sum'].loc[0], dataframe['v_flag_sum'].loc[0], dataframe['g_flag_sum'].loc[0], dataframe['e_flag_sum'].loc[0]],
+                    '% Currmon Trend Rows W Flag': [dataframe['c_% Currmon Trend Rows W Flag'].loc[0], dataframe['v_% Currmon Trend Rows W Flag'].loc[0], dataframe['g_% Currmon Trend Rows W Flag'].loc[0], dataframe['e_% Currmon Trend Rows W Flag'].loc[0]],
+                    '% Subs W Flag': [dataframe['c_% Subs W Flag'].loc[0], dataframe['v_% Subs W Flag'].loc[0], dataframe['g_% Subs W Flag'].loc[0], dataframe['e_% Subs W Flag'].loc[0]]
                   }
     
     dataframe_out = pd.DataFrame(input_dict)
