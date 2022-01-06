@@ -183,7 +183,7 @@ def get_app_layout(curryr, currmon, sector_val):
                                                     ],
                                                 ),
                                 ], style={'display': 'none'}, id='flag_filt_container'),
-                        ], style={'width': '35%', 'display': 'inline-block', 'padding-left': '30px', 'padding-top': '78px'}),
+                        ], style={'width': '35%', 'display': 'inline-block', 'padding-left': '30px'}),
                     html.Div([
                         html.Div([
                             html.Div([

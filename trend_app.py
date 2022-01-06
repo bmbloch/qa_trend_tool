@@ -1096,7 +1096,7 @@ def filter_flags(dataframe_in, drop_flag):
                 'Flag Ranking': [0]}
         flag_filt = pd.DataFrame(data_fill, columns=['Submarkets With Flag', 'Flag Ranking'])
 
-    flag_filt_display = {'display': 'block', 'padding-top': '20px'}
+    flag_filt_display = {'display': 'block', 'padding-top': '20px', 'padding-left': '10px'}
 
     if len(flag_filt) >= 10:
         flag_filt_style_table = {'height': '350px', 'overflowY': 'auto'}
@@ -2115,7 +2115,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
             countdown[flag_cols] = np.where((countdown[flag_cols] != 0), 1, countdown[flag_cols])
             countdown = live_flag_count(countdown, sector_val, flag_cols, curryr, currmon)
             type_dict_countdown, format_dict_countdown = get_types(sector_val)
-            countdown_display = {'display': 'block', 'padding-top': '55px', 'padding-left': '10px'}
+            countdown_display = {'display': 'block', 'padding-top': '30px', 'padding-left': '10px'}
 
             # Get the next sub flagged, and if all flags were resolved and moving on to a new sub for review, clear out the stored flag decision variables
             orig_drop_val = drop_val
@@ -2523,7 +2523,7 @@ def display_summary(sector_val, drop_val, init_flags, curryr, currmon, success_i
         input_id = get_input_id()
 
         rank_display = {'display': 'block'}
-        sum_display = {'display': 'block', 'padding-left': '10px'}
+        sum_display = {'display': 'block', 'padding-left': '10px', 'padding-top': '18px'}
         nat_met_vac_display = {'display': 'block', 'padding-top': '30px'}
         nat_met_rent_display = {'display': 'block', 'padding-top': '30px'}
         
