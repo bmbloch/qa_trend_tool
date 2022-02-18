@@ -22,9 +22,9 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
 
     # Note: leave rol_vac and rol_G_mrent in so that it can be used to identify row where diff to rol is for highlighting purposes, will be dropped before final output of datatable
     if sector_val != "ind":
-        display_cols = ['identity_row', 'inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac',  'rol_vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_G_mrent']
+        display_cols = ['inv shim', 'cons shim', 'conv shim', 'demo shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'conv', 'demo', 'vac',  'rol_vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg', 'rol_G_mrent']
     else:
-        display_cols = ['identity_row', 'inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'rol_vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg']
+        display_cols = ['inv shim', 'cons shim', 'avail shim', 'mrent shim', 'merent shim', 'yr', 'currmon', 'inv', 'cons', 'sqcons', 'vac', 'rol_vac', 'vac_chg', 'sqvac', 'sqvac_chg', 'occ', 'avail', 'sqavail', 'abs', 'sqabs', 'mrent', 'G_mrent', 'rol_G_mrent', 'sqsren', 'sq_Gmrent', 'merent', 'G_merent', 'gap', 'gap_chg']
     
     if "c_flag_rolv" in flag_list:
         if sector_val == "ind":
@@ -127,14 +127,8 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
 
 # Function to creat the main display on the data tab
 def display_frame(dataframe, identity_val, display_cols, curryr, sector_val):
-    dataframe = dataframe.reset_index()
-    dataframe = dataframe.rename(columns={"index": "identity_row"})
-    dataframe = dataframe.set_index("identity")
-    dataframe = dataframe.loc[identity_val]
+    dataframe = dataframe[dataframe['identity'] == identity_val]
     dataframe = dataframe[display_cols]
-    dataframe = dataframe.reset_index()
-    dataframe = dataframe.set_index("identity_row")
-    dataframe = dataframe.drop(['identity'], axis =1)
     for z in display_cols[1:]:
         dataframe[z] = dataframe[z].apply(lambda x: '' if pd.isnull(x) else x)
     
