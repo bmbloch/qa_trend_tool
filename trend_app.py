@@ -1239,7 +1239,7 @@ def submit_update(data, shim_data, sector_val, orig_cols, user, drop_val, expand
                 priormon = 12
             else:
                 priormon = currmon - 1
-            data_orig = data_orig[(data_orig['yr'] == curryr) | ((data_orig['yr'] == curryr - 1) & (data_orig['currmon'] > priormon))]
+            data_orig = data_orig[(data_orig['yr'] == curryr) | ((data_orig['yr'] == curryr - 1) & (((data_orig['currmon'] > priormon | (currmon == 1))) | (currmon == 1)))]
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
@@ -1358,7 +1358,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
                 priormon = 12
             else:
                 priormon = currmon - 1
-            data_orig = data_orig[(data_orig['yr'] == curryr) | ((data_orig['yr'] == curryr - 1) & (data_orig['currmon'] > priormon))]
+            data_orig = data_orig[(data_orig['yr'] == curryr) | ((data_orig['yr'] == curryr - 1) & ((data_orig['currmon'] > priormon) | (currmon == 1)))]
         data_orig = data_orig[['currmon', 'yr'] + shim_cols]
         shim_data = shim_data[['currmon', 'yr'] + shim_cols]
         
@@ -1381,7 +1381,7 @@ def preview_update(data, shim_data, sector_val, preview_data, drop_val, expand, 
                     priormon = 12
                 else:
                     priormon = currmon - 1
-                preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & (preview_data['currmon'] >= priormon))]
+                preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & ((preview_data['currmon'] >= priormon) | (currmon == 1)))]
             preview_data['sub_prev'] = np.where(preview_data['identity'] == drop_val, 1, 0)
         else:
             preview_data = pd.DataFrame()
@@ -2751,7 +2751,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         if "full" in expand and first_yr == False and (shim_data.reset_index().loc[0]['yr'] == curryr or ((shim_data.reset_index().loc[0]['yr'] == curryr - 1) and (shim_data.reset_index().loc[0]['currmon'] == currmon))):
             shim_add = data.copy()
             shim_add = shim_add[['identity', 'currmon', 'yr'] + shim_cols]
-            shim_add = shim_add[(shim_add['yr'] < curryr - 1) | ((shim_add['yr'] == curryr - 1) & (shim_add['currmon'] <= priormon))]
+            shim_add = shim_add[(shim_add['yr'] < curryr - 1) | ((shim_add['yr'] == curryr - 1) & ((shim_add['currmon'] <= priormon) | (currmon == 1)))]
             shim_add = shim_add[(shim_add['identity'] == drop_val)]
             shim_add = shim_add.drop(['identity'], axis=1)
             shim_add[['inv', 'cons', 'avail', 'mrent', 'merent']] = np.nan
@@ -2764,7 +2764,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
 
             if len(preview_data) > 0:
                 preview_add = data.copy()
-                preview_add = preview_add[(preview_add['yr'] < curryr - 1) | ((preview_add['yr'] == curryr - 1) & (preview_add['currmon'] < priormon))]
+                preview_add = preview_add[(preview_add['yr'] < curryr - 1) | ((preview_add['yr'] == curryr - 1) & ((preview_add['currmon'] < priormon) | (currmon == 1)))]
                 preview_add = preview_add[(preview_add['identity'] == drop_val)]
                 preview_add = preview_add.append(preview_data)
                 preview_data = preview_add.copy()
@@ -2857,7 +2857,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
 
         shim_data_concat = shim_data.copy()
         if 'trunc' in expand and 'full' not in expand:
-            shim_data_concat = shim_data_concat[(shim_data_concat['yr'] == curryr) | ((shim_data_concat['yr'] == curryr - 1) & (shim_data_concat['currmon'] > priormon))]
+            shim_data_concat = shim_data_concat[(shim_data_concat['yr'] == curryr) | ((shim_data_concat['yr'] == curryr - 1) & ((shim_data_concat['currmon'] > priormon) | (currmon == 1)))]
         shim_data_concat = shim_data_concat.drop(['currmon', 'yr'], axis=1)
         shim_data_concat = shim_data_concat.reset_index(drop=True)
         display_data = display_data.reset_index()
