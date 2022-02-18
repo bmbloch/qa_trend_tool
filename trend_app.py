@@ -2729,11 +2729,11 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         
         # If the user wants to has not selected to see the full history for the submarket truncate the view to 12 months plus one extra month for calculating change in 12 month
         if "full" not in expand:
-            data = data[(data['yr'] == curryr) | ((data['yr'] == curryr - 1) & (data['currmon'] >= priormon))]
+            data = data[(data['yr'] == curryr) | ((data['yr'] == curryr - 1) & ((data['currmon'] >= priormon) | (currmon == 1)))]
             if len(preview_data) > 0:
-                preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & (preview_data['currmon'] >= priormon))]
+                preview_data = preview_data[(preview_data['yr'] == curryr) | ((preview_data['yr'] == curryr - 1) & ((preview_data['currmon'] >= priormon) | (currmon == 1)))]
             if len(shim_data) > 0:
-                shim_data = shim_data[(shim_data['yr'] == curryr) | ((shim_data['yr'] == curryr - 1) & (shim_data['currmon'] > priormon))]
+                shim_data = shim_data[(shim_data['yr'] == curryr) | ((shim_data['yr'] == curryr - 1) & ((shim_data['currmon'] >= priormon) | (currmon == 1)))]
 
         if sector_val != "ind":
             shim_cols = ['inv', 'cons', 'conv', 'demo', 'avail', 'mrent', 'merent']
@@ -2854,7 +2854,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         # Drop the first row if only displaying the trunc series, as that was only needed to calculate change variables in the next row
         if 'full' not in expand:
             display_data = display_data.iloc[1: , :]
-        
+
         shim_data_concat = shim_data.copy()
         if 'trunc' in expand and 'full' not in expand:
             shim_data_concat = shim_data_concat[(shim_data_concat['yr'] == curryr) | ((shim_data_concat['yr'] == curryr - 1) & (shim_data_concat['currmon'] > priormon))]
