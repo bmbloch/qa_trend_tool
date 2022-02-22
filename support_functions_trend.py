@@ -1508,6 +1508,13 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
     if sector_val == "ret":
         met_roll = met_roll.drop_duplicates(['metcode', 'yr', 'currmon'])
 
+    if currmon == 1:
+        met_roll['final_cons_ytd'] = met_roll['cons']
+        met_roll['final_vacchg_ytd'] = met_roll['vac_chg']
+        met_roll['final_abs_ytd'] = met_roll['abs']
+        met_roll['final_Gmrent_ytd'] = met_roll['G_mrent']
+        met_roll['final_Gmerent_ytd'] = met_roll['G_merent']
+
     if sector_val == "apt" or sector_val == "off" or sector_val == "ret":
         met_roll["merent"] = np.where(met_roll['tier'] > 1, np.nan, met_roll["merent"])
         met_roll["Gmerent"] = np.where(met_roll['tier'] > 1, np.nan, met_roll["Gmerent"])
@@ -1515,13 +1522,6 @@ def create_review_packet(data_in, curryr, currmon, sector_val):
         met_roll["final_Gmerent_last3mo"] = np.where(met_roll['tier'] > 1, np.nan, met_roll["final_Gmerent_last3mo"])
         met_roll["final_Gmerent_ytd"] = np.where(met_roll['tier'] > 1, np.nan, met_roll["final_Gmerent_ytd"])
         met_roll["final_gapchg_last3mo"] = np.where(met_roll['tier'] > 1, np.nan, met_roll["final_gapchg_last3mo"])
-
-    if currmon == 1:
-        met_roll['final_cons_ytd'] = met_roll['cons']
-        met_roll['final_vacchg_ytd'] = met_roll['vac_chg']
-        met_roll['final_abs_ytd'] = met_roll['abs']
-        met_roll['final_Gmrent_ytd'] = met_roll['G_mrent']
-        met_roll['final_Gmerent_ytd'] = met_roll['G_merent']
         
 
     if sector_val != "ind":
