@@ -1104,6 +1104,10 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
     file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
     prior = prior[['id']]
+    if isinstance(curr.reset_index().loc[0]['id'], str) and not isinstance(prior.reset_index().loc[0]['id'], str):
+        prior['id'] = prior['id'].astype(str)
+    elif not isinstance(curr.reset_index().loc[0]['id'], str) and isinstance(prior.reset_index().loc[0]['id'], str):
+        prior['id'] = prior['id'].astype(int)
     prior = prior.drop_duplicates('id')
     prior['in_last_month'] = 1
     prior = prior.set_index('id')
