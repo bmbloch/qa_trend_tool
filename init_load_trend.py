@@ -1101,6 +1101,13 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     data['abs'] = np.where((data['yr'] == 2019) & (data['currmon'] == 1) & (data['identity'] != data['identity'].shift(1)), np.nan, data['abs'])
 
     # Use last months final msq to determine what ids are new to the sq pool this month, and are in the nc rebench window
+    curr = pd.read_pickle(file_path)
+    curr = curr[(curr['yr'] == curryr) & (curr['currmon'] == currmon)]
+    curr = curr[curr['yearx'] >= curryr - 3]
+    curr = curr[curr['balance_test'] != '99']
+    curr = curr[['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
+    curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
+    
     prior = pd.read_pickle("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data_prior_month.pickle".format(get_home(), sector_val))
     file_path = Path("{}central/square/data/zzz-bb-test2/python/trend/intermediatefiles/{}_msq_data.pickle".format(get_home(), sector_val))
     prior = prior[['id']]
@@ -1111,12 +1118,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     prior = prior.drop_duplicates('id')
     prior['in_last_month'] = 1
     prior = prior.set_index('id')
-    curr = pd.read_pickle(file_path)
-    curr = curr[(curr['yr'] == curryr) & (curr['currmon'] == currmon)]
-    curr = curr[curr['yearx'] >= curryr - 3]
-    curr = curr[curr['balance_test'] != '99']
-    curr = curr[['id', 'yr', 'qtr', 'currmon', 'yearx', 'month', 'sizex', 'totavailx', 'renx', 'identity']]
-    curr['currmon_tag'] = np.where((curr['yearx'] == curryr) & (curr['month'] == currmon), 1, 0)
+    
     curr = curr.join(prior, on='id')
     del prior
     curr = curr[curr['in_last_month'].isnull() == True]
