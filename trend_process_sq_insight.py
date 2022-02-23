@@ -148,9 +148,7 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
         msq_data.to_pickle(file_path)
         del msq_data
         gc.collect()
-    
-    # if sector_val == "ind":
-    #     print("Take out qtr aggregation for ind once the new sq code is live")
+
     def roll_sq_insight(dataframe_in, curryr, currmon, currqtr, sector_val, var_type, level_type):
         dataframe = dataframe_in.copy()
         if var_type == "rent":
