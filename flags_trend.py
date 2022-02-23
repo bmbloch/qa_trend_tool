@@ -44,7 +44,7 @@ def c_sqdiff(data, curryr, currmon, sector_val, calc_names):
         data['c_flag_sqdiff'] = np.where(data['c_flag_sqdiff'] == 1, data['sqcons'] - data['cons'], data['c_flag_sqdiff'])
     
     elif sector_val == "off":
-        data['c_flag_sqdiff'] = np.where((data['sqcons'] != data['cons']), 1, 0)
+        data['c_flag_sqdiff'] = np.where((data['sqcons'] != data['cons']) & (data['yr'] >= curryr - 1), 1, 0)
         data['calc_csqdiff'] = np.where((data['c_flag_sqdiff'] == 1), abs(data['sqcons'] - data['cons']), np.nan)
         calc_names.append(list(data.columns)[-1])
 
