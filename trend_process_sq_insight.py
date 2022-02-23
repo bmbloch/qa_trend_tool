@@ -129,6 +129,11 @@ def process_sq_insight(sector_val, curryr, currmon, currqtr):
     sq_insight_met_vac = sq_insight_met_vac.reset_index(drop=True)
     sq_insight_sub_vac = sq_insight_sub_vac.reset_index(drop=True)
 
+    sq_insight_met_rent['currmon'] = np.where(sq_insight_met_rent['currmon'] == '', 13, sq_insight_met_rent['currmon'])
+    sq_insight_sub_rent['currmon'] = np.where(sq_insight_sub_rent['currmon'] == '', 13, sq_insight_sub_rent['currmon'])
+    sq_insight_met_vac['currmon'] = np.where(sq_insight_met_vac['currmon'] == '', 13, sq_insight_met_vac['currmon'])
+    sq_insight_sub_vac['currmon'] = np.where(sq_insight_sub_vac['currmon'] == '', 13, sq_insight_sub_vac['currmon'])
+
     sq_insight_met_rent[['yr', 'currmon', 'qtr']] = sq_insight_met_rent[['yr', 'currmon', 'qtr']].astype(int)
     sq_insight_sub_rent[['yr', 'currmon', 'qtr']] = sq_insight_sub_rent[['yr', 'currmon', 'qtr']].astype(int)
     sq_insight_met_vac[['yr', 'currmon', 'qtr']] = sq_insight_met_vac[['yr', 'currmon', 'qtr']].astype(int)
