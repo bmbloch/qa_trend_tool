@@ -32,14 +32,21 @@ def c_rolg(data, curryr, currmon, sector_val, calc_names):
 
     return data, calc_names
 
-# If this is an apt run, flag if sq_cons is not equal to pub cons, except if the sq_cons hasnt changed from last month
+# If this is an apt or off run, flag if sq_cons is not equal to pub cons, except if the sq_cons hasnt changed from last month
 def c_sqdiff(data, curryr, currmon, sector_val, calc_names):
 
-    data['c_flag_sqdiff'] = np.where((data['yr'] >= 2009) & (data['sqcons'] - data['cons'] != data['p_sqcons'] - data['rol_cons']) & (data['sqcons'] != data['cons']) & (data['curr_tag'] == 0) & (np.isnan(data['p_sqcons']) == False), 1, 0)
-    data['c_flag_sqdiff'] = np.where((data['sqcons'] != data['cons']) & (data['curr_tag'] == 1), 1, data['c_flag_sqdiff'])
+    if sector_val == "apt":
+    
+        data['c_flag_sqdiff'] = np.where((data['yr'] >= 2009) & (data['sqcons'] - data['cons'] != data['p_sqcons'] - data['rol_cons']) & (data['sqcons'] != data['cons']) & (data['curr_tag'] == 0) & (np.isnan(data['p_sqcons']) == False), 1, 0)
+        data['c_flag_sqdiff'] = np.where((data['sqcons'] != data['cons']) & (data['curr_tag'] == 1), 1, data['c_flag_sqdiff'])
         
-    # EM requested that the actual difference be the output for the orig flags file so the ids causing the flag are easier to spot, so handle that case differently
-    data["c_flag_sqdiff"] = np.where(data["c_flag_sqdiff"] == 1, data['sqcons'] - data['cons'], data["c_flag_sqdiff"])
+        # EM requested that the actual difference be the output for the orig flags file so the ids causing the flag are easier to spot, so handle that case differently
+        data['c_flag_sqdiff'] = np.where(data['c_flag_sqdiff'] == 1, data['sqcons'] - data['cons'], data['c_flag_sqdiff'])
+    
+    elif sector_val == "off":
+        data['c_flag_sqdiff'] = np.where((data['sqcons'] != data['cons']), 1, 0)
+        data['calc_csqdiff'] = np.where((data['c_flag_sqdiff'] == 1), abs(data['sqcons'] - data['cons']), np.nan)
+        calc_names.append(list(data.columns)[-1])
 
     return data, calc_names
 
@@ -357,7 +364,7 @@ def calc_flags(data_in, curryr, currmon, sector_val, v_threshold, r_threshold):
     # Call the individual flag functions to get the current flags
     data, calc_names = c_rolv(data, curryr, currmon, sector_val, calc_names)
     data, calc_names = c_rolg(data, curryr, currmon, sector_val, calc_names)
-    if sector_val == "apt":
+    if sector_val == "apt" or sector_val == "off":
         data, calc_names = c_sqdiff(data, curryr, currmon, sector_val, calc_names)
     data, calc_names = v_low(data, curryr, currmon, sector_val, calc_names)
     data, calc_names = v_high(data, curryr, currmon, sector_val, calc_names)

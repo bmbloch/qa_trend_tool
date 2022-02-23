@@ -421,7 +421,8 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     }
     
     if sector_val != "apt":
-        del issue_descriptions['c_flag_sqdiff']
+        if sector_val != "off":
+            del issue_descriptions['c_flag_sqdiff']
         del issue_descriptions['v_flag_sqlev']
         del issue_descriptions['g_flag_sqlev']
 

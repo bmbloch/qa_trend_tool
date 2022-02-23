@@ -1052,7 +1052,7 @@ def update_decision_log(decision_data, data, drop_val, sector_val, curryr, currm
     return decision_data_update
 
 # This function filters out submarkets flagged for a specific flag chosen by the user on the Home tab, and creates the necessary table and styles for display
-def filter_flags(dataframe_in, drop_flag):
+def filter_flags(dataframe_in, drop_flag, sector_val):
 
     flag_filt = dataframe_in.copy()
     flag_filt[drop_flag + "_test"] = flag_filt.groupby('identity')[drop_flag].transform('sum')
@@ -1064,7 +1064,7 @@ def filter_flags(dataframe_in, drop_flag):
     flag_filt = flag_filt[[drop_flag, 'identity', 'flag_skip']]
     flag_filt = flag_filt[(flag_filt[drop_flag] > 0)]
 
-    if drop_flag == "c_flag_sqdiff":
+    if drop_flag == "c_flag_sqdiff" and sector_val == "apt":
         flag_filt[drop_flag] = flag_filt[drop_flag].rank(ascending=False, method='min')
 
     if len(flag_filt) > 0:
@@ -2094,7 +2094,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
                 data.loc[drop_val + str(curryr) + str(currmon), 'erent_comment'] = erent_c
 
         if input_id != "preview-button":
-            flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag)
+            flag_filt, flag_filt_style_table, flag_filt_display, flag_filt_title = filter_flags(data, drop_flag, sector_val)
 
         if input_id == "submit-button" or input_id == "init_trigger" or first_update == True:
             # Re-calc stats and flags now that the data has been updated, or if this is the initial load
@@ -3574,7 +3574,7 @@ def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_m
 
             elif type_value == "q":
                 if xaxis_var in ['cons']:
-                    if sector_val == "apt":
+                    if sector_val == "apt" or sector_val == "off":
                         graph_data = sum_flags(graph_data, ['c_flag_sqdiff'])
                         graph_data['flagged_status'] = np.where(graph_data['tot_flags'] > 0, 1, 0)
                         graph_data = graph_data.drop(['tot_flags'], axis=1)
