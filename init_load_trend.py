@@ -90,11 +90,11 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
         data_refresh = data_refresh.rename(columns={'sub1to99_Gnrenx': 'sub1to99_Grenx'})
 
     if sector_val == "ind" or sector_val == "ret":
-        data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['subsector'] + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
-        data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
+        data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['subsector'] + data_refresh['yr'].astype(str) + data_refresh['qtr'].astype(str) + data_refresh['currmon'].astype(str)
+        data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
     else:
-        data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['yr'].astype(str) + data_refresh['currmon'].astype(str)
-        data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['currmon'].astype(str)
+        data_refresh['join_ident'] = data_refresh['metcode'] + data_refresh['subid'].astype(str) + data_refresh['yr'].astype(str) + data_refresh['qtr'].astype(str) + data_refresh['currmon'].astype(str)
+        data['join_ident'] = data['metcode'] + data['subid'].astype(str) + data['subsector'] + data['yr'].astype(str) + data['qtr'].astype(str) + data['currmon'].astype(str)
 
     survey_cols = ['avail10d', 'avail00d', 'dqinvren10', 'dqren10d', 'dqren00d', 'ncrenlev', 'covvac', 'covren', 'ss_vac_chg', 'ss_rent_chg', 'pastsubsqvac',
                     'pastsubsqrent', 'sub1to99_Grenx', 'newnc_thismo', 'newncsf', 'newncava', 'newncrev', 'subsq_props', 'rentchgs', 
@@ -116,7 +116,7 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
         diff_cols.append(col + "_diff")
         diff_cols.append(col + "_has_diff")
         data[col + "_diff"] = data[col] - data[col[2:] + "_oob"]
-        data[col + "_has_diff"] = np.where((abs(data[col + "_diff"]) > 0.0009) & (data[col].isnull() == False), 1, 0)
+        data[col + "_has_diff"] = np.where((abs(data[col + "_diff"]) >= 0.0005) & (data[col].isnull() == False), 1, 0)
         testing = data.copy()
         testing = testing[testing[col + "_has_diff"] == 1]
         if len(testing) > 0:
@@ -131,7 +131,7 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
         data[col[2:]] = np.where(data[col + "_has_diff"] == 1, data[col], data[col[2:]])
     if len(refresh_list) > 0: 
         refresh_list.sort()
-    
+    data.to_csv('testing1.csv', index=False)
     if has_diff == True:
         data['vac'] = data['avail'] / data['inv']
         data['vac'] = round(data['vac'], 4)
