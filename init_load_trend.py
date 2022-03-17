@@ -131,7 +131,7 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
         data[col[2:]] = np.where(data[col + "_has_diff"] == 1, data[col], data[col[2:]])
     if len(refresh_list) > 0: 
         refresh_list.sort()
-    data.to_csv('testing1.csv', index=False)
+    
     if has_diff == True:
         data['vac'] = data['avail'] / data['inv']
         data['vac'] = round(data['vac'], 4)
