@@ -80,6 +80,7 @@ def get_app_layout(curryr, currmon, sector_val):
             dcc.Store(id='curryr'),
             dcc.Store(id='currmon'),
             dcc.Store(id='store_msq_load'),
+            dcc.Store(id='store_prelim_mode'),
             dcc.Store(id='flag_list'),
             dcc.Store(id='p_skip_list'),
             dcc.Store(id='identity_val'),

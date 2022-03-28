@@ -1439,9 +1439,10 @@ def router(pathname, curryr, currmon, sector_val):
                     State('login-curryr','value'),
                     State('login-currmon','value'),
                     State('msq_load','value'),
+                    State('prelim_mode', 'value'),
                     State('flag_flow_input', 'value')])
 #@Timer("Login Auth")
-def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, flag_flow):
+def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, prelim_mode, flag_flow):
     input_file_alert = False
 
     if sector_input == "ind":
@@ -1486,7 +1487,11 @@ def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, 
                 msq_load = "N"
             else:
                 msq_load = msq_load[0]
-            return pathname, '', username + "/" + sector_input.title() + "/" + str(curryr) + "m" + str(currmon) + "/" + msq_load + "/" + flag_flow
+            if len(prelim_mode) == 0:
+                prelim_mode = "N"
+            else:
+                prelim_mode = prelim_mode[0]
+            return pathname, '', username + "/" + sector_input.title() + "/" + str(curryr) + "m" + str(currmon) + "/" + msq_load + "/" + flag_flow + "/" + prelim_mode
         else:
             session['authed'] = False
 
@@ -1506,18 +1511,19 @@ def login_auth(n_clicks, username, pw, sector_input, curryr, currmon, msq_load, 
                  Output('curryr', 'data'),
                  Output('currmon', 'data'),
                  Output('store_msq_load', 'data'),
-                 Output('flag_flow', 'data')],
+                 Output('flag_flow', 'data'),
+                 Output('store_prelim_mode', 'data')],
                  [Input('url', 'search')])
 #@Timer("Store Input Vals")
 def store_input_vals(url_input):
     if url_input is None:
         raise PreventUpdate
     else:
-        user, sector_val, global_vals, msq_load, flag_flow = url_input.split("/")
+        user, sector_val, global_vals, msq_load, flag_flow, prelim_mode = url_input.split("/")
         curryr, currmon = global_vals.split("m")
         curryr = int(curryr)
         currmon = int(currmon)
-        return user, sector_val.lower(), curryr, currmon, msq_load, flag_flow
+        return user, sector_val.lower(), curryr, currmon, msq_load, flag_flow, prelim_mode
 
 @trend.callback([Output('input_file', 'data'),
                 Output('confirm_msq_refresh', 'displayed'),
@@ -2036,9 +2042,10 @@ def finalize_econ(confirm_click, sector_val, curryr, currmon, success_init):
                 State('store_flag_cols', 'data'),
                 State('first_update', 'data'),
                 State('flag_flow', 'data'),
-                State('test_auto_rebench', 'data')])
+                State('test_auto_rebench', 'data'),
+                State('store_prelim_mode', 'data')])
 #@Timer("Update Data")
-def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update, flag_flow, test_auto_rebench):
+def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val, orig_cols, curryr, currmon, user, file_used, cons_c, avail_c, mrent_c, erent_c, drop_val, expand, flag_list, p_skip_list, success_init, skip_input_noprev, skip_input_resolved, skip_input_unresolved, skip_input_new, skip_input_skipped, subsequent_chg, v_threshold, r_threshold, flag_cols, first_update, flag_flow, test_auto_rebench, prelim_mode):
     
     input_id = get_input_id()
     
@@ -2119,7 +2126,7 @@ def update_data(submit_button, preview_button, drop_flag, init_fired, sector_val
 
             # Get the next sub flagged, and if all flags were resolved and moving on to a new sub for review, clear out the stored flag decision variables
             orig_drop_val = drop_val
-            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+            flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, False, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val, prelim_mode)
             
             if orig_drop_val != drop_val and input_id == "submit-button":
                 flags_resolved = []
@@ -2226,7 +2233,7 @@ def process_man_drop(drop_val, sector_val, init_fired, preview_status, curryr, c
     else:    
 
         data = use_pickle("in", "main_data_" + sector_val, False, curryr, currmon, sector_val)
-        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val)
+        flag_list, p_skip_list, drop_val, has_flag, test_auto_rebench, avail_check, mrent_check, merent_check, first_yr, first_month = flag_examine(data, drop_val, True, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val, "N")
 
         # Reset the radio button to the correct variable based on the new flag
         if test_auto_rebench == True:

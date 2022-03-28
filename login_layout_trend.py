@@ -109,13 +109,24 @@ def get_login_layout():
                                                 ),
                                                     ], style={'width': '30%', 'display': 'inline-block', 'padding-left': '20px'}),
                                 html.Div([
-                                    dcc.Checklist(
-                                        id='msq_load',
-                                        value=[],
-                                        options=[
-                                            {'label': ' MSQs Updated', 'value': 'Y'},
-                                            ],
-                                        labelStyle={'display': 'block', 'margin': '0 10px 0 10px'}), 
+                                    html.Div([
+                                        dcc.Checklist(
+                                            id='msq_load',
+                                            value=[],
+                                            options=[
+                                                {'label': ' MSQs Updated', 'value': 'Y'},
+                                                ],
+                                            labelStyle={'display': 'block', 'margin': '0 10px 0 10px'}), 
+                                        ], style={'display': 'block'}),
+                                    html.Div([
+                                        dcc.Checklist(
+                                            id='prelim_mode',
+                                            value=[],
+                                            options=[
+                                                {'label': ' Prelim Mode', 'value': 'Y'},
+                                                ],
+                                            labelStyle={'display': 'block', 'margin': '0 10px 0 10px'}), 
+                                        ], style={'display': 'block'}),    
                                     ],  style={'padding-left': '10px', 'width': '40%', 'display': 'inline-block', 'vertical-align': 'top'}),
                             ], style={'display': 'block'}),
                                 

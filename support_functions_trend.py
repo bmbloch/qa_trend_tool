@@ -1046,7 +1046,7 @@ def insert_fix(dataframe, row_to_fix, identity_val, fix, variable_fix, curryr, c
     return dataframe
 
 # Function to identify if a submarket has a flag for review
-def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val):
+def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow, test_auto_rebench, sector_val, prelim_mode):
     
     if test_auto_rebench == True:
         avail_check, mrent_check, merent_check, identity_for_check, first_yr, first_month = auto_rebench_check(data, curryr, currmon, sector_val, True, True, True)
@@ -1081,6 +1081,9 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
             if flag_flow == "cat":
                 dataframe_test = dataframe.copy()
 
+                if prelim_mode == "Y" and sector_val != 'ind' and not test_auto_rebench:
+                    dataframe_test = dataframe_test[dataframe_test['tier'] != 3]
+
                 dataframe_test[flag_cols] = np.where((dataframe_test[flag_cols] != 0), 1, dataframe_test[flag_cols])
 
                 rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
@@ -1109,6 +1112,8 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                         break
             elif flag_flow == "flag":
                 dataframe_test = dataframe.copy()
+                if prelim_mode == "Y" and sector_val != 'ind' and not test_auto_rebench:
+                    dataframe_test = dataframe_test[dataframe_test['tier'] != 3]
                 rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
                 test_flag_cols = [x + "_test" for x in rol_flag_cols]
                 dataframe_test[test_flag_cols] = dataframe_test.groupby('identity')[rol_flag_cols].transform('sum')
@@ -1124,7 +1129,7 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                         dataframe = dataframe_test_1.copy()
                         break
 
-        cols_to_keep = flag_cols + ['identity', 'flag_skip']
+        cols_to_keep = flag_cols + ['identity', 'flag_skip', 'tier']
         dataframe = dataframe[cols_to_keep]
         dataframe[flag_cols] = np.where((dataframe[flag_cols] > 0), 1, dataframe[flag_cols])
         rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
@@ -1139,6 +1144,11 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
         dataframe['total_skips'] = dataframe.groupby('identity')['sum_skips'].transform('sum')
         dataframe['flags_left'] = round(dataframe['total_flags'] - dataframe['total_skips'],0)
         dataframe = dataframe[dataframe['flags_left'] > 0]
+        if prelim_mode == "Y" and sector_val != 'ind' and not test_auto_rebench:
+            temp = dataframe.copy()
+            temp = temp[temp['tier'] != 3]
+            if len(temp) > 0:
+                dataframe = temp.copy()
         
         if len(dataframe) == 0:
             if filt == True:
