@@ -1130,6 +1130,8 @@ def flag_examine(data, identity_val, filt, curryr, currmon, flag_cols, flag_flow
                         break
 
         cols_to_keep = flag_cols + ['identity', 'flag_skip', 'tier']
+        if sector_val == "ind":
+            cols_to_keep.remove('tier')
         dataframe = dataframe[cols_to_keep]
         dataframe[flag_cols] = np.where((dataframe[flag_cols] > 0), 1, dataframe[flag_cols])
         rol_flag_cols = [x for x in flag_cols if "rol" in x or x == "v_flag_low" or x == "v_flag_high" or x == "e_flag_high" or x == "e_flag_low" or x == "c_flag_sqdiff"]
