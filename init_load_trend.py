@@ -107,6 +107,11 @@ def refresh_data(sector_val, curryr, currmon, data_in, data_refresh_in):
     else:
         data[['avail10d', 'avail00d']] = round((data[['avail10d', 'avail00d']] * -1), 0)
 
+    data['avail10d_temp'] = np.where((data['avail10d'].isnull() == True), 0, data['avail10d'])
+    data['avail00d_temp'] = np.where((data['avail00d'].isnull() == True), 0, data['avail00d'])
+    data['avail0d'] = np.where((data['avail10d'].isnull() == False) | (data['avail00d'].isnull() == False), data['avail10d_temp'] + data['avail00d_temp'], np.nan)
+    data = data.drop(['avail10d_temp', 'avail00d_temp'],axis=1)
+
     prelim_cols = ['p_inv', 'p_cons', 'p_avail', 'p_occ', 'p_abs', 'p_mrent', 'p_G_mrent', 'p_merent', 'p_G_merent', 'p_gap'] 
     data = data.join(data_refresh.set_index('join_ident')[prelim_cols], on='join_ident')
     has_diff = False
@@ -277,6 +282,11 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         else:
             data[['avail10d', 'avail00d']] = round((data[['avail10d', 'avail00d']] * -1), 0)
 
+        data['avail10d_temp'] = np.where((data['avail10d'].isnull() == True), 0, data['avail10d'])
+        data['avail00d_temp'] = np.where((data['avail00d'].isnull() == True), 0, data['avail00d'])
+        data['avail0d'] = np.where((data['avail10d'].isnull() == False) | (data['avail00d'].isnull() == False), data['avail10d_temp'] + data['avail00d_temp'], np.nan)
+        data = data.drop(['avail10d_temp', 'avail00d_temp'],axis=1)
+
         # Create a column that will keep track if the user overrides a flag and does not think a change is warranted
         data['flag_skip'] = ''
         
@@ -330,7 +340,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
         data['qrol_vac'] = np.where((data['yr'] == curryr) & (data['currmon'] > currmon_cut), data['qrol_vac'], data['rol_vac'])
         data['qrol_mrent'] = np.where((data['yr'] == curryr) & (data['currmon'] > currmon_cut), data['qrol_mrent'], data['rol_mrent'])
         data['qrol_merent'] = np.where((data['yr'] == curryr) & (data['currmon'] > currmon_cut), data['qrol_merent'], data['rol_merent'])
-    
+
     orig_cols = list(data.columns)
     if sector_val == "apt" and file_used == "oob":
         orig_cols = orig_cols + ['p_sqcons']

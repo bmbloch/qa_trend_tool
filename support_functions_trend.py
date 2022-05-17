@@ -71,7 +71,7 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     if variable_fix == "c":
         key_met_cols = ['newncsf', 'newncava', 'ncrenlev', 'newncrev', 'cons_roldiff', 'vac_roldiff', 'gmrent_roldiff']
     elif variable_fix == "v":
-        key_met_cols = ['vac_chg_ytd', 'vac_chg_12', 'sqvac_chg_12', 'ss_vac_chg', 'vac_roldiff', 'newncava', 'nc_surabs', 'vacdrops', 'vacflats', 'vacincrs', 'met_sur_totabs', 'met_sur_v_cov_perc', 'met_avg_mos_to_last_vacsur', 'avail10d', 'sub_sur_totabs', 'sub_sur_v_cov_perc', 'sub_avg_mos_to_last_vacsur']
+        key_met_cols = ['vac_chg_ytd', 'vac_chg_12', 'sqvac_chg_12', 'ss_vac_chg', 'vac_roldiff', 'newncava', 'nc_surabs', 'vacdrops', 'vacflats', 'vacincrs', 'met_sur_totabs', 'met_sur_v_cov_perc', 'met_avg_mos_to_last_vacsur', 'avail0d', 'sub_sur_totabs', 'sub_sur_v_cov_perc', 'sub_avg_mos_to_last_vacsur']
 
         if sector_val != "apt":
             key_met_cols.remove('vac_chg_12')
@@ -121,7 +121,7 @@ def set_display_cols(dataframe_in, identity_val, variable_fix, sector_val, curry
     else:
         insight_stats = pd.DataFrame()
     
-    key_met_cols = [x for x in key_met_cols if math.isnan(dataframe[x]) == False or x == "dqren10" or x == "avail10d"]
+    key_met_cols = [x for x in key_met_cols if math.isnan(dataframe[x]) == False or x == "dqren10" or x == "avail0d"]
    
     return display_cols, key_met_cols, insight_stats
 
@@ -452,9 +452,9 @@ def get_issue(type_return, sector_val, dataframe=False, has_flag=False, flag_lis
     }
 
     if sector_val != "ind":
-        highlighting['v_flag_level'] = ['vac'], ['sub sur totabs', 'avail10d'], ['sq vac']
+        highlighting['v_flag_level'] = ['vac'], ['sub sur totabs', 'avail0d'], ['sq vac']
     else:
-        highlighting['v_flag_level'] = ['avail'], ['sub sur totabs', 'avail10d'], ['sq avail']
+        highlighting['v_flag_level'] = ['avail'], ['sub sur totabs', 'avail0d'], ['sq avail']
     
     display_issue_cols = []
     key_metric_issue_cols = []
@@ -2064,7 +2064,7 @@ def ncsur_tooltip(ncsur_props, sub_ncabsprops_keys, tables, underline_cols):
 
     return tables, underline_cols
 
-def avail10_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_cols):
+def avail0_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_cols):
     for key in sub_availprops_keys:
         if key == sub_availprops_keys[0]:
             table_avail = textwrap.dedent(
@@ -2088,7 +2088,7 @@ def avail10_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_col
                                             )
                                         )
     tables.append(table_avail)
-    underline_cols += ['avail10d']
+    underline_cols += ['avail0d']
 
     return tables, underline_cols
 

@@ -114,16 +114,16 @@ def v_surabs(data, curryr, currmon, sector_val, calc_names):
 
     data['sub_sur_totabs_fill'] = data['sub_sur_totabs'].fillna(0)
     data['v_flag_surabs'] = np.where((abs(data['abs'] - data['sub_sur_totabs_fill'] - data['nc_surabs']) / data['inv'] >= 0.005) & (data['curr_tag'] == 1), 1, 0)
-    data['v_flag_surabs'] = np.where(((data['abs'] - data['nc_surabs']) * data['avail10d'] < 0) & (data['curr_tag'] == 1), 1, data['v_flag_surabs'])
+    data['v_flag_surabs'] = np.where(((data['abs'] - data['nc_surabs']) * data['avail0d'] < 0) & (data['curr_tag'] == 1), 1, data['v_flag_surabs'])
 
-    # Dont flag if abs is higher than avail10d and totsurabs and moving it closer to total would move the vacancy further away from sqvac
-    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] > data['sqvac']) & (data['abs'] > data['sub_sur_totabs']) & (data['abs'] <= data['avail10d']) & (data['abs'] < 0), 0, data['v_flag_surabs'])
-    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] < data['sqvac']) & (data['abs'] < data['sub_sur_totabs']) & (data['abs'] >= data['avail10d']) & (data['abs'] > 0), 0, data['v_flag_surabs'])
+    # Dont flag if abs is higher than avail0d and totsurabs and moving it closer to total would move the vacancy further away from sqvac
+    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] > data['sqvac']) & (data['abs'] > data['sub_sur_totabs']) & (data['abs'] <= data['avail0d']) & (data['abs'] < 0), 0, data['v_flag_surabs'])
+    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['vac'] < data['sqvac']) & (data['abs'] < data['sub_sur_totabs']) & (data['abs'] >= data['avail0d']) & (data['abs'] > 0), 0, data['v_flag_surabs'])
     
-    # Per the other analysts' request, dont flag if between avail10d and total surabs. First clause only for non ind sectors
+    # Per the other analysts' request, dont flag if between avail0d and total surabs. First clause only for non ind sectors
     if sector_val != "ind":
-        data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['abs'] >= data['avail10d']) & (data['abs'] <= data['sub_sur_totabs']), 0, data['v_flag_surabs'])
-    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (abs(data['abs'] - data['avail10d']) / data['inv'] < 0.001) & (data['sub_sur_totabs'].isnull() == True), 0, data['v_flag_surabs'])
+        data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (data['abs'] >= data['avail0d']) & (data['abs'] <= data['sub_sur_totabs']), 0, data['v_flag_surabs'])
+    data['v_flag_surabs'] = np.where((data['v_flag_surabs'] == 1) & (abs(data['abs'] - data['avail0d']) / data['inv'] < 0.001) & (data['sub_sur_totabs'].isnull() == True), 0, data['v_flag_surabs'])
 
     data['calc_vsurabs'] = np.where(data['v_flag_surabs'] > 0, abs(data['abs'] - data['sub_sur_totabs_fill'] - data['nc_surabs']) / data['inv'], np.nan)
     calc_names.append(list(data.columns)[-1])
@@ -161,14 +161,14 @@ def v_level(data, curryr, currmon, sector_val, calc_names):
     if sector_val != "ind":
         data['v_flag_level'] = np.where((data['curr_tag'] == 1) & (data['vac'] > data['sqvac'] + 0.05) & ((data['abs'] - data['nc_surabs']) < data['sub_sur_totabs'] - (5000 / divisor)), 
                                     1, 0)
-        data['v_flag_level'] = np.where((data['curr_tag'] == 1) & (data['vac'] < data['sqvac'] - 0.05) & (data['abs'] - data['nc_surabs'] > data['avail10d'] + (5000 / divisor)), 
+        data['v_flag_level'] = np.where((data['curr_tag'] == 1) & (data['vac'] < data['sqvac'] - 0.05) & (data['abs'] - data['nc_surabs'] > data['avail0d'] + (5000 / divisor)), 
                                     1, data['v_flag_level'])    
 
         data['calc_vlev'] = np.where(data['v_flag_level'] > 0, abs(data['vac'] - data['sqvac']), np.nan) 
     else:
         data['v_flag_level'] = np.where((data['curr_tag'] == 1) & (data['avail'] > data['sqavail']) & ((data['abs'] - data['nc_surabs']) < data['sub_sur_totabs'] - (5000 / divisor)), 
                                     1, 0)
-        data['v_flag_level'] = np.where((data['curr_tag'] == 1) & (data['avail'] < data['sqavail']) & (data['abs'] - data['nc_surabs'] > data['avail10d'] + (5000 / divisor)), 
+        data['v_flag_level'] = np.where((data['curr_tag'] == 1) & (data['avail'] < data['sqavail']) & (data['abs'] - data['nc_surabs'] > data['avail0d'] + (5000 / divisor)), 
                                     1, data['v_flag_level'])  
         
         data['calc_vlev'] = np.where(data['v_flag_level'] > 0, abs(data['avail'] - data['sqavail']), np.nan)

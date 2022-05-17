@@ -33,7 +33,7 @@ from stats_trend import calc_stats
 from flags_trend import calc_flags
 from support_functions_trend import set_display_cols, display_frame, gen_metrics, rollup, live_flag_count, summarize_flags_ranking, summarize_flags, get_issue 
 from support_functions_trend import get_diffs, metro_sorts, flag_examine, calc_3mos, calc_ytd, create_review_packet, check_skips, get_user_skips, sub_met_graphs, set_bar_scale, set_y2_scale
-from support_functions_trend import ncsur_tooltip, avail10_tooltip, all_avail_tooltip, ren10_tooltip, all_rent_tooltip, ncbackfill_tooltip
+from support_functions_trend import ncsur_tooltip, avail0_tooltip, all_avail_tooltip, ren10_tooltip, all_rent_tooltip, ncbackfill_tooltip
 from trend_app_layout import get_app_layout
 from login_layout_trend import get_login_layout
 from timer_trend import Timer
@@ -105,7 +105,7 @@ def get_types(sector_val):
     type_dict['gap'] = 'numeric'
     type_dict['Surveyed Abs'] = 'numeric'
     type_dict['newncrev'] = 'numeric'
-    type_dict['avail10d'] = 'numeric'
+    type_dict['avail0d'] = 'numeric'
     type_dict['dqren10d'] = 'numeric'
     type_dict['Months To Last Surv'] = 'numeric'
     type_dict['Survey Cover Pct'] = 'numeric'
@@ -221,7 +221,7 @@ def get_types(sector_val):
     format_dict['rol abs'] = Format(group=",")
     format_dict['rol avail'] = Format(group=",")
     format_dict['newncava'] = Format(group=",")
-    format_dict['avail10d'] = Format(group=",")
+    format_dict['avail0d'] = Format(group=",")
     format_dict['met sur totabs'] = Format(group=",")
     format_dict['sub sur totabs'] = Format(group=",")
     format_dict['c met sur totabs'] = Format(group=",")
@@ -507,12 +507,12 @@ def create_scatter_plot(dataframe, xaxis_var, yaxis_var, type_value, curryr, cur
             x_data = dataframe['index_yr'].unique()
         x_tick_format = ',.02%'
     
-    if yaxis_var in ["cons", "abs", "rol_cons", "rol_abs", "sqcons", "sqabs", "avail10d", "sub_sur_totabs", "met_sur_totabs", "metsqabs", "metsqcons"]:
+    if yaxis_var in ["cons", "abs", "rol_cons", "rol_abs", "sqcons", "sqabs", "avail0d", "sub_sur_totabs", "met_sur_totabs", "metsqabs", "metsqcons"]:
         if type_value == "c":
             y_data = dataframe[dataframe['variable'] == yaxis_var]['value'].astype(int)
         else:
             y_data = dataframe[dataframe['variable'] == 'diff_val']['value'].astype(int)
-        if "abs" in yaxis_var or yaxis_var == "avail10d":
+        if "abs" in yaxis_var or yaxis_var == "avail0d":
             if sector_val == "apt":
                 y_data = y_data.round(0)
             else:    
@@ -561,7 +561,7 @@ def create_scatter_plot(dataframe, xaxis_var, yaxis_var, type_value, curryr, cur
                     }
     elif type_value == "s":
         axis_titles = {
-            "avail10d": "Curr Diff to Surveyed Absoprtion in MSQ",
+            "avail0d": "Curr Diff to Surveyed Absoprtion in MSQ",
             "dqren10d": "Curr Diff to Surveyed Rent Change in MSQ",
             "sub_sur_totabs": "Curr Diff to Total Surveyed Absorption",
             "met_sur_totabs": "Curr Diff to Total Surveyed Absorption",
@@ -677,7 +677,7 @@ def set_ts_bar(fig, data_in, var_1, var_2, curryr, currmon, type_value, bar_colo
 
     if type_value == "s":
         y_data_s = list(data[data['variable'] == var_2]['value'])
-        if "abs" in var_2 or "avail10d" in var_2:
+        if "abs" in var_2 or "avail0d" in var_2:
             if sector_val == "apt":
                 y_data_s =  [round(x,0) for x in y_data_s]
             else:
@@ -740,7 +740,7 @@ def set_ts_layout(fig, axis_var, identity, y_tick_range, dtick, tick_0, curryr, 
                     "metsqabs": "Square Absorption",
                     "sq_Gmrent": "Square Market Rent Change",
                     "metsq_Gmrent": "square Market Rent Change",
-                    "avail10d": "MSQ Surveyed Abs VS Curr Pub Abs",
+                    "avail0d": "MSQ Surveyed Abs VS Curr Pub Abs",
                     "dqren10d": "MSQ Surveyed Rent Chg VS Curr Pub Rent Chg",
                     "sub_sur_totabs": "Surveyed Abs VS Curr Pub Abs",
                     "met_sur_totabs": "Surveyed Abs VS Curr Pub Abs",
@@ -769,7 +769,7 @@ def set_ts_layout(fig, axis_var, identity, y_tick_range, dtick, tick_0, curryr, 
                     "metsqabs": "Square Absorption",
                     "sq_Gmrent": "Square Market Rent Level",
                     "metsq_Gmrent": "Square Market Rent Level",
-                    "avail10d": "Absorption",
+                    "avail0d": "Absorption",
                     "dqren10d": "Market Rent Change",
                     "sub_sur_totabs": "Absorption",
                     "met_sur_totabs": "Absorption",
@@ -779,7 +779,7 @@ def set_ts_layout(fig, axis_var, identity, y_tick_range, dtick, tick_0, curryr, 
 
     title_name = '<b>{}</b><br>{}'.format(identity, graph_titles[axis_var])
 
-    if "cons" in axis_var or "abs" in axis_var or "avail10d" in axis_var or "sub_sur_totabs" in axis_var:
+    if "cons" in axis_var or "abs" in axis_var or "avail0d" in axis_var or "sub_sur_totabs" in axis_var:
         tick_format = ','
     elif "mrent" in axis_var or "merent" in axis_var:
         if sector_val == "apt":
@@ -2903,7 +2903,7 @@ def output_display(sector_val, drop_val, all_buttons, key_met_val, expand, show_
         
         sub_availprops_keys = [x for x in surv_avail_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_availprops_keys) > 0:
-            tables, underline_cols = avail10_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_cols)
+            tables, underline_cols = avail0_tooltip(surv_avail_props, sub_availprops_keys, tables, underline_cols)
             
         sub_all_availprops_keys = [x for x in all_avail_props.keys() if x.split(",")[0] == drop_val]
         if len(sub_all_availprops_keys) > 0:
@@ -3460,7 +3460,7 @@ def get_scatter_drops(type_value, aggreg_met, sector_val, curryr, currmon, x_var
         elif type_value == "s":
             options_list_1 = []
             if aggreg_met == False:
-                options_list_2 = ['avail10d', 'dqren10d', 'sub_g_renx_mo_wgt', 'sub_sur_totabs']
+                options_list_2 = ['avail0d', 'dqren10d', 'sub_g_renx_mo_wgt', 'sub_sur_totabs']
             elif aggreg_met == True:
                 options_list_2 = ['met_g_renx_mo_wgt', 'met_sur_totabs']
             if x_var == "abs":
@@ -3526,7 +3526,7 @@ def produce_scatter_graph(xaxis_var, yaxis_var, type_value, flags_only, aggreg_m
                         xaxis_var = yaxis_var[5:]
 
         elif type_value == "s":
-            if yaxis_var in ["avail10d", "sub_sur_totabs", "met_sur_totabs"]:
+            if yaxis_var in ["avail0d", "sub_sur_totabs", "met_sur_totabs"]:
                 xaxis_var = "abs"
             elif yaxis_var in ["dqren10d", "sub_g_renx_mo_wgt", "met_g_renx_mo_wgt"]:
                 xaxis_var = "G_mrent"
@@ -3690,7 +3690,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
                     else:
                         xaxis_var = yaxis_var[5:]
         elif type_value == "s":
-            if yaxis_var == "avail10d" or yaxis_var == "sub_sur_totabs" or yaxis_var == "met_sur_totabs":
+            if yaxis_var == "avail0d" or yaxis_var == "sub_sur_totabs" or yaxis_var == "met_sur_totabs":
                 xaxis_var = "abs"
             elif yaxis_var == "dqren10d" or yaxis_var == "sub_g_renx_mo_wgt" or yaxis_var == "met_g_renx_mo_wgt":
                 xaxis_var = "G_mrent"
@@ -3865,7 +3865,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
 
             if "abs" in yaxis_var and "sur" not in yaxis_var:
                 y_numer_list = [yaxis_var]
-            elif yaxis_var == "avail10d":
+            elif yaxis_var == "avail0d":
                 y_numer_list = ['abs', yaxis_var]
             elif yaxis_var == "sub_sur_totabs" or yaxis_var == "met_sur_totabs":
                 y_numer_list = ['abs', yaxis_var]
@@ -3913,7 +3913,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
                 bar_color_2 = "mediumseagreen"
                 line_color = "purple"
 
-            if "cons" in xaxis_var or "abs" in xaxis_var or "avail10d" in yaxis_var or "sub_sur_totabs" in yaxis_var or "dqren10d" in yaxis_var or "sub_g_renx_mo_wgt" in yaxis_var or "met_sur_totabs" in yaxis_var or "met_g_renx_mo_wgt" in yaxis_var:
+            if "cons" in xaxis_var or "abs" in xaxis_var or "avail0d" in yaxis_var or "sub_sur_totabs" in yaxis_var or "dqren10d" in yaxis_var or "sub_g_renx_mo_wgt" in yaxis_var or "met_sur_totabs" in yaxis_var or "met_g_renx_mo_wgt" in yaxis_var:
                 fig_x = set_ts_bar(fig_x, graph, x_var_1, x_var_2, curryr, currmon, type_value, bar_color_1, bar_color_2, sector_val)
                 if type_value == "s":
                     title_var = x_var_2
@@ -3931,7 +3931,7 @@ def produce_timeseries(hoverData, xaxis_var, yaxis_var, sector_val, scatter_chec
                 y_tick_range, dtick, tick_0 = set_y2_scale(graph, "ts", x_level_var, sector_val)
                 fig_x = set_ts_layout(fig_x, x_chg_var, identity, y_tick_range, dtick, tick_0, curryr, currmon, "Scatter", x_bar_range_list, sector_val, type_value, x_bar_dtick, False)
 
-            if "avail10d" in yaxis_var or "sub_sur_totabs" in yaxis_var or "dqren10d" in yaxis_var or "sub_g_renx_mo_wgt" in yaxis_var or "met_sur_totabs" in yaxis_var or "met_g_renx_mo_wgt" in yaxis_var:
+            if "avail0d" in yaxis_var or "sub_sur_totabs" in yaxis_var or "dqren10d" in yaxis_var or "sub_g_renx_mo_wgt" in yaxis_var or "met_sur_totabs" in yaxis_var or "met_g_renx_mo_wgt" in yaxis_var:
                 fig_y = go.Figure()
             elif "cons" in yaxis_var or ("abs" in yaxis_var and "tot" not in yaxis_var):
                 fig_y = set_ts_bar(fig_y, graph, y_var_1, y_var_2, curryr, currmon, type_value, bar_color_1, bar_color_2, sector_val)
