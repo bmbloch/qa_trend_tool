@@ -1137,7 +1137,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     new_ids = list(curr['id'])
     newnc_dict = {}
     for index, row in curr.iterrows():
-        newnc_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
+        newnc_dict[row['identity'] + "," + str(row['id']).split('.')[0]] = {'id': row['id'], 'yearx': row['yearx'], 'month': row['month'], 
                                                                     'sizex': row['sizex'], 'totavailx': row['totavailx'], 'renx': row['renx']}
     del curr
     gc.collect()
@@ -1183,7 +1183,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     nc_sur_props = nc_sur_props[['id', 'identity', 'nc_surabs', 'yearx', 'month']]
     ncsur_prop_dict = {}
     for index, row in nc_sur_props.iterrows():
-        ncsur_prop_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
+        ncsur_prop_dict[row['identity'] + "," + str(row['id']).split('.')[0]] = {'id': row['id'], 'nc_surabs': row['nc_surabs'], 'yearx': row['yearx'], 'month': row['month']}
 
     del nc_sur_props
     gc.collect()
@@ -1201,7 +1201,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     sur_avail = sur_avail[['id', 'identity', 'abs']]
     avail_10_dict = {}
     for index, row in sur_avail.iterrows():
-        avail_10_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'abs': row['abs']}
+        avail_10_dict[row['identity'] + "," + str(row['id']).split('.')[0]] = {'id': row['id'], 'abs': row['abs']}
 
     del sur_avail
     gc.collect()
@@ -1218,7 +1218,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     sq_avail = sq_avail.groupby('identity').head(5).reset_index(drop=True)
     sq_avail_dict = {}
     for index, row in sq_avail.iterrows():
-        sq_avail_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'abs': row['abs'], 'availxM': row['availxM']}
+        sq_avail_dict[row['identity'] + "," + str(row['id']).split('.')[0]] = {'id': row['id'], 'abs': row['abs'], 'availxM': row['availxM']}
     
     del sq_avail
     gc.collect()
@@ -1237,7 +1237,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     sur_rg = sur_rg[['id', 'identity', 'rg']]
     rg_10_dict = {}
     for index, row in sur_rg.iterrows():
-        rg_10_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg']}
+        rg_10_dict[row['identity'] + "," + str(row['id']).split('.')[0]] = {'id': row['id'], 'rg': row['rg']}
 
     del sur_rg
     gc.collect()
@@ -1255,7 +1255,7 @@ def process_initial_load(data, sector_val, curryr, currmon, msq_load, file_used)
     sq_rg = sq_rg.groupby('identity').head(5).reset_index(drop=True)
     sq_rg_dict = {}
     for index, row in sq_rg.iterrows():
-        sq_rg_dict[row['identity'] + "," + str(int(row['id']))] = {'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
+        sq_rg_dict[row['identity'] + "," + str(row['id']).split('.')[0]] = {'id': row['id'], 'rg': row['rg'], 'renxM': row['renxM']}
 
     del sq_rg
     gc.collect()
